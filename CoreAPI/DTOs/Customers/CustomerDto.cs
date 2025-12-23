@@ -1,0 +1,12 @@
+﻿using CoreAPI.Models;
+
+namespace CoreAPI.DTOs.Customers;
+
+public record CustomerDto(
+    string Id,
+    string Name,
+    string Email,
+    string PhoneNumber,
+    IList<LoyaltyAccount> LoyaltyAccounts,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt);

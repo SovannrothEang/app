@@ -1,0 +1,56 @@
+﻿using AutoMapper;
+using CoreAPI.DTOs.Auth;
+using CoreAPI.Models;
+using CoreAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
+
+namespace CoreAPI.Services;
+
+public class RoleService(
+    UserManager<User> userManager,
+    RoleManager<Role> roleManager,
+    IMapper mapper) : IRoleService
+{
+    private readonly UserManager<User> _userManager = userManager;
+    private readonly RoleManager<Role> _roleManager = roleManager;
+    private readonly IMapper _mapper = mapper;
+
+    public IEnumerable<RoleDto> GetAllRoles(CancellationToken ct = default)
+    {
+        //var roles = await _roleManager.Roles.ToListAsync();
+        var roles = _roleManager.Roles.ToList();
+        return roles.Select(r => _mapper.Map<Role, RoleDto>(r));
+    }
+
+    public async Task<IEnumerable<string>> GetRoleNamesAsync(User user)
+    {
+        return await _userManager.GetRolesAsync(user);
+    }
+
+    public async Task<RoleDto?> GetRoleByIdAsync(string id)
+    {
+        var role = await _roleManager.FindByIdAsync(id);
+        return role is null ? null : _mapper.Map<Role, RoleDto>(role);
+    }
+
+
+    public async Task<IdentityResult> CreateRoleAsync(RoleCreateDto roleCreate)
+    {
+        var role = _mapper.Map<RoleCreateDto, Role>(roleCreate);
+        return await _roleManager.CreateAsync(role);
+    }
+
+    public async Task<IdentityResult> AssignRoleAsync(AssignRoleDto dto)
+    {
+        var user = await _userManager.FindByNameAsync(dto.UserName)
+            ?? throw new KeyNotFoundException($"No User is found with UserName: {dto.UserName}!");
+
+        var role = await _roleManager.FindByNameAsync(dto.RoleName)
+            ?? throw new KeyNotFoundException($"No Role is found with UserName: {dto.UserName}!");
+
+        if (await _userManager.IsInRoleAsync(user, dto.RoleName))
+            throw new BadHttpRequestException($"User is already assigned to role: '{dto.RoleName}'!");
+
+        return await _userManager.AddToRoleAsync(user, role.Name!);
+    }
+}

@@ -1,0 +1,15 @@
+﻿namespace CoreAPI.DTOs
+{
+    public record AuthResponseDto(
+        string AccessToken,
+        DateTime ExpiresAt,
+        string RefreshToken,
+        string UserId,
+        string Email,
+        IEnumerable<string> Roles
+    );
+
+    public record UserProfileResponseDto(
+        string Id, string? UserName, string? Email, IList<string> Roles
+    );
+}
