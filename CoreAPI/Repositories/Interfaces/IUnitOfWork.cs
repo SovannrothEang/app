@@ -4,6 +4,14 @@ namespace CoreAPI.Repositories.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
+    IUserRepository UserRepository { get; }
+    ICustomerRepository CustomerRepository { get; }
+    ITenantRepository TenantRepository { get; }
+    ILoyaltyAccountRepository LoyaltyAccountRepository { get; }
+    IPointTransactionRepository PointTransactionRepository { get; }
+
+    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
+    Task CommitAsync(CancellationToken cancellationToken = default);
+    Task RollbackAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
-    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
 }

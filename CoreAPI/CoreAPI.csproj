@@ -24,9 +24,5 @@
         <PackageReference Include="Scalar.AspNetCore" Version="2.11.6" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
     </ItemGroup>
-    
-    <ItemGroup>
-      <Folder Include="Shared\" />
-    </ItemGroup>
 
 </Project>

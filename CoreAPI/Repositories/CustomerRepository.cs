@@ -6,40 +6,43 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class CustomerRepository(AppDbContext dbContext) : Repository<Customer, string>(dbContext), ICustomerRepository
+public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(dbContext), ICustomerRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
-    
-    public async Task<IEnumerable<Customer>> GetAllAsync(CancellationToken cancellationToken = default)
+
+    public async Task<IEnumerable<Customer>> GetAllAsync(
+        bool childIncluded = false,
+        Expression<Func<Customer, bool>>? filtering = null,
+        CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Customers
+        var queryable = _dbContext.Customers
             .AsNoTracking()
+            .AsQueryable();
+
+        if (childIncluded)
+            queryable = queryable
+                .Include(e => e.LoyaltyAccounts)
+                .ThenInclude(e => e.PointTransactions);
+        
+        if (filtering != null)
+            queryable = queryable.Where(filtering);
+            
+        return await queryable
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Customer>> GetAllWithIncludesAsync(CancellationToken cancellationToken = default)
+    public async Task<Customer?> GetByIdAsync(string id, bool childIncluded = false, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Customers
+        var queryable = _dbContext.Customers
             .AsNoTracking()
-            .Include(e => e.LoyaltyAccounts)
-            .ThenInclude(e => e.PointTransactions)
-            .ToListAsync(cancellationToken);
-    }
+            .AsQueryable();
 
-    public async Task<IEnumerable<Customer>> GetAllWithFiltering(Expression<Func<Customer, bool>> filtering, CancellationToken cancellationToken = default)
-    {
-        return await _dbContext.Customers
-            .AsNoTracking()
-            .Where(filtering)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<Customer?> GetByIdWithIncludesAsync(string id, CancellationToken cancellationToken = default)
-    {
-        return await _dbContext.Customers
-            .AsNoTracking()
-            .Include(e => e.LoyaltyAccounts)
-            .ThenInclude(e => e.PointTransactions)
+        if (childIncluded)
+            queryable = queryable
+                .Include(e => e.LoyaltyAccounts)
+                .ThenInclude(e => e.PointTransactions);
+        
+        return await queryable
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 }

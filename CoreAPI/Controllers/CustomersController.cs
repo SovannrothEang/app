@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
-using CoreAPI.Services;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,9 +27,8 @@ public class CustomersController(
         [FromQuery] bool? childIncluded = false, 
         CancellationToken ct = default)
     {
-        var customers = childIncluded is true or not null
-            ? await _customerService.GetAllWithIncludesAsync(ct)
-            : await _customerService.GetAllAsync(ct);
+        childIncluded ??= false;
+        var customers = await _customerService.GetAllAsync(childIncluded.Value, ct);
         return Ok(customers.Select(c => _mapper.Map<CustomerDto>(c)));
     }
 
@@ -41,7 +39,8 @@ public class CustomersController(
         [FromQuery] bool? childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var customer = await _customerService.GetByIdAsync(id, childIncluded, cancellationToken);
+        childIncluded ??= false;
+        var customer = await _customerService.GetByIdAsync(id, childIncluded.Value, cancellationToken);
         if (customer == null) return NotFound();
         return Ok(_mapper.Map<CustomerDto>(customer));
     }

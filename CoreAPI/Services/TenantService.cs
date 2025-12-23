@@ -1,32 +1,59 @@
-﻿using CoreAPI.DTOs.Tenants;
+﻿using System.Linq.Expressions;
+using AutoMapper;
+using CoreAPI.DTOs.Tenants;
+using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 
 namespace CoreAPI.Services;
 
-public class TenantService(ITenantRepository tenantRepository) : ITenantService
+public class TenantService(ITenantRepository tenantRepository, IMapper mapper) : ITenantService
 {
     private readonly ITenantRepository _tenantRepository = tenantRepository;
+    private readonly IMapper _mapper = mapper;
 
-    public Task<IEnumerable<TenantDto>> GetAllAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<TenantDto>> GetAllAsync(Expression<Func<Tenant, bool>>? filtering = null, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var tenants = await _tenantRepository.GetAllAsync(filtering, cancellationToken);
+        return tenants.Select(e => _mapper.Map<TenantDto>(e)).ToList();
     }
 
-    public Task<IEnumerable<TenantDto>> GetAllWithIncludesAsync(CancellationToken ct = default)
+    public async Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        var tenant = await _tenantRepository.GetByIdAsync(id, ct);
+        return _mapper.Map<TenantDto>(tenant);
     }
 
-    public Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default)
+    public async Task<TenantDto> CreateAsync(TenantCreateDto dto, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        var tenant = _mapper.Map<Tenant>(dto);
+        await _tenantRepository.CreateAsync(tenant, ct);
+        return _mapper.Map<TenantDto>(tenant);
+    }
+
+    public async Task UpdateAsync(string id, TenantUpdateDto dto, CancellationToken ct = default)
+    {
+        var exist = await _tenantRepository.GetByIdAsync(id, ct)
+            ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
+        
+        _mapper.Map(dto, exist);
+        await _tenantRepository.Update(exist);
+        await _tenantRepository.SaveChangeAsync(ct);
+    }
+
+    public async Task DeleteAsync(string id, CancellationToken ct = default)
+    {
+        var exist = await _tenantRepository.GetByIdAsync(id, ct)
+            ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
+        
+        await _tenantRepository.Remove(exist);
+        await _tenantRepository.SaveChangeAsync(ct);
     }
 
     public async Task ActivateAsync(string id, CancellationToken ct = default)
     {
         var tenant = await _tenantRepository.GetByIdAsync(id, ct)
-                     ?? throw new KeyNotFoundException($"No tenant was found with id: {id}");
+                     ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
 
         tenant.Activate();
         await _tenantRepository.SaveChangeAsync(ct);
@@ -35,7 +62,7 @@ public class TenantService(ITenantRepository tenantRepository) : ITenantService
     public async Task DeactivateAsync(string id, CancellationToken ct = default)
     {
         var tenant = await _tenantRepository.GetByIdAsync(id, ct)
-            ?? throw new KeyNotFoundException($"No tenant was found with id: {id}");
+            ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
         
         tenant.Deactivate();
         await _tenantRepository.SaveChangeAsync(ct);

@@ -6,19 +6,54 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CoreAPI.Repositories;
 
-public class UnitOfWork(AppDbContext context, IMapper mapper) : IUnitOfWork
+public sealed class UnitOfWork(AppDbContext context, IMapper mapper) : IUnitOfWork
 {
     private readonly AppDbContext _context = context;
     private readonly IMapper _mapper = mapper;
-    private readonly ConcurrentDictionary<Type, object> _repositories = [];
+    // private readonly ConcurrentDictionary<Type, object> _repositories = [];
     private bool _disposed;
-    //private IDbContextTransaction? _objTran;
+    private IDbContextTransaction? _transaction = null;
 
-    //public async Task CommitAsync(CancellationToken ct = default)
-    //{
-    //    if (_objTran != null)
-    //        await _objTran.CommitAsync(ct);
-    //}
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        _transaction ??= await _context.Database.BeginTransactionAsync(cancellationToken);
+    }
+
+    public async Task CommitAsync(CancellationToken cancellationToken = default)
+    {
+        if (_transaction != null)
+        {
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                await _transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await RollbackAsync(cancellationToken);
+                throw;
+            }
+            finally
+            {
+                _transaction.Dispose();
+            }
+        }
+    }
+
+    public async Task RollbackAsync(CancellationToken cancellationToken = default)
+    {
+        if (_transaction != null)
+        {
+            await _transaction.RollbackAsync(cancellationToken);
+            await _transaction.DisposeAsync();
+        }
+    }
+
+    public IUserRepository UserRepository { get; private set; } = new UserRepository(context);
+    public ICustomerRepository CustomerRepository { get; private set; } = new CustomerRepository(context);
+    public ITenantRepository TenantRepository { get; private set; } = new TenantRepository(context);
+    public ILoyaltyAccountRepository LoyaltyAccountRepository { get; private set; } = new LoyaltyAccountRepository(context);
+    public IPointTransactionRepository PointTransactionRepository { get; private set; } = new PointTransactionRepository(context);
 
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
@@ -30,20 +65,6 @@ public class UnitOfWork(AppDbContext context, IMapper mapper) : IUnitOfWork
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-
-    //public void Rollback()
-    //{
-    //    if (_objTran != null)
-    //    {
-    //        _objTran.Rollback();
-    //        _objTran.Dispose();
-    //    }
-    //}
-    public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken ct = default)
-    {
-        return await _context.Database.BeginTransactionAsync(ct);
-    }
-
     // public IGenericRepository<T> GetRepository<T>() where T : class
     // {
     //     var type = typeof(T);
@@ -51,15 +72,15 @@ public class UnitOfWork(AppDbContext context, IMapper mapper) : IUnitOfWork
     //         new GenericRepository<T>(_context, _mapper));
     // }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposed && disposing)
         {
-            //if (_objTran != null)
-            //{
-            //    _objTran.Dispose();
-            //    _objTran = null;
-            //}
+            if (_transaction != null)
+            {
+                _transaction.Dispose();
+                _transaction = null;
+            }
             _context.Dispose();
             _disposed = true;
         }

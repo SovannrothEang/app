@@ -3,10 +3,13 @@ using CoreAPI.Models;
 
 namespace CoreAPI.Repositories.Interfaces;
 
-public interface ITenantRepository : IRepository<Tenant, string>
+public interface ITenantRepository : IRepository<Tenant>
 {
-    Task<IEnumerable<Tenant>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<IEnumerable<Tenant>> GetAllWithFiltering(
-        Expression<Func<Tenant, bool>> filtering,
+    Task<IEnumerable<Tenant>> GetAllAsync(
+        // bool childIncluded = false,
+        Expression<Func<Tenant, bool>>? filter = null,
+        CancellationToken cancellationToken = default);
+    Task<Tenant?> GetByIdAsync(
+        string id,
         CancellationToken cancellationToken = default);
 }

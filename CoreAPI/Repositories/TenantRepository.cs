@@ -6,22 +6,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class TenantRepository(AppDbContext dbContext) : Repository<Tenant, string>(dbContext), ITenantRepository
+public class TenantRepository(AppDbContext dbContext) : Repository<Tenant>(dbContext), ITenantRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    public async Task<IEnumerable<Tenant>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Tenant>> GetAllAsync(
+        Expression<Func<Tenant, bool>>? filtering = null,
+        CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Tenants
+        var queryable = _dbContext.Tenants
             .AsNoTracking()
+            .AsQueryable();
+        
+        if (filtering != null)
+            queryable = queryable.Where(filtering);
+            
+        return await queryable
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Tenant>> GetAllWithFiltering(Expression<Func<Tenant, bool>> filtering, CancellationToken cancellationToken = default)
+    public async Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Tenants
+        var queryable = _dbContext.Tenants
             .AsNoTracking()
-            .Where(filtering)
-            .ToListAsync(cancellationToken);
+            .AsQueryable();
+        
+        return await queryable
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 }
