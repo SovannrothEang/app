@@ -1,18 +1,28 @@
-﻿using System.Collections.Concurrent;
-using AutoMapper;
+﻿using AutoMapper;
 using CoreAPI.Data;
 using CoreAPI.Repositories.Interfaces;
+using CoreAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CoreAPI.Repositories;
 
-public sealed class UnitOfWork(AppDbContext context, IMapper mapper) : IUnitOfWork
+public sealed class UnitOfWork(
+    AppDbContext context,
+    IMapper mapper,
+    ICurrentUserProvider currentUserProvider) : IUnitOfWork
 {
     private readonly AppDbContext _context = context;
     private readonly IMapper _mapper = mapper;
+    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     // private readonly ConcurrentDictionary<Type, object> _repositories = [];
     private bool _disposed;
     private IDbContextTransaction? _transaction = null;
+    
+    public IUserRepository UserRepository { get; private set; } = new UserRepository(context);
+    public ICustomerRepository CustomerRepository { get; private set; } = new CustomerRepository(context);
+    public ITenantRepository TenantRepository { get; private set; } = new TenantRepository(context);
+    public ILoyaltyAccountRepository LoyaltyAccountRepository { get; private set; } = new LoyaltyAccountRepository(context);
+    public IPointTransactionRepository PointTransactionRepository { get; private set; } = new PointTransactionRepository(context);
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -48,13 +58,7 @@ public sealed class UnitOfWork(AppDbContext context, IMapper mapper) : IUnitOfWo
             await _transaction.DisposeAsync();
         }
     }
-
-    public IUserRepository UserRepository { get; private set; } = new UserRepository(context);
-    public ICustomerRepository CustomerRepository { get; private set; } = new CustomerRepository(context);
-    public ITenantRepository TenantRepository { get; private set; } = new TenantRepository(context);
-    public ILoyaltyAccountRepository LoyaltyAccountRepository { get; private set; } = new LoyaltyAccountRepository(context);
-    public IPointTransactionRepository PointTransactionRepository { get; private set; } = new PointTransactionRepository(context);
-
+    
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         return await _context.SaveChangesAsync(ct);

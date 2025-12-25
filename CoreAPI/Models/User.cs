@@ -3,10 +3,9 @@ using Microsoft.AspNetCore.Identity;
 
 namespace CoreAPI.Models;
 
-public sealed class User : IdentityUser<string>, IEntity
+public sealed class User : IdentityUser<string>, ITenantEntity
 {
-    public string? TenantId { get; set; }
-    public Tenant? Tenant { get; set; }
+    public string TenantId { get; private set; } = null!;
     public bool IsActive { get; private set; } = true;
     public bool IsDeleted { get; private set; } = false;
     public DateTime CreatedAt { get; } = DateTime.UtcNow.AddHours(7);
@@ -21,11 +20,12 @@ public sealed class User : IdentityUser<string>, IEntity
         SecurityStamp = Guid.NewGuid().ToString();
     }
 
-    public User(string email, string userName)
+    public User(string id, string email, string userName, string tenantId)
     {
-        Id = Guid.NewGuid().ToString();
+        Id = id;
         SecurityStamp = Guid.NewGuid().ToString();
         UserName = userName;
         Email = email;
+        TenantId = tenantId;
     }
 }

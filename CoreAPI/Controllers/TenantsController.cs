@@ -3,7 +3,6 @@ using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Exceptions;
 using CoreAPI.Models;
-using CoreAPI.Models.Enums;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,7 +15,8 @@ namespace CoreAPI.Controllers;
 [Tags("Tenants")]
 [RequireHttps]
 public class TenantsController(
-    ICurrentUserService currentUserService,
+    ICurrentUserProvider currentUserProvider,
+    IAuthorizationService authorizationService,
     UserManager<User> userManager,
     ICustomerService customerService,
     IPointTransactionService pointTransactionService,
@@ -24,7 +24,8 @@ public class TenantsController(
     ILogger<TenantsController> logger,
     ITenantService tenantService) : ControllerBase
 {
-    private readonly ICurrentUserService _currentUserService = currentUserService;
+    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+    private readonly IAuthorizationService _authorizationService = authorizationService;
     private readonly UserManager<User> _userManager = userManager;
     private readonly ICustomerService _customerService = customerService;
     private readonly IPointTransactionService _pointTransactionService = pointTransactionService;
@@ -51,24 +52,21 @@ public class TenantsController(
         }
     }
 
-    // [HttpPost]
-    // [Authorize(Constants.RequireSuperAdminRole)]
-    // public async Task<ActionResult> CreateTenantAsync(
-    //     [FromBody] TenantCreateDto dto,
-    //     [FromBody] string ownerUsername,
-    //     [FromBody] string ownerEmail,
-    //     [FromBody] string password,
-    //     CancellationToken ct = default)
-    // {
-    //     var user = new User(ownerEmail, ownerUsername);
-    //     var tenant = _mapper.Map<Tenant>(dto);
-    //     await _userManager.CreateAsync(user, password);
-    //     await _userManager.AddToRoleAsync(user, "Tenant");
-    //     
-    //     await _repository.CreateAsync(tenant, cancellationToken: ct);
-    //     await _unitOfWork.SaveChangesAsync(ct);
-    //     return Ok(tenant);
-    // }
+    [HttpPost]
+    [Authorize(Constants.RequireSuperAdminRole)]
+    public ActionResult CreateTenantAsync(
+        [FromBody] TenantCreateDto dto,
+        CancellationToken ct = default)
+    {
+        // var user = new User(ownerEmail, ownerUsername);
+        // var tenant = _mapper.Map<Tenant>(dto);
+        // await _userManager.CreateAsync(user, password);
+        // await _userManager.AddToRoleAsync(user, "Tenant");
+        //
+        // await _repository.CreateAsync(tenant, cancellationToken: ct);
+        // await _unitOfWork.SaveChangesAsync(ct);
+        return Ok();
+    }
 
     // [HttpPut("{tenantId}")]
     // // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
@@ -112,6 +110,10 @@ public class TenantsController(
         [FromRoute] string tenantId,
         CancellationToken ct = default)
     {
+        var tenantAccess = await _authorizationService.AuthorizeAsync(User, tenantId);
+        if (!tenantAccess.Succeeded)
+            return Forbid();
+        
         await _tenantService.ActivateAsync(tenantId, ct);
         return NoContent();
     }
@@ -176,7 +178,7 @@ public class TenantsController(
         [FromBody] CustomerAdjustPointDto dto,
         CancellationToken ct = default)
     {
-        var current = _currentUserService.UserId;
+        var current = _currentUserProvider.UserId;
         var (balance, transactionDetail) =
             await _pointTransactionService.AdjustPointAsync(customerId, tenantId, current, dto, ct);
         return Ok(new

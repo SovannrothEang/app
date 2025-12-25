@@ -3,7 +3,7 @@ using CoreAPI.Models.Shared;
 
 namespace CoreAPI.Models;
 
-public sealed class LoyaltyAccount : BaseEntity
+public sealed class LoyaltyAccount : BaseEntity, ITenantEntity
 {
     public string TenantId { get; private set; } = null!;
     public string CustomerId { get; private set; } = null!;

@@ -1,6 +1,6 @@
 ﻿namespace CoreAPI.Models.Shared;
 
-public abstract class BaseEntity : IEntity 
+public abstract class BaseEntity 
 {
     public bool IsActive { get; private set; } = true;
     public bool IsDeleted { get; private set; } = false;

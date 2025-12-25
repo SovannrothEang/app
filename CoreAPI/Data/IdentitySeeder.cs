@@ -30,7 +30,7 @@ public static class IdentitySeeder
 
         if (superAdmin is null)
         {
-            superAdmin = new User(superAdminEmail, superAdminUser);
+            superAdmin = new User(Guid.NewGuid().ToString(), superAdminEmail, superAdminUser);
             var isExist = await userMgr.FindByEmailAsync(superAdminEmail);
             if (isExist == null)
             {

@@ -16,10 +16,10 @@ public class TenantProfile : Profile
         CreateMap<TenantCreateDto, Tenant>()
             .ConstructUsing(src => new Tenant(
                 Guid.NewGuid().ToString(),
-                src.Name,
+                src.Tenant.Name,
                 new LoyaltyProgramSetting(
-                    src.PointPerDollar,
-                    src.ExpiryDays)
+                    src.Tenant.PointPerDollar,
+                    src.Tenant.ExpiryDays)
             ));
 
         // CreateMap<TenantUpdateDto, Tenant>()

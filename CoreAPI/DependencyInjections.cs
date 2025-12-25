@@ -3,6 +3,7 @@ using CoreAPI.Data;
 using CoreAPI.Models;
 using CoreAPI.Repositories;
 using CoreAPI.Repositories.Interfaces;
+using CoreAPI.Requirements;
 using CoreAPI.Services;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,7 +41,7 @@ public static class DependencyInjections
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IUserService, AuthService>();
-            builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+            builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
         }
 
         public IServiceCollection AddIdentity()
@@ -96,7 +97,9 @@ public static class DependencyInjections
                 .AddPolicy(Constants.RequireTenantOwnerOrAdminRole, p
                     => p.RequireAssertion(context =>
                         context.User.IsInRole("Admin") || 
-                        (context.User.IsInRole("Tenant") && context.User.HasClaim(c => c.Type == "tenant_id"))));
+                        (context.User.IsInRole("Tenant") && context.User.HasClaim(c => c.Type == "tenant_id"))))
+                .AddPolicy(Constants.TenantAccessPolicy, p =>
+                    p.Requirements.Add(new TenantAccessRequirement()));
         }
     }
 }

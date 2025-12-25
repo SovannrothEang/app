@@ -1,8 +1,9 @@
 ﻿using CoreAPI.Models.Enums;
+using CoreAPI.Models.Shared;
 
 namespace CoreAPI.Models;
 
-public record PointTransaction
+public record PointTransaction : ITenantEntity
 {
     public string Id { get; private set; } = Guid.NewGuid().ToString();
     public string TenantId { get; private set; } = null!;

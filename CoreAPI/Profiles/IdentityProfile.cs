@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Auth;
+using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
 
 namespace CoreAPI.Profiles;
@@ -12,6 +13,7 @@ public class IdentityProfile : Profile
         // User
         CreateMap<LoginDto, User>();
         CreateMap<RegisterDto, User>();
+        CreateMap<TenantOwnerCreate, User>();
         CreateMap<User, UserProfileResponseDto>()
             .ConstructUsing(src => new UserProfileResponseDto(
                 src.Id,

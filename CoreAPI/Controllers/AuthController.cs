@@ -9,10 +9,10 @@ namespace CoreAPI.Controllers;
 [ApiController]
 [Tags("Authentications")]
 public class AuthController(IUserService userService,
-    ICurrentUserService currentUser) : ControllerBase
+    ICurrentUserProvider currentUser) : ControllerBase
 {
     private readonly IUserService _userService = userService;
-    private readonly ICurrentUserService _currentUser = currentUser;
+    private readonly ICurrentUserProvider _currentUser = currentUser;
 
     [HttpPost("register")]
     [AllowAnonymous]

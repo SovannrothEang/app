@@ -1,6 +1,6 @@
 ﻿namespace CoreAPI.Services.Interfaces;
 
-public interface ICurrentUserService
+public interface ICurrentUserProvider
 {
     string? UserId { get; }
     string? Email { get; }
