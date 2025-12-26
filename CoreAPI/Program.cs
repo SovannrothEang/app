@@ -55,15 +55,10 @@ builder.Services.Configure<HstsOptions>(options =>
 
 var app = builder.Build();
 
-#region Seed Data
-_ = bool.TryParse(builder.Configuration["IsDataSeeded"], out var isSeeded);
-if (!isSeeded)
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     await IdentitySeeder.SeedAsync(scope.ServiceProvider);
-    // await TenantSeeder.SeedAsync(scope.ServiceProvider);
 }
-#endregion
 
 if (app.Environment.IsDevelopment())
 {

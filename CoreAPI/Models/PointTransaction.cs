@@ -6,9 +6,9 @@ namespace CoreAPI.Models;
 public record PointTransaction : ITenantEntity
 {
     public string Id { get; private set; } = Guid.NewGuid().ToString();
-    public string TenantId { get; private set; } = null!;
+    public string TenantId { get; set; } = null!;
     public string CustomerId { get; private set; } = null!;
-    public int Amount { get; private set; }
+    public decimal Amount { get; private set; }
     public TransactionType Type { get; private set; }
     public string? Reason { get; private set; }
     public string? ReferenceId { get; private set; }
@@ -16,7 +16,7 @@ public record PointTransaction : ITenantEntity
 
     private PointTransaction() { }
 
-    public PointTransaction(string id, string tenantId, string customerId, int amount, TransactionType type, string? reason, string? referenceId = null)
+    public PointTransaction(string id, string tenantId, string customerId, decimal amount, TransactionType type, string? reason, string? referenceId = null)
     {
         Id = id;
         TenantId = tenantId;
@@ -27,6 +27,12 @@ public record PointTransaction : ITenantEntity
         ReferenceId = referenceId;
     }
     
-    public static PointTransaction Create(string tenantId, string customerId, int amount, TransactionType type, string? reason, string? referenceId = null)
+    public static PointTransaction Create(
+        string tenantId,
+        string customerId,
+        int amount,
+        TransactionType type,
+        string? reason,
+        string? referenceId = null)
         => new PointTransaction(Guid.NewGuid().ToString(), tenantId, customerId, amount, type, reason, referenceId);
 }

@@ -4,6 +4,7 @@ using CoreAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251225024228_AddNullableToSettingTenant")]
+    partial class AddNullableToSettingTenant
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,11 +98,6 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.HasIndex("TenantId");
-
-                    b.HasIndex("TenantId", "CustomerId")
-                        .IsUnique();
-
                     b.ToTable("LoyaltyAccounts", (string)null);
                 });
 
@@ -108,8 +106,8 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("VARCHAR(100)");
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("DECIMAL(18,2)");
+                    b.Property<int>("Amount")
+                        .HasColumnType("INT");
 
                     b.Property<string>("CustomerId")
                         .IsRequired()
@@ -138,8 +136,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("Type");
 
-                    b.HasIndex("TenantId", "CustomerId")
-                        .IsUnique();
+                    b.HasIndex("TenantId", "CustomerId");
 
                     b.ToTable("PointTransactions", (string)null);
                 });
@@ -177,21 +174,17 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("[Name] <> '' AND [IsDeleted] = 0");
+
                     b.HasIndex("NormalizedName")
                         .IsUnique()
                         .HasDatabaseName("RoleNameIndex")
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.HasIndex("TenantId")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("TenantId", "Id")
-                        .IsUnique()
-                        .HasFilter("[Id] <> '' AND [IsDeleted] = 0");
-
-                    b.HasIndex("TenantId", "Name")
-                        .IsUnique()
-                        .HasFilter("[Name] <> '' AND [IsDeleted] = 0");
+                        .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.ToTable("Roles", (string)null);
                 });
@@ -216,7 +209,7 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(50)");
+                        .HasColumnType("VARCHAR(100)");
 
                     b.Property<byte>("Status")
                         .HasColumnType("TINYINT");
@@ -304,6 +297,10 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[Email] <> '' AND [IsDeleted] = 0");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -314,15 +311,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("TenantId")
                         .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
 
-                    b.HasIndex("TenantId", "Email")
-                        .IsUnique()
-                        .HasFilter("[Email] <> '' AND [IsDeleted] = 0");
-
-                    b.HasIndex("TenantId", "Id")
-                        .IsUnique()
-                        .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
-
-                    b.HasIndex("TenantId", "UserName")
+                    b.HasIndex("UserName")
                         .IsUnique()
                         .HasFilter("[UserName] <> '' AND [IsDeleted] = 0");
 
@@ -490,6 +479,12 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("CoreAPI.Models.User", b =>
                 {
+                    b.HasOne("CoreAPI.Models.Tenant", null)
+                        .WithOne("User")
+                        .HasForeignKey("CoreAPI.Models.User", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("CoreAPI.Models.Tenant", "Tenant")
                         .WithMany("Users")
                         .HasForeignKey("TenantId")
@@ -563,6 +558,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("CoreAPI.Models.Tenant", b =>
                 {
                     b.Navigation("Roles");
+
+                    b.Navigation("User");
 
                     b.Navigation("Users");
                 });

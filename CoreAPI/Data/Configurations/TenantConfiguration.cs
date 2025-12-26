@@ -16,8 +16,12 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .IsRequired();
 
         builder.Property(e => e.Name)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(50)")
             .IsRequired();
+        
+        // builder.Property(e => e.Slug)
+        //     .HasColumnType("VARCHAR(50)")
+        //     .IsRequired();
         
         builder.Property(e => e.Status)
             .HasColumnType("TINYINT");
@@ -44,8 +48,6 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         
         builder.OwnsOne(e => e.Setting);
         
-        builder.HasOne(e => e.User)
-            .WithOne()
-            .HasForeignKey<User>(e => e.Id);
+
     }
 }

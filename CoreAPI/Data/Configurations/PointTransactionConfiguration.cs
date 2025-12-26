@@ -14,7 +14,7 @@ public class PointTransactionConfiguration : IEntityTypeConfiguration<PointTrans
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
         builder.Property(pt => pt.Amount)
-            .HasColumnType("INT")
+            .HasColumnType("DECIMAL(18,2)")
             .IsRequired();
         builder.Property(pt => pt.Type)
             .HasColumnType("TINYINT")
@@ -38,5 +38,7 @@ public class PointTransactionConfiguration : IEntityTypeConfiguration<PointTrans
         builder.HasIndex(pt => pt.Id)
             .IsUnique();
         builder.HasIndex(pt => pt.Type);
+        builder.HasIndex(pt => new { pt.TenantId, pt.CustomerId })
+            .IsUnique();
     }
 }

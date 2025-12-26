@@ -4,6 +4,7 @@ using CoreAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251225034923_AddCompositeConstraintIndex")]
+    partial class AddCompositeConstraintIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -183,11 +186,8 @@ namespace Infrastructure.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.HasIndex("TenantId")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("TenantId", "Id")
                         .IsUnique()
-                        .HasFilter("[Id] <> '' AND [IsDeleted] = 0");
+                        .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.HasIndex("TenantId", "Name")
                         .IsUnique()
@@ -312,15 +312,12 @@ namespace Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.HasIndex("TenantId")
+                        .IsUnique()
                         .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.HasIndex("TenantId", "Email")
                         .IsUnique()
                         .HasFilter("[Email] <> '' AND [IsDeleted] = 0");
-
-                    b.HasIndex("TenantId", "Id")
-                        .IsUnique()
-                        .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.HasIndex("TenantId", "UserName")
                         .IsUnique()
@@ -490,6 +487,12 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("CoreAPI.Models.User", b =>
                 {
+                    b.HasOne("CoreAPI.Models.Tenant", null)
+                        .WithOne("User")
+                        .HasForeignKey("CoreAPI.Models.User", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("CoreAPI.Models.Tenant", "Tenant")
                         .WithMany("Users")
                         .HasForeignKey("TenantId")
@@ -563,6 +566,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("CoreAPI.Models.Tenant", b =>
                 {
                     b.Navigation("Roles");
+
+                    b.Navigation("User");
 
                     b.Navigation("Users");
                 });

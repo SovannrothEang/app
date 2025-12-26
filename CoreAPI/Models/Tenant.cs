@@ -5,22 +5,27 @@ namespace CoreAPI.Models;
 
 public sealed class Tenant : BaseEntity
 {
-    public string Id { get; private set; } = null!;
+    public string Id { get; private set; } 
     public string Name { get; private set; } = null!;
     public TenantStatus Status { get; private set; } =  TenantStatus.Active;
-    public LoyaltyProgramSetting Setting { get; private set; } = null!;
+    public LoyaltyProgramSetting? Setting { get; private set; }
 
-    public User? User { get; set; }
-    
-    // private readonly List<TenantUser> _tenantUsers = [];
-    // public IReadOnlyCollection<TenantUser> TenantUsers => _tenantUsers;
 
-    public Tenant() { }
     
-    public Tenant(string id, string name, LoyaltyProgramSetting setting)
+    private readonly List<User> _users = [];
+    public IReadOnlyCollection<User> Users => _users;
+    private readonly List<Role> _roles = [];
+    public IReadOnlyCollection<Role> Roles => _roles;
+
+    public Tenant()
     {
+        Id = Guid.NewGuid().ToString();
+    }
+    
+    public Tenant(string id, string name, LoyaltyProgramSetting? setting = null)
+    {
+        Id = id;
         Name = name;
-        Status = TenantStatus.Active;
         Setting = setting;
     }
 

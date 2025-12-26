@@ -5,11 +5,13 @@ namespace CoreAPI.Models;
 
 public sealed class User : IdentityUser<string>, ITenantEntity
 {
-    public string TenantId { get; private set; } = null!;
+    public string TenantId { get; set; } = null!;
     public bool IsActive { get; private set; } = true;
     public bool IsDeleted { get; private set; } = false;
     public DateTime CreatedAt { get; } = DateTime.UtcNow.AddHours(7);
     public DateTime? UpdatedAt { get; private set; } = null;
+
+    public Tenant Tenant { get; set; } = null!;
     
     // private readonly List<TenantUser> _tenantUsers = [];
     // public IReadOnlyCollection<TenantUser> TenantUsers => _tenantUsers;
@@ -27,5 +29,6 @@ public sealed class User : IdentityUser<string>, ITenantEntity
         UserName = userName;
         Email = email;
         TenantId = tenantId;
+        if (string.IsNullOrEmpty(TenantId)) throw new ArgumentNullException(nameof(tenantId));
     }
 }

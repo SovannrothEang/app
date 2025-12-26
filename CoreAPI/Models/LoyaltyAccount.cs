@@ -5,7 +5,7 @@ namespace CoreAPI.Models;
 
 public sealed class LoyaltyAccount : BaseEntity, ITenantEntity
 {
-    public string TenantId { get; private set; } = null!;
+    public string TenantId { get; set; } = null!;
     public string CustomerId { get; private set; } = null!;
     public int Balance { get; private set; }
     public TierLevel Tier { get; private set; } = TierLevel.Bronze;

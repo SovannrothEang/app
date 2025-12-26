@@ -2,7 +2,7 @@
 
 public interface IRepository<in TEntity> where TEntity : class
 {
-    Task<int> SaveChangeAsync(CancellationToken cancellationToken);
+    Task<int> SaveChangeAsync(CancellationToken cancellationToken= default);
     Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default);
     Task Update(TEntity entity);
     Task Remove(TEntity entity);

@@ -4,9 +4,11 @@ using CoreAPI.Models;
 using CoreAPI.Repositories;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Requirements;
+using CoreAPI.Requirements.Handlers;
 using CoreAPI.Services;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,7 +22,9 @@ public static class DependencyInjections
         public void AddPersistence()
         {
             builder.Services.AddDbContext<AppDbContext>(
-                options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                options => options
+                    .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                    // .EnableSensitiveDataLogging() // Development 
             );
         }
         
@@ -42,6 +46,9 @@ public static class DependencyInjections
             builder.Services.AddScoped<IRoleService, RoleService>();
             builder.Services.AddScoped<IUserService, AuthService>();
             builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
+            
+            builder.Services.AddTransient<IAuthorizationHandler, PlatformAccessHandler>();
+            builder.Services.AddTransient<IAuthorizationHandler, TenantAccessHandler>();
         }
 
         public IServiceCollection AddIdentity()

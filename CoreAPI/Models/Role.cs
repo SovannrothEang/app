@@ -5,11 +5,13 @@ namespace CoreAPI.Models;
 
 public sealed class Role : IdentityRole<string>, ITenantEntity
 {
-    public string TenantId { get; private set; } = null!;
+    public string TenantId { get; set; } = null!;
     
     public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; } = null;
+
+    public Tenant Tenant { get; set; } = null!;
 
     public Role()
     {

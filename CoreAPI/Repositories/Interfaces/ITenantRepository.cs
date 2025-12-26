@@ -12,4 +12,7 @@ public interface ITenantRepository : IRepository<Tenant>
     Task<Tenant?> GetByIdAsync(
         string id,
         CancellationToken cancellationToken = default);
+
+    Task<bool> IsExistByNameAsync(string name, CancellationToken cancellationToken = default);
+    Task<bool> IsExistByIdAsync(string id, CancellationToken cancellationToken = default);
 }
