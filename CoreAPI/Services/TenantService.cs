@@ -24,13 +24,6 @@ public class TenantService(ITenantRepository tenantRepository, IMapper mapper) :
         return _mapper.Map<TenantDto>(tenant);
     }
 
-    public async Task<TenantDto> CreateAsync(TenantCreateDto dto, CancellationToken ct = default)
-    {
-        var tenant = _mapper.Map<Tenant>(dto);
-        await _tenantRepository.CreateAsync(tenant, ct);
-        return _mapper.Map<TenantDto>(tenant);
-    }
-
     public async Task UpdateAsync(string id, TenantUpdateDto dto, CancellationToken ct = default)
     {
         var exist = await _tenantRepository.GetByIdAsync(id, ct)

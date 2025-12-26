@@ -20,7 +20,8 @@ public class TokenService(IConfiguration config, UserManager<User> userManager) 
             new (JwtRegisteredClaimNames.Sub, user.Id),
             new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new (ClaimTypes.NameIdentifier, user.Id),
-            new (ClaimTypes.Email, user.Email?? string.Empty)
+            new (ClaimTypes.Email, user.Email?? string.Empty),
+            new ("tenant_id", user.TenantId)
             ];
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -31,8 +32,6 @@ public class TokenService(IConfiguration config, UserManager<User> userManager) 
         
         // var tenant = await _tenantUserRepository.GetFirstOrDefaultAsync(
         //     tu => tu.UserId == user.Id && tu.IsDeleted == false && tu.IsActive == true);
-        if (user.TenantId != null)
-            claims.Add(new Claim("tenant_id", user.TenantId));
 
         // Generate keys
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));

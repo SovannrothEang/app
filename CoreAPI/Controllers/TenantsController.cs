@@ -2,10 +2,8 @@
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Exceptions;
-using CoreAPI.Models;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoreAPI.Controllers;
@@ -17,7 +15,7 @@ namespace CoreAPI.Controllers;
 public class TenantsController(
     ICurrentUserProvider currentUserProvider,
     IAuthorizationService authorizationService,
-    UserManager<User> userManager,
+    IUserService userService,
     ICustomerService customerService,
     IPointTransactionService pointTransactionService,
     IMapper mapper,
@@ -26,7 +24,7 @@ public class TenantsController(
 {
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IAuthorizationService _authorizationService = authorizationService;
-    private readonly UserManager<User> _userManager = userManager;
+    private readonly IUserService _userService = userService;
     private readonly ICustomerService _customerService = customerService;
     private readonly IPointTransactionService _pointTransactionService = pointTransactionService;
     private readonly ITenantService _tenantService = tenantService;
@@ -53,19 +51,17 @@ public class TenantsController(
     }
 
     [HttpPost]
-    [Authorize(Constants.RequireSuperAdminRole)]
-    public ActionResult CreateTenantAsync(
+    [Authorize(Constants.PlatformRootPolicy)]
+    public async Task<ActionResult> CreateTenantAsync(
         [FromBody] TenantCreateDto dto,
         CancellationToken ct = default)
     {
-        // var user = new User(ownerEmail, ownerUsername);
-        // var tenant = _mapper.Map<Tenant>(dto);
-        // await _userManager.CreateAsync(user, password);
-        // await _userManager.AddToRoleAsync(user, "Tenant");
-        //
-        // await _repository.CreateAsync(tenant, cancellationToken: ct);
-        // await _unitOfWork.SaveChangesAsync(ct);
-        return Ok();
+        var (userId, token) = await _userService.CreateTenantAndUserAsync(dto, ct);
+        return Ok(new
+        {
+            UserId = userId,
+            Token = token
+        });
     }
 
     // [HttpPut("{tenantId}")]

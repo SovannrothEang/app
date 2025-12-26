@@ -10,6 +10,7 @@ using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -47,7 +48,7 @@ public static class DependencyInjections
             builder.Services.AddScoped<IUserService, AuthService>();
             builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
             
-            builder.Services.AddTransient<IAuthorizationHandler, PlatformAccessHandler>();
+            builder.Services.AddTransient<IAuthorizationHandler, PlatformRootAccessHandler>();
             builder.Services.AddTransient<IAuthorizationHandler, TenantAccessHandler>();
         }
 
@@ -100,11 +101,8 @@ public static class DependencyInjections
             builder.Services.AddAuthorizationBuilder()
                 .AddPolicy(Constants.RequireAuthenticatedUser, p => p.RequireAuthenticatedUser())
                 .AddPolicy(Constants.RequireSuperAdminRole, p => p.RequireRole("SuperAdmin"))
-                .AddPolicy(Constants.CanCreate, p => p.RequireRole("Admin,Manager"))
-                .AddPolicy(Constants.RequireTenantOwnerOrAdminRole, p
-                    => p.RequireAssertion(context =>
-                        context.User.IsInRole("Admin") || 
-                        (context.User.IsInRole("Tenant") && context.User.HasClaim(c => c.Type == "tenant_id"))))
+                .AddPolicy(Constants.PlatformRootPolicy, p =>
+                    p.Requirements.Add(new PlatformRootAccessRequirement()))
                 .AddPolicy(Constants.TenantAccessPolicy, p =>
                     p.Requirements.Add(new TenantAccessRequirement()));
         }

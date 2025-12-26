@@ -16,12 +16,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserPr
     // public DbSet<TenantUser>  TenantUsers { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<LoyaltyAccount> LoyaltyAccounts { get; set; }
+    public DbSet<PointTransaction> PointTransactions { get; set; }
 
     private void ApplyTenantFilter<TEntity>(ModelBuilder builder)
         where TEntity : class, ITenantEntity
     {
         builder.Entity<TEntity>()
             .HasQueryFilter(e => (e.TenantId == _currentUserProvider.TenantId));
+    }
+    
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // TODO: Keep tracking, and ensure tenant owner can only modify their data
+        foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                case EntityState.Modified:
+                    if (string.IsNullOrEmpty(entry.Entity?.TenantId) &&
+                        _currentUserProvider.TenantId is not null)
+                    {
+                        entry.Entity?.TenantId = _currentUserProvider.TenantId;
+                    }
+                    break;
+            }
+        }
+        return base.SaveChangesAsync(cancellationToken);
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -112,24 +133,5 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserPr
         builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
         builder.Entity<IdentityUserRole<string>>().ToTable("UserRoles");
         builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
-    }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
-        {
-            switch (entry.State)
-            {
-                case EntityState.Added:
-                case EntityState.Modified:
-                    if (string.IsNullOrEmpty(entry.Entity?.TenantId) &&
-                        _currentUserProvider.TenantId is not null)
-                    {
-                        entry.Entity?.TenantId = _currentUserProvider.TenantId;
-                    }
-                    break;
-            }
-        }
-        return base.SaveChangesAsync(cancellationToken);
     }
 }

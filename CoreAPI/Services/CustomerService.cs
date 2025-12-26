@@ -66,7 +66,7 @@ public class CustomerService(
         CancellationToken cancellationToken = default)
     {
         var account = await _loyaltyAccountRepository.GetByTenantAndCustomerAsync(
-                          tenantId, customerId, cancellationToken)
+                          tenantId, customerId, childIncluded: true, cancellationToken)
                       ?? throw new KeyNotFoundException($"No Account was found for customer with id: {customerId}.");
 
         List<PointTransaction> lastActivities = [];

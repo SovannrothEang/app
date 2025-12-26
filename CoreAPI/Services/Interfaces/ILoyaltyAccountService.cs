@@ -5,8 +5,17 @@ namespace CoreAPI.Services.Interfaces;
 
 public interface ILoyaltyAccountService
 {
-    Task<IEnumerable<LoyaltyAccountDto>> GetAllWithCustomerAsync(string customerId, CancellationToken ct);
-    Task<IEnumerable<LoyaltyAccountDto>> GetAllWithTenantAsync(string tenantId, CancellationToken ct);
-    Task<LoyaltyAccountDto?> GetByIdAsync(string tenantId, string customerId, CancellationToken cancellationToken = default);
-    Task<LoyaltyAccountDto?> GetByIdWithIncludesAsync(string tenantId, string customerId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<LoyaltyAccountDto>> GetAllWithCustomerAsync(
+        string customerId,
+        bool childIncluded = false,
+        CancellationToken ct = default);
+    Task<IEnumerable<LoyaltyAccountDto>> GetAllWithTenantAsync(
+        string tenantId,
+        bool childIncluded = false,
+        CancellationToken ct = default);
+    Task<LoyaltyAccountDto?> GetByTenantAndCustomerAsync(
+        string tenantId,
+        string customerId,
+        bool childIncluded = false,
+        CancellationToken cancellationToken = default);
 }

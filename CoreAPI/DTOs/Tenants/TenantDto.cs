@@ -7,6 +7,6 @@ public record TenantDto(
     string Id,
     string Name,
     TenantStatus Status,
-    LoyaltyProgramSetting Setting,
+    LoyaltyProgramSetting? Setting,
     DateTime CreatedAt,
     DateTime? UpdatedAt);

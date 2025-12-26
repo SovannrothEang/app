@@ -7,8 +7,8 @@ namespace CoreAPI.Repositories.Interfaces;
 
 public interface IUserRepository
 {
-    Task<IEnumerable<User>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<IEnumerable<User>> GetAllWithFilteringAsync(Expression<Func<User, bool>> filtering,CancellationToken cancellationToken = default);
+    Task<IEnumerable<User>> GetAllAsync(Expression<Func<User, bool>>? filtering = null,
+        CancellationToken cancellationToken = default);
     Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
     Task AddAsync(User user, CancellationToken cancellationToken = default);
     Task Update(string id, User user, CancellationToken cancellationToken = default);
@@ -20,16 +20,20 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    public Task<IEnumerable<User>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<User>> GetAllAsync(
+        Expression<Func<User, bool>>? filtering = null,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var queryable = _dbContext.Users.AsQueryable();
+            
+        if (filtering != null)
+            queryable = queryable.Where(filtering);
+            
+        return await queryable
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
-    public Task<IEnumerable<User>> GetAllWithFilteringAsync(Expression<Func<User, bool>> filtering, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-    
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Users

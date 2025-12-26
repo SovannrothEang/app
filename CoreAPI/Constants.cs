@@ -7,4 +7,5 @@ public static class Constants
     public const string CanCreate = "CanCreate";
     public const string RequireTenantOwnerOrAdminRole = "RequireTenantOwnerOrAdmin";
     public const string TenantAccessPolicy = "TenantAccessPolicy";
+    public const string PlatformRootPolicy = "PlatformRootPolicy";
 }

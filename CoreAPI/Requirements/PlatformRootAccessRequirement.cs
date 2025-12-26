@@ -2,7 +2,7 @@
 
 namespace CoreAPI.Requirements;
 
-public class PlatformAccessRequirement : IAuthorizationRequirement
+public class PlatformRootAccessRequirement : IAuthorizationRequirement
 {
     
 }

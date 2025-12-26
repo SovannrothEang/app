@@ -1,23 +1,27 @@
 ﻿using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Auth;
+using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Services;
 
 public class AuthService(
     UserManager<User> userManager,
     SignInManager<User> signInManager,
-    IUserRepository userRepository,
+    IUnitOfWork unitOfWork,
     IMapper mapper,
     ITokenService tokenService) : IUserService
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly SignInManager<User> _signInManager = signInManager;
-    private readonly IUserRepository _userRepository = userRepository;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IUserRepository _userRepository = unitOfWork.UserRepository;
+    private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
     private readonly IMapper _mapper = mapper;
 
     //private readonly IEmailSender<User> _emailSender = emailSender;
@@ -36,9 +40,11 @@ public class AuthService(
         return result;
     }
 
-    public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
+    public async Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default)
     {
-        var user = await _userManager.FindByNameAsync(dto.UserName);
+        var user = await _userManager.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.NormalizedUserName == dto.UserName.ToUpper(), ct);
         if (user == null) return null;
 
         var signinResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: false);
@@ -55,6 +61,49 @@ public class AuthService(
             user.Email!,
             roles
         );
+    }
+    
+    public async Task<(string userId, string token)> CreateTenantAndUserAsync(TenantCreateDto dto, CancellationToken ct = default)
+    {
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var tenant = _mapper.Map<Tenant>(dto.Tenant);
+            await _tenantRepository.CreateAsync(tenant, ct);
+            // await _unitOfWork.SaveChangesAsync(ct);
+
+            var user = new User(Guid.NewGuid().ToString(), dto.Owner.Email, dto.Owner.UserName, tenant.Id)
+            {
+                EmailConfirmed = true
+            };
+            var result = await _userManager.CreateAsync(user);
+            if (!result.Succeeded)
+                throw new Exception(result.Errors.First().Description);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            // TODO: use EmailService, and send the invited-link to the tenant's email instead
+            return (user.Id, token); // Development
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            throw;
+        }
+    }
+    
+    public async Task CompleteInviteAsync(string userId, string token, string newPassword)
+    {
+        var user = await _userManager.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) throw new Exception("User not found");
+
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+        
+        if (!result.Succeeded) 
+            throw new Exception("Invalid token or password complexity failed.");
     }
 
     #region Auth
@@ -82,6 +131,7 @@ public class AuthService(
     {
         throw new NotImplementedException();
     }
+    
     #endregion
 
     public async Task<IEnumerable<UserProfileResponseDto>> GetAllUserAsync(CancellationToken ct = default)

@@ -5,7 +5,21 @@ namespace CoreAPI.Services.Interfaces;
 
 public interface IPointTransactionService
 {
-    Task<IEnumerable<PointTransaction>> GetAllTransactionsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<PointTransaction>> GetAllTransactionsAsync(CancellationToken ct = default);
+    Task<IEnumerable<PointTransaction>> GetAllByTenantAndCustomerAsync(
+        string tenantId,
+        string customerId,
+        CancellationToken cancellationToken = default);
+    
+    Task<PointTransaction?> GetByIdAsync(
+        string id,
+        CancellationToken cancellationToken = default);
+    
+    Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
+        string customerId,
+        string tenantId,
+        CancellationToken cancellationToken = default);
+    
     Task<(decimal balance, PointTransaction transactionDetail)> EarnPointAsync(
         string customerId,
         string tenantId,
@@ -23,13 +37,5 @@ public interface IPointTransactionService
         string tenantId,
         string? performBy,
         CustomerAdjustPointDto dto,
-        CancellationToken cancellationToken = default);
-     Task<CustomerDto> GetValidCustomerAsync(
-        string customerId,
-        CancellationToken ct = default);
-
-    Task<(Customer customer, Tenant tenant)> ValidCustomerAndTenantAsync(
-        string customerId,
-        string tenantId,
         CancellationToken cancellationToken = default);
 }

@@ -19,20 +19,27 @@ public class PointTransactionService(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<IEnumerable<PointTransaction>> GetAllTransactionsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<PointTransaction>> GetAllTransactionsAsync(CancellationToken ct = default)
     {
-        var transactions = await _pointTransactionRepository.GetAllAsync(cancellationToken);
+        var transactions = await _pointTransactionRepository.GetAllAsync(cancellationToken: ct);
         return transactions;
     }
 
-    public async Task<CustomerDto> GetValidCustomerAsync(string customerId, CancellationToken ct = default)
+    public async Task<IEnumerable<PointTransaction>> GetAllByTenantAndCustomerAsync(string tenantId, string customerId,
+        CancellationToken cancellationToken = default)
     {
-        var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken: ct)
-                       ?? throw new KeyNotFoundException($"No customer was found with id: {customerId}.");
-        return _mapper.Map<CustomerDto>(customer);
+        return await _pointTransactionRepository.GetAllByTenantAndCustomerAsync(
+            tenantId,
+            customerId,
+            cancellationToken: cancellationToken);
     }
 
-    public async Task<(Customer customer, Tenant tenant)> ValidCustomerAndTenantAsync(
+    public async Task<PointTransaction?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return await _pointTransactionRepository.GetByIdAsync(id, cancellationToken);
+    }
+
+    public async Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
         string customerId,
         string tenantId,
         CancellationToken cancellationToken = default)
@@ -44,24 +51,20 @@ public class PointTransactionService(
         if (tenant.Status != TenantStatus.Active)
             throw new BadHttpRequestException("Tenant is not active!");
        
-        var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken: cancellationToken)
+        var customer = await _customerRepository.GetByIdAsync(customerId, childIncluded: true, cancellationToken)
                        ?? throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
 
         return (customer, tenant);
     }
 
-    private static void CheckRelationshipCustomerAndTenant(Customer customer, Tenant tenant)
-    {
-        var exist = customer.LoyaltyAccounts.Any(acc => acc.TenantId == tenant.Id);
-        if (!exist)
-            throw new KeyNotFoundException($"Customer does not has account with tenant, tenant id: {tenant.Id}.");
-    }
-
     public async Task<(decimal balance, PointTransaction transactionDetail)>
-        EarnPointAsync
-        (string customerId, string tenantId, CustomerEarnPointDto dto, CancellationToken cancellationToken = default)
+        EarnPointAsync (
+            string customerId,
+            string tenantId,
+            CustomerEarnPointDto dto,
+            CancellationToken cancellationToken = default)
     {
-        var (customer, tenant) = await ValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
         
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         PointTransaction transactionDetail;
@@ -82,11 +85,16 @@ public class PointTransactionService(
         return (balance, transactionDetail);
     }
 
-    public async Task<(decimal balance, PointTransaction transactionDetail)> RedeemPointAsync(string customerId, string tenantId, CustomerRedeemPointDto dto,
-        CancellationToken cancellationToken = default)
+    public async Task<(decimal balance, PointTransaction transactionDetail)>
+        RedeemPointAsync(
+            string customerId,
+            string tenantId,
+            CustomerRedeemPointDto dto,
+            CancellationToken cancellationToken = default)
     {
-        var (customer, tenant) = await ValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
-        CheckRelationshipCustomerAndTenant(customer, tenant);
+        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+        IsCustomerLinkedWithTenant(customer, tenant);
+        
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         var account = customer.LoyaltyAccounts.First(e => e.TenantId == tenant.Id);
         if (dto.Amount > account.Balance)
@@ -97,17 +105,17 @@ public class PointTransactionService(
         return (balance, transactionDetail);
     }
 
-    public async Task<(decimal balance, PointTransaction transactionDetail)> AdjustPointAsync(
-        string customerId,
-        string tenantId,
-        string? performBy,
-        CustomerAdjustPointDto dto,
-        CancellationToken cancellationToken = default)
+    public async Task<(decimal balance, PointTransaction transactionDetail)>
+        AdjustPointAsync(
+            string customerId,
+            string tenantId,
+            string? performBy,
+            CustomerAdjustPointDto dto,
+            CancellationToken cancellationToken = default)
     {
-        // Checking relationship between customer and tenant
-        // checking if tenant is deactivated
-        var (customer, tenant) = await ValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
-        CheckRelationshipCustomerAndTenant(customer, tenant);
+        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+        IsCustomerLinkedWithTenant(customer, tenant);
+        
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         var account = customer.LoyaltyAccounts.First(e => e.TenantId == tenant.Id);
         var (balance, transactionDetail) = account.Adjustment(dto.Amount, dto.Reason, null);
@@ -115,4 +123,12 @@ public class PointTransactionService(
         await _unitOfWork.CommitAsync(cancellationToken);
         return (balance, transactionDetail);
     }
+    
+    private static void IsCustomerLinkedWithTenant(Customer customer, Tenant tenant)
+    {
+        var exist = customer.LoyaltyAccounts.Any(acc => acc.TenantId == tenant.Id);
+        if (!exist)
+            throw new KeyNotFoundException($"Customer does not has account with tenant, tenant id: {tenant.Id}.");
+    }
+
 }

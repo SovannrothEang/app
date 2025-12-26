@@ -1,28 +1,48 @@
+using AutoMapper;
 using CoreAPI.DTOs.LoyaltyAccounts;
-using CoreAPI.Models;
+using CoreAPI.Repositories;
 using CoreAPI.Services.Interfaces;
 
 namespace CoreAPI.Services;
 
-public class LoyaltyAccountService : ILoyaltyAccountService
+public class LoyaltyAccountService(ILoyaltyAccountRepository accountRepository, IMapper mapper) : ILoyaltyAccountService
 {
-    public Task<IEnumerable<LoyaltyAccountDto>> GetAllWithCustomerAsync(string customerId, CancellationToken ct)
+    private readonly ILoyaltyAccountRepository _accountRepository = accountRepository;
+    private readonly IMapper _mapper = mapper;
+
+    public async Task<IEnumerable<LoyaltyAccountDto>> GetAllWithCustomerAsync(
+        string customerId,
+        bool childIncluded = false,
+        CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        var account = await _accountRepository.GetAllWithCustomerAsync(
+            customerId: customerId,
+            childIncluded: childIncluded,
+            cancellationToken: ct);
+        
+        return account.Select(a => _mapper.Map<LoyaltyAccountDto>(a));
     }
 
-    public Task<IEnumerable<LoyaltyAccountDto>> GetAllWithTenantAsync(string tenantId, CancellationToken ct)
+    public async Task<IEnumerable<LoyaltyAccountDto>> GetAllWithTenantAsync(
+        string tenantId,
+        bool childIncluded = false,
+        CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        var accounts = await _accountRepository.GetAllWithTenantAsync(
+            tenantId: tenantId,
+            childIncluded: childIncluded,
+            cancellationToken: ct);
+        return accounts.Select(a => _mapper.Map<LoyaltyAccountDto>(a));
     }
 
-    public Task<LoyaltyAccountDto?> GetByIdAsync(string tenantId, string customerId, CancellationToken cancellationToken = default)
+    public async Task<LoyaltyAccountDto?> GetByTenantAndCustomerAsync(
+        string tenantId,
+        string customerId, 
+        bool childIncluded = false,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
-    }
-
-    public Task<LoyaltyAccountDto?> GetByIdWithIncludesAsync(string tenantId, string customerId, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
+        var account = await _accountRepository.GetByTenantAndCustomerAsync(
+            tenantId, customerId, childIncluded, cancellationToken);
+        return _mapper.Map<LoyaltyAccountDto>(account);
     }
 }

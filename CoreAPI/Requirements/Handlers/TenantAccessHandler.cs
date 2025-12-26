@@ -4,31 +4,37 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CoreAPI.Requirements.Handlers;
 
-public class TenantAccessHandler(ICurrentUserProvider currentUserProvider, IUnitOfWork unitOfWork) : AuthorizationHandler<TenantAccessRequirement, string>
+public class TenantAccessHandler(
+    ICurrentUserProvider currentUserProvider,
+    IHttpContextAccessor httpContext,
+    IConfiguration configuration) : AuthorizationHandler<TenantAccessRequirement, string>
 {
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
-    private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
+    private readonly IHttpContextAccessor _httpContext = httpContext;
+    private readonly string _hostTenantId = configuration["Tenancy:Host"]
+                                            ?? throw new Exception("Tenancy:Host not found");
 
-    protected override async Task HandleRequirementAsync(
+    protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         TenantAccessRequirement requirement,
         string tenantId)
     {
         if (!_currentUserProvider.IsAuthenticated)
-            return;
+            return Task.CompletedTask;
         
-        // if (currentUserTenantId is null &&
-        //     !context.User.IsInRole("SuperAdmin"))
-        // {
-        //     return Task.CompletedTask;
-        // }
-        
-        var tenant = await _tenantRepository.GetByIdAsync(tenantId);
-        if (tenant != null && tenant.Id == _currentUserProvider.TenantId ||
-            _currentUserProvider.IsInRole("SuperAdmin"))
+        // SuperAdmin access
+        if (_currentUserProvider.TenantId == _hostTenantId &&
+            !context.User.IsInRole("SuperAdmin")) // _currentUserProvider.IsInRole("SuperAdmin") ??
         {
             context.Succeed(requirement);
         }
+        
+        var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
+        // Tenant Owner Access
+        // TODO: Need to check the Tenant's role, and permissions
+        if (_currentUserProvider.TenantId == tenantRouteValue)
+            context.Succeed(requirement);
 
+        return Task.CompletedTask;
     }
 }

@@ -44,7 +44,7 @@ public class AuthController(IUserService userService,
 
     [HttpGet("me")]
     [Authorize(Policy = Constants.RequireAuthenticatedUser)]
-    public IActionResult GetMe()
+    public ActionResult GetMe()
     {
         if (!_currentUser.IsAuthenticated)
             return Unauthorized();
@@ -68,4 +68,20 @@ public class AuthController(IUserService userService,
             ? Ok(new { message = "Changed successfully." })
             : BadRequest(new { message = "Failed to change password. Please check your current password." });
     }
+    
+    [HttpPost("complete-invite")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CompleteInvite([FromBody] SetupPasswordRequest req)
+    {
+        try 
+        {
+            await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
+            return Ok(new { Message = "Account activated." });
+        }
+        catch(Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
+    
 }

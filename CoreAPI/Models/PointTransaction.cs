@@ -13,6 +13,7 @@ public record PointTransaction : ITenantEntity
     public string? Reason { get; private set; }
     public string? ReferenceId { get; private set; }
     public DateTime OccurredOn { get; private set; } = DateTime.UtcNow;
+    // Todo: PerformBy which user
 
     private PointTransaction() { }
 
