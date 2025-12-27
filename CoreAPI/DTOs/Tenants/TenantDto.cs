@@ -8,5 +8,5 @@ public record TenantDto(
     string Name,
     TenantStatus Status,
     AccountSetting? Setting,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt);

@@ -35,11 +35,15 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .HasDefaultValue(false);
 
         builder.Property(e => e.CreatedAt)
-            .HasColumnType("DATETIME2(3)")
+            .HasColumnType("DATETIMEOFFSET(3)")
             .IsRequired();
         
         builder.Property(e => e.UpdatedAt)
-            .HasColumnType("DATETIME2(3)")
+            .HasColumnType("DATETIMEOFFSET(3)")
+            .HasDefaultValue(null);
+        
+        builder.Property(e => e.DeletedAt)
+            .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
         
         builder.HasIndex(e => e.Id)

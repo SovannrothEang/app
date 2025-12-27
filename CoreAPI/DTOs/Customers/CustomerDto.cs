@@ -8,5 +8,5 @@ public record CustomerDto(
     string Email,
     string PhoneNumber,
     IList<Account> LoyaltyAccounts,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt);

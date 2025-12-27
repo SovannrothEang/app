@@ -24,7 +24,10 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(pt => pt.ReferenceId)
             .HasColumnType("VARCHAR(100)");
         builder.Property(pt => pt.OccurredAt)
-            .HasColumnType("DATETIME2(3)")
+            .HasColumnType("DATETIMEOFFSET(3)")
+            .IsRequired();
+        builder.Property(pt => pt.CreatedAt)
+            .HasColumnType("DATETIMEOFFSET(3)")
             .IsRequired();
 
         builder.Property<string>("TenantId")

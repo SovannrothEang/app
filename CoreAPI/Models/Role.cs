@@ -6,12 +6,14 @@ namespace CoreAPI.Models;
 public sealed class Role : IdentityRole<string>, ITenantEntity
 {
     public string TenantId { get; set; } = null!;
-    
-    public bool IsDeleted { get; set; } = false;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; } = null;
 
-    public Tenant Tenant { get; set; } = null!;
+    public bool IsActive { get; private set; } = true;
+    public bool IsDeleted { get; private set; }
+    public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Tenant? Tenant { get; set; }
 
     public Role()
     {
@@ -23,5 +25,30 @@ public sealed class Role : IdentityRole<string>, ITenantEntity
         Id = id;
         Name = name;
         TenantId = tenantId;
+    }
+
+    public void Modified()
+    {
+        this.UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Deleted()
+    {
+        this.IsDeleted = true;
+        this.DeletedAt = DateTimeOffset.UtcNow;
+    }
+    public void Activate()
+    {
+        if (this.IsActive)
+            throw new InvalidOperationException("This entity is already active");
+        this.IsActive = true;
+        Modified();
+    }
+    public void Deactivate()
+    {
+        if (!this.IsActive)
+            throw new InvalidOperationException("This entity is already deactivated");
+        this.IsActive = false;
+        Modified();
     }
 }

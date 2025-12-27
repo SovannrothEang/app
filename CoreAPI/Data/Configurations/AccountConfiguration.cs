@@ -28,6 +28,27 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(e => e.Tier)
             .HasColumnType("TINYINT")
             .IsRequired();
+        
+        
+        builder.Property(e => e.IsActive)
+            .HasColumnType("BIT")
+            .HasDefaultValue(true);
+        
+        builder.Property(e => e.IsDeleted)
+            .HasColumnType("BIT")
+            .HasDefaultValue(false);
+
+        builder.Property(e => e.CreatedAt)
+            .HasColumnType("DATETIMEOFFSET(3)")
+            .IsRequired();
+        
+        builder.Property(e => e.UpdatedAt)
+            .HasColumnType("DATETIMEOFFSET(3)")
+            .HasDefaultValue(null);
+        
+        builder.Property(e => e.DeletedAt)
+            .HasColumnType("DATETIMEOFFSET(3)")
+            .HasDefaultValue(null);
 
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => new { e.TenantId, e.CustomerId })

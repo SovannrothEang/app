@@ -2,6 +2,6 @@
 
 public record CustomerGetBalanceOptionsDto(
     string? TransactionType,
-    DateTime? StartDate = null,
-    DateTime? EndDate = null,
+    DateTimeOffset? StartDate = null,
+    DateTimeOffset? EndDate = null,
     Pagination? Pagination = null);

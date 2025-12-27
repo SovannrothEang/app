@@ -8,8 +8,9 @@ public sealed class User : IdentityUser<string>, ITenantEntity
     public string TenantId { get; set; } = null!;
     public bool IsActive { get; private set; } = true;
     public bool IsDeleted { get; private set; } = false;
-    public DateTime CreatedAt { get; } = DateTime.UtcNow.AddHours(7);
-    public DateTime? UpdatedAt { get; private set; } = null;
+    public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? UpdatedAt { get; private set; } = null;
+    public DateTimeOffset? DeletedAt { get; private set; } = null;
 
     public Tenant Tenant { get; set; } = null!;
     
@@ -30,5 +31,30 @@ public sealed class User : IdentityUser<string>, ITenantEntity
         Email = email;
         TenantId = tenantId;
         if (string.IsNullOrEmpty(TenantId)) throw new ArgumentNullException(nameof(tenantId));
+    }
+
+    public void Modified()
+    {
+        this.UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Deleted()
+    {
+        this.IsDeleted = true;
+        this.DeletedAt = DateTimeOffset.UtcNow;
+    }
+    public void Activate()
+    {
+        if (this.IsActive)
+            throw new InvalidOperationException("This entity is already active");
+        this.IsActive = true;
+        Modified();
+    }
+    public void Deactivate()
+    {
+        if (!this.IsActive)
+            throw new InvalidOperationException("This entity is already deactivated");
+        this.IsActive = false;
+        Modified();
     }
 }
