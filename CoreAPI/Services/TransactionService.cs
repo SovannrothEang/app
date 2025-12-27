@@ -8,35 +8,35 @@ using CoreAPI.Services.Interfaces;
 
 namespace CoreAPI.Services;
 
-public class PointTransactionService(
+public class TransactionService(
     IUnitOfWork unitOfWork,
     IMapper mapper)
-    : IPointTransactionService
+    : ITransactionService
 {
-    private readonly IPointTransactionRepository _pointTransactionRepository = unitOfWork.PointTransactionRepository;
+    private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
     private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<IEnumerable<PointTransaction>> GetAllTransactionsAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync(CancellationToken ct = default)
     {
-        var transactions = await _pointTransactionRepository.GetAllAsync(cancellationToken: ct);
+        var transactions = await _transactionRepository.GetAllAsync(cancellationToken: ct);
         return transactions;
     }
 
-    public async Task<IEnumerable<PointTransaction>> GetAllByTenantAndCustomerAsync(string tenantId, string customerId,
+    public async Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(string tenantId, string customerId,
         CancellationToken cancellationToken = default)
     {
-        return await _pointTransactionRepository.GetAllByTenantAndCustomerAsync(
+        return await _transactionRepository.GetAllByTenantAndCustomerAsync(
             tenantId,
             customerId,
             cancellationToken: cancellationToken);
     }
 
-    public async Task<PointTransaction?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Transaction?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await _pointTransactionRepository.GetByIdAsync(id, cancellationToken);
+        return await _transactionRepository.GetByIdAsync(id, cancellationToken);
     }
 
     public async Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
@@ -57,7 +57,7 @@ public class PointTransactionService(
         return (customer, tenant);
     }
 
-    public async Task<(decimal balance, PointTransaction transactionDetail)>
+    public async Task<(decimal balance, Transaction transactionDetail)>
         EarnPointAsync (
             string customerId,
             string tenantId,
@@ -67,7 +67,7 @@ public class PointTransactionService(
         var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
         
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        PointTransaction transactionDetail;
+        Transaction transactionDetail;
         int balance;
             
         var account = customer.LoyaltyAccounts.FirstOrDefault(e => e.TenantId == tenant.Id);
@@ -85,7 +85,7 @@ public class PointTransactionService(
         return (balance, transactionDetail);
     }
 
-    public async Task<(decimal balance, PointTransaction transactionDetail)>
+    public async Task<(decimal balance, Transaction transactionDetail)>
         RedeemPointAsync(
             string customerId,
             string tenantId,
@@ -105,7 +105,7 @@ public class PointTransactionService(
         return (balance, transactionDetail);
     }
 
-    public async Task<(decimal balance, PointTransaction transactionDetail)>
+    public async Task<(decimal balance, Transaction transactionDetail)>
         AdjustPointAsync(
             string customerId,
             string tenantId,

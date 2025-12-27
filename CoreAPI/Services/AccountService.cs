@@ -1,16 +1,16 @@
 using AutoMapper;
-using CoreAPI.DTOs.LoyaltyAccounts;
+using CoreAPI.DTOs.Accounts;
 using CoreAPI.Repositories;
 using CoreAPI.Services.Interfaces;
 
 namespace CoreAPI.Services;
 
-public class LoyaltyAccountService(ILoyaltyAccountRepository accountRepository, IMapper mapper) : ILoyaltyAccountService
+public class AccountService(IAccountRepository accountRepository, IMapper mapper) : IAccountService
 {
-    private readonly ILoyaltyAccountRepository _accountRepository = accountRepository;
+    private readonly IAccountRepository _accountRepository = accountRepository;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<IEnumerable<LoyaltyAccountDto>> GetAllWithCustomerAsync(
+    public async Task<IEnumerable<AccountDto>> GetAllWithCustomerAsync(
         string customerId,
         bool childIncluded = false,
         CancellationToken ct = default)
@@ -20,10 +20,10 @@ public class LoyaltyAccountService(ILoyaltyAccountRepository accountRepository, 
             childIncluded: childIncluded,
             cancellationToken: ct);
         
-        return account.Select(a => _mapper.Map<LoyaltyAccountDto>(a));
+        return account.Select(a => _mapper.Map<AccountDto>(a));
     }
 
-    public async Task<IEnumerable<LoyaltyAccountDto>> GetAllWithTenantAsync(
+    public async Task<IEnumerable<AccountDto>> GetAllWithTenantAsync(
         string tenantId,
         bool childIncluded = false,
         CancellationToken ct = default)
@@ -32,10 +32,10 @@ public class LoyaltyAccountService(ILoyaltyAccountRepository accountRepository, 
             tenantId: tenantId,
             childIncluded: childIncluded,
             cancellationToken: ct);
-        return accounts.Select(a => _mapper.Map<LoyaltyAccountDto>(a));
+        return accounts.Select(a => _mapper.Map<AccountDto>(a));
     }
 
-    public async Task<LoyaltyAccountDto?> GetByTenantAndCustomerAsync(
+    public async Task<AccountDto?> GetByTenantAndCustomerAsync(
         string tenantId,
         string customerId, 
         bool childIncluded = false,
@@ -43,6 +43,6 @@ public class LoyaltyAccountService(ILoyaltyAccountRepository accountRepository, 
     {
         var account = await _accountRepository.GetByTenantAndCustomerAsync(
             tenantId, customerId, childIncluded, cancellationToken);
-        return _mapper.Map<LoyaltyAccountDto>(account);
+        return _mapper.Map<AccountDto>(account);
     }
 }

@@ -9,8 +9,8 @@ public sealed class Customer : BaseEntity
     public string Email { get; private set; } = null!;
     public string PhoneNumber { get; private set; } = null!;
 
-    private readonly List<LoyaltyAccount> _accounts = [];
-    public IReadOnlyCollection<LoyaltyAccount> LoyaltyAccounts => _accounts;
+    private readonly List<Account> _accounts = [];
+    public IReadOnlyCollection<Account> LoyaltyAccounts => _accounts;
     
     private Customer() { }
 
@@ -28,11 +28,11 @@ public sealed class Customer : BaseEntity
         PhoneNumber = phoneNumber;
     }
     
-    public LoyaltyAccount CreateLoyaltyAccount(string tenantId)
+    public Account CreateLoyaltyAccount(string tenantId)
     {
         if (_accounts.Any(e => Equals(e.TenantId, tenantId)))
             throw new ArgumentException($"The tenant {tenantId} is already created.");
-        var account = new LoyaltyAccount(tenantId, this.Id);
+        var account = new Account(tenantId, this.Id);
         _accounts.Add(account);
         return account;
     }

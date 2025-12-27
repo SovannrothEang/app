@@ -33,7 +33,6 @@ public class RoleService(
         return role is null ? null : _mapper.Map<Role, RoleDto>(role);
     }
 
-
     public async Task<IdentityResult> CreateRoleAsync(RoleCreateDto roleCreate)
     {
         var role = _mapper.Map<RoleCreateDto, Role>(roleCreate);

@@ -7,8 +7,8 @@ public interface IUnitOfWork : IDisposable
     IUserRepository UserRepository { get; }
     ICustomerRepository CustomerRepository { get; }
     ITenantRepository TenantRepository { get; }
-    ILoyaltyAccountRepository LoyaltyAccountRepository { get; }
-    IPointTransactionRepository PointTransactionRepository { get; }
+    IAccountRepository AccountRepository { get; }
+    ITransactionRepository TransactionRepository { get; }
 
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task CommitAsync(CancellationToken cancellationToken = default);

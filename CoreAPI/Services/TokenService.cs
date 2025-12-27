@@ -8,10 +8,15 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace CoreAPI.Services;
 
-public class TokenService(IConfiguration config, UserManager<User> userManager) : ITokenService
+public class TokenService(
+    IConfiguration config,
+    UserManager<User> userManager,
+    ICurrentUserProvider currentUserProvider) : ITokenService
 {
     private readonly IConfiguration _config = config;
     private readonly UserManager<User> _userManager = userManager;
+
+    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     // private readonly IGenericRepository<TenantUser> _tenantUserRepository = unitOfWork.GetRepository<TenantUser>();
 
     public async Task<(string, DateTime)> GenerateToken(User user)
@@ -24,6 +29,7 @@ public class TokenService(IConfiguration config, UserManager<User> userManager) 
             new ("tenant_id", user.TenantId)
             ];
 
+        _currentUserProvider.SetTenantId(user.TenantId); // Don't know if it's violation or not, But need it for Role searching
         var roles = await _userManager.GetRolesAsync(user);
         if (roles.Any())
         {

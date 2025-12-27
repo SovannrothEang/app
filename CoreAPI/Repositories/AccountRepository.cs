@@ -6,38 +6,38 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public interface ILoyaltyAccountRepository
+public interface IAccountRepository
 {
-    Task<IEnumerable<LoyaltyAccount>> GetAllAsync(
-        Expression<Func<LoyaltyAccount, bool>>? filtering = null,
+    Task<IEnumerable<Account>> GetAllAsync(
+        Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
 
-    Task<LoyaltyAccount?> GetByTenantAndCustomerAsync(
+    Task<Account?> GetByTenantAndCustomerAsync(
         string tenantId,
         string customerId,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<LoyaltyAccount>> GetAllWithCustomerAsync(
+    Task<IEnumerable<Account>> GetAllWithCustomerAsync(
         string customerId,
-        Expression<Func<LoyaltyAccount, bool>>? filtering = null,
+        Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<LoyaltyAccount>> GetAllWithTenantAsync(
+    Task<IEnumerable<Account>> GetAllWithTenantAsync(
         string tenantId,
-        Expression<Func<LoyaltyAccount, bool>>? filtering = null,
+        Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
 }
 
-public class LoyaltyAccountRepository(AppDbContext dbContext) : ILoyaltyAccountRepository
+public class AccountRepository(AppDbContext dbContext) : IAccountRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    public async Task<IEnumerable<LoyaltyAccount>> GetAllAsync(
-        Expression<Func<LoyaltyAccount, bool>>? filtering = null,
+    public async Task<IEnumerable<Account>> GetAllAsync(
+        Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default) 
     {
@@ -54,7 +54,7 @@ public class LoyaltyAccountRepository(AppDbContext dbContext) : ILoyaltyAccountR
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<LoyaltyAccount?> GetByTenantAndCustomerAsync(
+    public async Task<Account?> GetByTenantAndCustomerAsync(
         string tenantId,
         string customerId,
         bool childIncluded = false,
@@ -70,9 +70,9 @@ public class LoyaltyAccountRepository(AppDbContext dbContext) : ILoyaltyAccountR
             .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CustomerId == customerId, cancellationToken);
     }
     
-    public async Task<IEnumerable<LoyaltyAccount>> GetAllWithCustomerAsync(
+    public async Task<IEnumerable<Account>> GetAllWithCustomerAsync(
         string customerId,
-        Expression<Func<LoyaltyAccount, bool>>? filtering = null,
+        Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
@@ -90,9 +90,9 @@ public class LoyaltyAccountRepository(AppDbContext dbContext) : ILoyaltyAccountR
             .ToListAsync(cancellationToken);
     }
     
-    public async Task<IEnumerable<LoyaltyAccount>> GetAllWithTenantAsync(
+    public async Task<IEnumerable<Account>> GetAllWithTenantAsync(
         string tenantId,
-        Expression<Func<LoyaltyAccount, bool>>? filtering = null,
+        Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {

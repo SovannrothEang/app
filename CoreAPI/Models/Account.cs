@@ -3,25 +3,25 @@ using CoreAPI.Models.Shared;
 
 namespace CoreAPI.Models;
 
-public sealed class LoyaltyAccount : BaseEntity, ITenantEntity
+public sealed class Account : BaseEntity, ITenantEntity
 {
     public string TenantId { get; set; } = null!;
     public string CustomerId { get; private set; } = null!;
     public int Balance { get; private set; }
     public TierLevel Tier { get; private set; } = TierLevel.Bronze;
     
-    private readonly List<PointTransaction> _pointTransactions = [];
-    public IReadOnlyCollection<PointTransaction> PointTransactions => _pointTransactions.AsReadOnly();
+    private readonly List<Transaction> _pointTransactions = [];
+    public IReadOnlyCollection<Transaction> PointTransactions => _pointTransactions.AsReadOnly();
 
-    public LoyaltyAccount() { }
+    public Account() { }
 
-    public LoyaltyAccount(string tenantId, string customerId)
+    public Account(string tenantId, string customerId)
     {
         TenantId = tenantId;
         CustomerId = customerId;
     }
    
-    public (int balanace, PointTransaction transaction)
+    public (int balanace, Transaction transaction)
         EarnPoint(
             int amount,
             string? reason,
@@ -32,7 +32,7 @@ public sealed class LoyaltyAccount : BaseEntity, ITenantEntity
         return (this.Balance, transaction);
     }
     
-    public (int balance, PointTransaction transaction)
+    public (int balance, Transaction transaction)
         Redemption (int amount, string? reason)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
@@ -42,7 +42,7 @@ public sealed class LoyaltyAccount : BaseEntity, ITenantEntity
         return (this.Balance, transaction);
     }
 
-    public (int balance, PointTransaction transaction)
+    public (int balance, Transaction transaction)
         Adjustment (int amount, string? reason, string? referenceId)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
@@ -50,7 +50,7 @@ public sealed class LoyaltyAccount : BaseEntity, ITenantEntity
         return (this.Balance, transaction);
     }
 
-    private PointTransaction ApplyTransaction(
+    private Transaction ApplyTransaction(
         int amount,
         TransactionType type,
         string? reason,
@@ -64,7 +64,7 @@ public sealed class LoyaltyAccount : BaseEntity, ITenantEntity
             _ => TierLevel.Bronze
         };
 
-        var transaction = PointTransaction.Create(
+        var transaction = Transaction.Create(
             TenantId,
             CustomerId,
             amount,

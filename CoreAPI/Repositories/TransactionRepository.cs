@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class PointTransactionRepository(AppDbContext dbContext) : IPointTransactionRepository
+public class TransactionRepository(AppDbContext dbContext) : ITransactionRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    public async Task<IEnumerable<PointTransaction>> GetAllAsync(Expression<Func<PointTransaction, bool>>? filtering = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Transaction>> GetAllAsync(Expression<Func<Transaction, bool>>? filtering = null, CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.PointTransactions.AsQueryable();
             
@@ -22,10 +22,10 @@ public class PointTransactionRepository(AppDbContext dbContext) : IPointTransact
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<PointTransaction>> GetAllByTenantAndCustomerAsync(
+    public async Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(
         string tenantId,
         string customerId,
-        Expression<Func<PointTransaction, bool>>? filtering = null,
+        Expression<Func<Transaction, bool>>? filtering = null,
         CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.PointTransactions.AsQueryable();
@@ -39,7 +39,7 @@ public class PointTransactionRepository(AppDbContext dbContext) : IPointTransact
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<PointTransaction?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Transaction?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.PointTransactions
             .AsNoTracking()

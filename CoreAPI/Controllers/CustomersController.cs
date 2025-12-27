@@ -11,11 +11,11 @@ namespace CoreAPI.Controllers;
 [RequireHttps]
 public class CustomersController(
     IMapper mapper,
-    IPointTransactionService transactionService,
+    ITransactionService transactionService,
     ICustomerService customerService) : ControllerBase
 {
     private readonly IMapper _mapper = mapper;
-    private readonly IPointTransactionService _transactionService = transactionService;
+    private readonly ITransactionService _transactionService = transactionService;
     private readonly ICustomerService _customerService = customerService;
     
     [HttpGet]

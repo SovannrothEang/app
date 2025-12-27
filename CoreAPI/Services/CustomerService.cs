@@ -11,13 +11,13 @@ public class CustomerService(
     IUnitOfWork unitOfWork,
     ICustomerRepository customerRepository,
     ITenantRepository tenantRepository,
-    ILoyaltyAccountRepository loyaltyAccountRepository,
+    IAccountRepository accountRepository,
     IMapper mapper) : ICustomerService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICustomerRepository _customerRepository = customerRepository;
     private readonly ITenantRepository _tenantRepository = tenantRepository;
-    private readonly ILoyaltyAccountRepository _loyaltyAccountRepository = loyaltyAccountRepository;
+    private readonly IAccountRepository _accountRepository = accountRepository;
     private readonly IMapper _mapper = mapper;
 
     public async Task<IEnumerable<CustomerDto>> GetAllAsync(bool childIncluded = false, CancellationToken ct = default)
@@ -59,17 +59,17 @@ public class CustomerService(
         return _mapper.Map<CustomerDto>(customer);
     }
 
-    public async Task<(decimal balance, List<PointTransaction> list)> GetCustomerBalanceByIdAsync(
+    public async Task<(decimal balance, List<Transaction> list)> GetCustomerBalanceByIdAsync(
         string customerId,
         string tenantId,
         CustomerGetBalanceOptionsDto? options,
         CancellationToken cancellationToken = default)
     {
-        var account = await _loyaltyAccountRepository.GetByTenantAndCustomerAsync(
+        var account = await _accountRepository.GetByTenantAndCustomerAsync(
                           tenantId, customerId, childIncluded: true, cancellationToken)
                       ?? throw new KeyNotFoundException($"No Account was found for customer with id: {customerId}.");
 
-        List<PointTransaction> lastActivities = [];
+        List<Transaction> lastActivities = [];
         
         if (options!.TransactionType is not null)
         {
@@ -78,10 +78,10 @@ public class CustomerService(
         }
 
         if (options.StartDate is not null)
-            lastActivities = [..account.PointTransactions.Where(p => p.OccurredOn >= options.StartDate.Value).ToList()];
+            lastActivities = [..account.PointTransactions.Where(p => p.OccurredAt >= options.StartDate.Value).ToList()];
        
         if (options.EndDate is not null)
-            lastActivities = lastActivities.Where(act => act.OccurredOn <= options.EndDate.Value).ToList();
+            lastActivities = lastActivities.Where(act => act.OccurredAt <= options.EndDate.Value).ToList();
 
         // Defect as always showing even query param is not null
         if (lastActivities.Count <= 0)

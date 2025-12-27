@@ -33,15 +33,15 @@ public static class DependencyInjections
         {
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             // builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            builder.Services.AddScoped<ILoyaltyAccountRepository, LoyaltyAccountRepository>();
+            builder.Services.AddScoped<IAccountRepository, AccountRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<ITenantRepository, TenantRepository>();
             builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 
             builder.Services.AddScoped<ICustomerService, CustomerService>();
             builder.Services.AddScoped<ITenantService, TenantService>();
-            builder.Services.AddScoped<ILoyaltyAccountService, LoyaltyAccountService>();
-            builder.Services.AddScoped<IPointTransactionService, PointTransactionService>();
+            builder.Services.AddScoped<IAccountService, AccountService>();
+            builder.Services.AddScoped<ITransactionService, TransactionService>();
         
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IRoleService, RoleService>();
@@ -101,6 +101,7 @@ public static class DependencyInjections
             builder.Services.AddAuthorizationBuilder()
                 .AddPolicy(Constants.RequireAuthenticatedUser, p => p.RequireAuthenticatedUser())
                 .AddPolicy(Constants.RequireSuperAdminRole, p => p.RequireRole("SuperAdmin"))
+                .AddPolicy(Constants.RequireTenantOwner, p => p.RequireRole("SuperAdmin", "TenantOwner"))
                 .AddPolicy(Constants.PlatformRootPolicy, p =>
                     p.Requirements.Add(new PlatformRootAccessRequirement()))
                 .AddPolicy(Constants.TenantAccessPolicy, p =>

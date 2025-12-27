@@ -11,7 +11,7 @@ public interface ICustomerService
     Task UpdateAsync(string id, CustomerUpdateDto dto, CancellationToken ct = default);
     Task DeleteAsync(string id, CancellationToken ct = default);
     
-    Task<(decimal balance, List<PointTransaction> list)> GetCustomerBalanceByIdAsync(
+    Task<(decimal balance, List<Transaction> list)> GetCustomerBalanceByIdAsync(
         string customerId,
         string tenantId,
         CustomerGetBalanceOptionsDto? options,

@@ -1,4 +1,4 @@
-﻿using CoreAPI.DTOs.LoyaltyAccounts;
+﻿using CoreAPI.DTOs.Accounts;
 
 namespace CoreAPI.DTOs.Customers;
 
@@ -8,4 +8,4 @@ public record CustomerDetailDto(
     string Email,
     string PhoneNumber,
     int TotalBalance,
-    IReadOnlyList<LoyaltyAccountCustomerDto> LoyaltyAccounts);
+    IReadOnlyList<AccountCustomerDto> LoyaltyAccounts);

@@ -12,12 +12,14 @@ namespace CoreAPI.Services;
 
 public class AuthService(
     UserManager<User> userManager,
+    RoleManager<Role> roleManager,
     SignInManager<User> signInManager,
     IUnitOfWork unitOfWork,
     IMapper mapper,
     ITokenService tokenService) : IUserService
 {
     private readonly UserManager<User> _userManager = userManager;
+    private readonly RoleManager<Role> _roleManager = roleManager;
     private readonly SignInManager<User> _signInManager = signInManager;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IUserRepository _userRepository = unitOfWork.UserRepository;
@@ -43,6 +45,7 @@ public class AuthService(
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default)
     {
         var user = await _userManager.Users
+            // Ignore filtering for search for a user
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.NormalizedUserName == dto.UserName.ToUpper(), ct);
         if (user == null) return null;
@@ -68,10 +71,19 @@ public class AuthService(
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            // Tenant Creation
             var tenant = _mapper.Map<Tenant>(dto.Tenant);
             await _tenantRepository.CreateAsync(tenant, ct);
-            // await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
 
+            // Role Creation
+            const string roleName = "TenantOwner";
+            var role = new Role(Guid.NewGuid().ToString(), roleName, tenant.Id);
+            var roleCreated = await _roleManager.CreateAsync(role);
+            if (!roleCreated.Succeeded)
+                throw new Exception(roleCreated.Errors.First().Description);
+            
+            // User Creation
             var user = new User(Guid.NewGuid().ToString(), dto.Owner.Email, dto.Owner.UserName, tenant.Id)
             {
                 EmailConfirmed = true
@@ -79,10 +91,14 @@ public class AuthService(
             var result = await _userManager.CreateAsync(user);
             if (!result.Succeeded)
                 throw new Exception(result.Errors.First().Description);
+            
+            // Assign role to user
+            await _userRepository.AddToRoleAsync(user.Id, role.Id);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            
             // TODO: use EmailService, and send the invited-link to the tenant's email instead
             return (user.Id, token); // Development
         }

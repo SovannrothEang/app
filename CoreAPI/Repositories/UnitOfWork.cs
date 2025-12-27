@@ -21,8 +21,8 @@ public sealed class UnitOfWork(
     public IUserRepository UserRepository { get; private set; } = new UserRepository(context);
     public ICustomerRepository CustomerRepository { get; private set; } = new CustomerRepository(context);
     public ITenantRepository TenantRepository { get; private set; } = new TenantRepository(context);
-    public ILoyaltyAccountRepository LoyaltyAccountRepository { get; private set; } = new LoyaltyAccountRepository(context);
-    public IPointTransactionRepository PointTransactionRepository { get; private set; } = new PointTransactionRepository(context);
+    public IAccountRepository AccountRepository { get; private set; } = new AccountRepository(context);
+    public ITransactionRepository TransactionRepository { get; private set; } = new TransactionRepository(context);
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {

@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CoreAPI.Data.Configurations;
 
-public class PointTransactionConfiguration : IEntityTypeConfiguration<PointTransaction>
+public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 {
-    public void Configure(EntityTypeBuilder<PointTransaction> builder)
+    public void Configure(EntityTypeBuilder<Transaction> builder)
     {
-        builder.ToTable("PointTransactions");
+        builder.ToTable("Transactions");
         builder.HasKey(pt => pt.Id);
         builder.Property(pt => pt.Id)
             .HasColumnType("VARCHAR(100)")
@@ -23,7 +23,7 @@ public class PointTransactionConfiguration : IEntityTypeConfiguration<PointTrans
             .HasColumnType("NVARCHAR(100)");
         builder.Property(pt => pt.ReferenceId)
             .HasColumnType("VARCHAR(100)");
-        builder.Property(pt => pt.OccurredOn)
+        builder.Property(pt => pt.OccurredAt)
             .HasColumnType("DATETIME2(3)")
             .IsRequired();
 
@@ -33,6 +33,11 @@ public class PointTransactionConfiguration : IEntityTypeConfiguration<PointTrans
 
         builder.Property<string>("CustomerId")
             .HasColumnType("VARCHAR(100)")
+            .IsRequired();
+        
+        builder.HasOne(pt => pt.LoyaltyAccount)
+            .WithMany(acc => acc.PointTransactions)
+            .HasForeignKey(pt => new { pt.TenantId, pt.CustomerId })
             .IsRequired();
         
         builder.HasIndex(pt => pt.Id)

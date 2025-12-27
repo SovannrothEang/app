@@ -17,7 +17,7 @@ public class TenantsController(
     IAuthorizationService authorizationService,
     IUserService userService,
     ICustomerService customerService,
-    IPointTransactionService pointTransactionService,
+    ITransactionService transactionService,
     IMapper mapper,
     ILogger<TenantsController> logger,
     ITenantService tenantService) : ControllerBase
@@ -26,7 +26,7 @@ public class TenantsController(
     private readonly IAuthorizationService _authorizationService = authorizationService;
     private readonly IUserService _userService = userService;
     private readonly ICustomerService _customerService = customerService;
-    private readonly IPointTransactionService _pointTransactionService = pointTransactionService;
+    private readonly ITransactionService _transactionService = transactionService;
     private readonly ITenantService _tenantService = tenantService;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<TenantsController> _logger = logger;
@@ -130,7 +130,7 @@ public class TenantsController(
         [FromBody] CustomerEarnPointDto dto,
         CancellationToken ct = default)
     {
-        var (balance, transactionDetail) = await _pointTransactionService.EarnPointAsync(customerId, tenantId, dto, ct);
+        var (balance, transactionDetail) = await _transactionService.EarnPointAsync(customerId, tenantId, dto, ct);
         return Ok(new
         {
             Balance = balance,
@@ -148,7 +148,7 @@ public class TenantsController(
     {
         try
         {
-            var (balance, transactionDetail) = await _pointTransactionService.RedeemPointAsync(customerId, tenantId, dto, ct);
+            var (balance, transactionDetail) = await _transactionService.RedeemPointAsync(customerId, tenantId, dto, ct);
             return Ok(new
             {
                 Balance = balance,
@@ -176,7 +176,7 @@ public class TenantsController(
     {
         var current = _currentUserProvider.UserId;
         var (balance, transactionDetail) =
-            await _pointTransactionService.AdjustPointAsync(customerId, tenantId, current, dto, ct);
+            await _transactionService.AdjustPointAsync(customerId, tenantId, current, dto, ct);
         return Ok(new
         {
             Balance = balance,

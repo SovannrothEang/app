@@ -49,7 +49,7 @@ public class AuthController(IUserService userService,
         if (!_currentUser.IsAuthenticated)
             return Unauthorized();
          
-        return Ok(new { _currentUser.UserId, _currentUser.Email, _currentUser.Roles });
+        return Ok(new { _currentUser.UserId, _currentUser.Email, _currentUser.TenantId, _currentUser.Roles });
     }
 
     [HttpPost("change-password")]

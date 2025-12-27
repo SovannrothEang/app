@@ -8,7 +8,7 @@ public sealed class Tenant : BaseEntity
     public string Id { get; private set; } 
     public string Name { get; private set; } = null!;
     public TenantStatus Status { get; private set; } =  TenantStatus.Active;
-    public LoyaltyProgramSetting? Setting { get; private set; }
+    public AccountSetting? Setting { get; private set; }
 
 
     
@@ -22,7 +22,7 @@ public sealed class Tenant : BaseEntity
         Id = Guid.NewGuid().ToString();
     }
     
-    public Tenant(string id, string name, LoyaltyProgramSetting? setting = null)
+    public Tenant(string id, string name, AccountSetting? setting = null)
     {
         Id = id;
         Name = name;
@@ -41,7 +41,7 @@ public sealed class Tenant : BaseEntity
         Modified();
     }
 
-    public void UpdateSetting(LoyaltyProgramSetting setting)
+    public void UpdateSetting(AccountSetting setting)
     {
         Setting = setting;
         Modified();

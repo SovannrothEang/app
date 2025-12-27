@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CoreAPI.Requirements.Handlers;
 
-public class TenantAccessHandler(
+    public class TenantAccessHandler(
     ICurrentUserProvider currentUserProvider,
     IHttpContextAccessor httpContext,
-    IConfiguration configuration) : AuthorizationHandler<TenantAccessRequirement, string>
+    IConfiguration configuration) : AuthorizationHandler<TenantAccessRequirement>
 {
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IHttpContextAccessor _httpContext = httpContext;
@@ -16,23 +16,31 @@ public class TenantAccessHandler(
 
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
-        TenantAccessRequirement requirement,
-        string tenantId)
+        TenantAccessRequirement requirement)
     {
         if (!_currentUserProvider.IsAuthenticated)
             return Task.CompletedTask;
-        
+
         // SuperAdmin access
         if (_currentUserProvider.TenantId == _hostTenantId &&
-            !context.User.IsInRole("SuperAdmin")) // _currentUserProvider.IsInRole("SuperAdmin") ??
+            context.User.IsInRole("SuperAdmin")) // _currentUserProvider.IsInRole("SuperAdmin") ??
         {
             context.Succeed(requirement);
+            return Task.CompletedTask;
         }
-        
+
         var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
-        // Tenant Owner Access
+        // Tenant Route Access
         // TODO: Need to check the Tenant's role, and permissions
         if (_currentUserProvider.TenantId == tenantRouteValue)
+        {
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+
+        // Tenant Owner
+        // TODO: Check this whether it's violence or not
+        if (_currentUserProvider.TenantId != null && _currentUserProvider.IsInRole("TenantOwner"))
             context.Succeed(requirement);
 
         return Task.CompletedTask;

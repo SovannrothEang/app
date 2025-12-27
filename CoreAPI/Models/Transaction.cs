@@ -3,7 +3,7 @@ using CoreAPI.Models.Shared;
 
 namespace CoreAPI.Models;
 
-public record PointTransaction : ITenantEntity
+public record Transaction : ITenantEntity
 {
     public string Id { get; private set; } = Guid.NewGuid().ToString();
     public string TenantId { get; set; } = null!;
@@ -12,12 +12,14 @@ public record PointTransaction : ITenantEntity
     public TransactionType Type { get; private set; }
     public string? Reason { get; private set; }
     public string? ReferenceId { get; private set; }
-    public DateTime OccurredOn { get; private set; } = DateTime.UtcNow;
+    public DateTime OccurredAt { get; private set; } = DateTime.UtcNow;
     // Todo: PerformBy which user
 
-    private PointTransaction() { }
+    public Account? LoyaltyAccount { get; init; }
 
-    public PointTransaction(string id, string tenantId, string customerId, decimal amount, TransactionType type, string? reason, string? referenceId = null)
+    private Transaction() { }
+
+    public Transaction(string id, string tenantId, string customerId, decimal amount, TransactionType type, string? reason, string? referenceId = null)
     {
         Id = id;
         TenantId = tenantId;
@@ -28,12 +30,12 @@ public record PointTransaction : ITenantEntity
         ReferenceId = referenceId;
     }
     
-    public static PointTransaction Create(
+    public static Transaction Create(
         string tenantId,
         string customerId,
         int amount,
         TransactionType type,
         string? reason,
         string? referenceId = null)
-        => new PointTransaction(Guid.NewGuid().ToString(), tenantId, customerId, amount, type, reason, referenceId);
+        => new Transaction(Guid.NewGuid().ToString(), tenantId, customerId, amount, type, reason, referenceId);
 }

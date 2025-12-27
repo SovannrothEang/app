@@ -15,8 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserPr
     public DbSet<Tenant>  Tenants { get; set; }
     // public DbSet<TenantUser>  TenantUsers { get; set; }
     public DbSet<Customer> Customers { get; set; }
-    public DbSet<LoyaltyAccount> LoyaltyAccounts { get; set; }
-    public DbSet<PointTransaction> PointTransactions { get; set; }
+    public DbSet<Account> LoyaltyAccounts { get; set; }
+    public DbSet<Transaction> PointTransactions { get; set; }
 
     private void ApplyTenantFilter<TEntity>(ModelBuilder builder)
         where TEntity : class, ITenantEntity

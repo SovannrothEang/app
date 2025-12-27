@@ -7,6 +7,6 @@ public record CustomerDto(
     string Name,
     string Email,
     string PhoneNumber,
-    IList<LoyaltyAccount> LoyaltyAccounts,
+    IList<Account> LoyaltyAccounts,
     DateTime CreatedAt,
     DateTime? UpdatedAt);

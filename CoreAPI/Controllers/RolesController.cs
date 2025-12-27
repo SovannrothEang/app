@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CoreAPI.Controllers;
 
-[Route("api/admin/[controller]")]
+[Route("api/[controller]")]
 [ApiController]
 [Tags("Roles")]
-[Authorize(Policy = Constants.RequireSuperAdminRole)]
+[Authorize(Policy = Constants.TenantAccessPolicy)]
 public class RolesController(IRoleService roleService) : ControllerBase
 {
     private readonly IRoleService _roleService = roleService;
@@ -17,12 +17,12 @@ public class RolesController(IRoleService roleService) : ControllerBase
     ///     Get all available roles
     /// </summary>
     /// <returns> A list of roles </returns>
-    [HttpGet()]
-    [Authorize(Policy = Constants.RequireSuperAdminRole)]
+    [HttpGet]
+    // [Authorize(Policy = Constants.TenantAccessPolicy)]
     public ActionResult GetAll()
     {
         var roles = _roleService.GetAllRoles();
-        return Ok();
+        return Ok(roles);
     }
 
     /// <summary>
@@ -30,8 +30,7 @@ public class RolesController(IRoleService roleService) : ControllerBase
     /// </summary>
     /// <param name="roleCreate"></param>
     /// <returns></returns>
-    [HttpPost()]
-    [Authorize(Policy = Constants.RequireSuperAdminRole)]
+    [HttpPost]
     public async Task<ActionResult> CreateRole([FromBody] RoleCreateDto roleCreate)
     {
         if (!ModelState.IsValid)
@@ -49,12 +48,29 @@ public class RolesController(IRoleService roleService) : ControllerBase
     /// <param name="dto"></param>
     /// <returns></returns>
     [HttpPost("assign-user")]
-    [Authorize(Policy = Constants.RequireSuperAdminRole)]
     public async Task<ActionResult> AssignRole([FromBody] AssignRoleDto dto)
     {
         var result = await _roleService.AssignRoleAsync(dto);
         return result.Succeeded
             ? Ok(new { message = $"User {dto.UserName} added to role {dto.RoleName}" })
             : BadRequest(result.Errors);
+    }
+
+    [HttpPost("unassign-user")]
+    public ActionResult UnassignRole([FromBody] AssignRoleDto dto)
+    {
+        return Ok();
+    }
+    
+    [HttpPut("{roleId}")]
+    public ActionResult UpdateRoleAsync(string roleId)
+    {
+        return Ok();
+    }
+    
+    [HttpDelete("{roleId}")]
+    public ActionResult RemoveRoleAsync(string roleId)
+    {
+        return Ok();
     }
 }

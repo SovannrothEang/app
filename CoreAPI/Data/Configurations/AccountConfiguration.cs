@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CoreAPI.Data.Configurations;
 
-public class LoyaltyAccountConfiguration : IEntityTypeConfiguration<LoyaltyAccount>
+public class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
-    public void Configure(EntityTypeBuilder<LoyaltyAccount> builder)
+    public void Configure(EntityTypeBuilder<Account> builder)
     {
-        builder.ToTable("LoyaltyAccounts");
+        builder.ToTable("Accounts");
         builder.HasKey(e => new { e.TenantId, e.CustomerId });
 
         builder.Property(e => e.CustomerId)
