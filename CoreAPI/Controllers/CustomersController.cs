@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoreAPI.Controllers;
@@ -11,14 +13,17 @@ namespace CoreAPI.Controllers;
 [RequireHttps]
 public class CustomersController(
     IMapper mapper,
+    IUserService userService,
     ITransactionService transactionService,
     ICustomerService customerService) : ControllerBase
 {
     private readonly IMapper _mapper = mapper;
+    private readonly IUserService _userService = userService;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly ICustomerService _customerService = customerService;
     
     [HttpGet]
+    [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetCustomersAsync(
         [FromQuery] bool? childIncluded = false, 
         CancellationToken ct = default)
@@ -30,6 +35,7 @@ public class CustomersController(
 
     [HttpGet("{id}")]
     [ActionName(nameof(GetCustomerByIdAsync))]
+    [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetCustomerByIdAsync(
         [FromRoute] string id,
         [FromQuery] bool? childIncluded = false,
@@ -42,6 +48,7 @@ public class CustomersController(
     }
     
     [HttpPost]
+    [AllowAnonymous] // I think I'll need a route for this ???
     public async Task<ActionResult> CreateCustomerAsync(
         [FromBody] CustomerCreateDto dto,
         CancellationToken cancellationToken = default)

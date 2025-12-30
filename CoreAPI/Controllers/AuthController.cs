@@ -8,7 +8,8 @@ namespace CoreAPI.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Tags("Authentications")]
-public class AuthController(IUserService userService,
+public class AuthController(
+    IUserService userService,
     ICurrentUserProvider currentUser) : ControllerBase
 {
     private readonly IUserService _userService = userService;

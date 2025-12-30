@@ -10,7 +10,6 @@ using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -49,7 +48,8 @@ public static class DependencyInjections
             builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
             
             builder.Services.AddTransient<IAuthorizationHandler, PlatformRootAccessHandler>();
-            builder.Services.AddTransient<IAuthorizationHandler, TenantAccessHandler>();
+            builder.Services.AddTransient<IAuthorizationHandler, TenantScopeAccessHandler>();
+            builder.Services.AddTransient<IAuthorizationHandler, PointTransactionAccessHandler>();
         }
 
         public IServiceCollection AddIdentity()
@@ -104,8 +104,10 @@ public static class DependencyInjections
                 .AddPolicy(Constants.RequireTenantOwner, p => p.RequireRole("SuperAdmin", "TenantOwner"))
                 .AddPolicy(Constants.PlatformRootPolicy, p =>
                     p.Requirements.Add(new PlatformRootAccessRequirement()))
-                .AddPolicy(Constants.TenantAccessPolicy, p =>
-                    p.Requirements.Add(new TenantAccessRequirement()));
+                .AddPolicy(Constants.TenantScopeAccessPolicy, p =>
+                    p.Requirements.Add(new TenantScopeAccessRequirement()))
+                .AddPolicy(Constants.PointTransactionAccessPolicy, p =>
+                    p.Requirements.Add(new PointTransactionAccessRequirement()));
         }
     }
 }

@@ -8,7 +8,7 @@ namespace CoreAPI.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Tags("Roles")]
-[Authorize(Policy = Constants.TenantAccessPolicy)]
+[Authorize(Policy = Constants.TenantScopeAccessPolicy)]
 public class RolesController(IRoleService roleService) : ControllerBase
 {
     private readonly IRoleService _roleService = roleService;

@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CoreAPI.Requirements.Handlers;
 
-    public class TenantAccessHandler(
+    public class TenantScopeAccessHandler(
     ICurrentUserProvider currentUserProvider,
     IHttpContextAccessor httpContext,
-    IConfiguration configuration) : AuthorizationHandler<TenantAccessRequirement>
+    IConfiguration configuration) : AuthorizationHandler<TenantScopeAccessRequirement>
 {
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IHttpContextAccessor _httpContext = httpContext;
@@ -16,7 +16,7 @@ namespace CoreAPI.Requirements.Handlers;
 
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
-        TenantAccessRequirement requirement)
+        TenantScopeAccessRequirement requirement)
     {
         if (!_currentUserProvider.IsAuthenticated)
             return Task.CompletedTask;

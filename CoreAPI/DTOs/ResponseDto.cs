@@ -9,7 +9,7 @@
         IEnumerable<string> Roles
     );
 
-    public record UserProfileResponseDto(
+    public record UserProfileDto(
         string Id, string? UserName, string? Email, IList<string> Roles
     );
 }

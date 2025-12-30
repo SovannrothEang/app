@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.Models;
 using CoreAPI.Repositories;
@@ -12,12 +13,14 @@ public class CustomerService(
     ICustomerRepository customerRepository,
     ITenantRepository tenantRepository,
     IAccountRepository accountRepository,
+    IUserService userService,
     IMapper mapper) : ICustomerService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICustomerRepository _customerRepository = customerRepository;
     private readonly ITenantRepository _tenantRepository = tenantRepository;
     private readonly IAccountRepository _accountRepository = accountRepository;
+    private readonly IUserService _userService = userService;
     private readonly IMapper _mapper = mapper;
 
     public async Task<IEnumerable<CustomerDto>> GetAllAsync(bool childIncluded = false, CancellationToken ct = default)
@@ -28,7 +31,14 @@ public class CustomerService(
 
     public async Task<CustomerDto> CreateAsync(CustomerCreateDto dto, CancellationToken cancellationToken = default)
     {
-        var customer = _mapper.Map<Customer>(dto);
+        var registerDto = new RegisterDto(dto.UserName, dto.Email, dto.Password, dto.Password);
+        var user = await _userService.CreateUserAsync(registerDto, cancellationToken);
+        var customer = new Customer(
+            Guid.NewGuid().ToString(),
+            dto.UserName,
+            dto.Email,
+            dto.PhoneNumber,
+            user.Id);
         
         await _customerRepository.CreateAsync(customer, cancellationToken);
         await _customerRepository.SaveChangeAsync(cancellationToken);

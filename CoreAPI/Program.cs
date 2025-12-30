@@ -1,5 +1,6 @@
 using CoreAPI;
 using CoreAPI.Data;
+using CoreAPI.Exceptions;
 using CoreAPI.Middlewares;
 using CoreAPI.Profiles;
 using FluentValidation;
@@ -30,6 +31,8 @@ builder.AddPersistence();
 builder.AddDependencies();
 builder.AddIdentity();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddEndpointsApiExplorer();
 // builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
@@ -73,9 +76,10 @@ if (app.Environment.IsDevelopment())
     app.Map("/", () => Results.Redirect("/scalar"));
 }
 
-app.UseMiddleware<ErrorHandlingMiddleware>();
+// app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseMiddleware<TaskCanceledMiddleware>();
 app.UseHsts();
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

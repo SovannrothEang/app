@@ -2,4 +2,4 @@
 
 namespace CoreAPI.Requirements;
 
-public class TenantAccessRequirement() : IAuthorizationRequirement { }
+public class TenantScopeAccessRequirement() : IAuthorizationRequirement { }

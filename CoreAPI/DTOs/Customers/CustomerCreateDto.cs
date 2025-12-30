@@ -1,6 +1,7 @@
 ﻿namespace CoreAPI.DTOs.Customers;
 
 public record CustomerCreateDto(
-    string Name,
+    string UserName,
     string Email,
-    string PhoneNumber);
+    string PhoneNumber,
+    string Password);

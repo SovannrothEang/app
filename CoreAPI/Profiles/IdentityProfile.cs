@@ -14,8 +14,8 @@ public class IdentityProfile : Profile
         CreateMap<LoginDto, User>();
         CreateMap<RegisterDto, User>();
         CreateMap<TenantOwnerCreate, User>();
-        CreateMap<User, UserProfileResponseDto>()
-            .ConstructUsing(src => new UserProfileResponseDto(
+        CreateMap<User, UserProfileDto>()
+            .ConstructUsing(src => new UserProfileDto(
                 src.Id,
                 src.UserName,
                 src.Email,

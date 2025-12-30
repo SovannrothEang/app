@@ -1,9 +1,11 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using CoreAPI.Data;
 using CoreAPI.Models;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CoreAPI.Services;
@@ -11,10 +13,12 @@ namespace CoreAPI.Services;
 public class TokenService(
     IConfiguration config,
     UserManager<User> userManager,
+    AppDbContext dbContext,
     ICurrentUserProvider currentUserProvider) : ITokenService
 {
     private readonly IConfiguration _config = config;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly AppDbContext _dbContext = dbContext;
 
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     // private readonly IGenericRepository<TenantUser> _tenantUserRepository = unitOfWork.GetRepository<TenantUser>();
@@ -36,8 +40,11 @@ public class TokenService(
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
         }
         
-        // var tenant = await _tenantUserRepository.GetFirstOrDefaultAsync(
-        //     tu => tu.UserId == user.Id && tu.IsDeleted == false && tu.IsActive == true);
+        var customer = await _dbContext.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
+        if (customer != null)
+        {
+            claims.Add(new Claim("customer_id", customer.Id));
+        }
 
         // Generate keys
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));

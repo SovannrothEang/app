@@ -9,12 +9,15 @@ public sealed class Customer : BaseEntity
     public string Email { get; private set; } = null!;
     public string PhoneNumber { get; private set; } = null!;
 
+    public string UserId { get; set; } = null!;
+    public User? User { get; set; }
+
     private readonly List<Account> _accounts = [];
     public IReadOnlyCollection<Account> LoyaltyAccounts => _accounts;
     
     private Customer() { }
 
-    public Customer(string id, string name, string email, string phoneNumber)
+    public Customer(string id, string name, string email, string phoneNumber, string userId)
     {
         if (name.Length is 0 or > 150)
             throw new ArgumentException($"The name {name} is invalid.");
@@ -26,6 +29,7 @@ public sealed class Customer : BaseEntity
         Name = name;
         Email = email;
         PhoneNumber = phoneNumber;
+        UserId = userId;
     }
     
     public Account CreateLoyaltyAccount(string tenantId)

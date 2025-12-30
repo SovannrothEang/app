@@ -43,11 +43,19 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
         
-        builder.Property(e => e.UpdatedAt)
+        builder.Property(e => e.DeletedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
         
+        builder.Property(e => e.UserId)
+            .HasColumnType("VARCHAR(100)")
+            .IsRequired();
+        
         builder.HasIndex(e => e.Id)
+            .IsUnique()
+            .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
+        
+        builder.HasIndex(e => e.UserId)
             .IsUnique()
             .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
         
@@ -59,5 +67,10 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .WithOne()
             .HasForeignKey(e => e.CustomerId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.User)
+            .WithOne()
+            .HasForeignKey<Customer>(e => e.UserId)
+            .IsRequired();
     }
 }

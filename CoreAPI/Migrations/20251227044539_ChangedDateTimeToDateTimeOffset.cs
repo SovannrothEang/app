@@ -218,7 +218,6 @@ namespace Infrastructure.Migrations
                 name: "IX_Users_TenantId",
                 table: "Users",
                 column: "TenantId",
-                unique: true,
                 filter: "[TenantId] IS NOT NULL AND [IsDeleted] = 0");
             migrationBuilder.CreateIndex(
                 name: "IX_Users_TenantId_Email",
@@ -436,7 +435,6 @@ namespace Infrastructure.Migrations
                 name: "IX_Users_TenantId",
                 table: "Users",
                 column: "TenantId",
-                unique: true,
                 filter: "[TenantId] IS NOT NULL AND [IsDeleted] = 0");
             migrationBuilder.CreateIndex(
                 name: "IX_Users_TenantId_Email",

@@ -12,7 +12,7 @@ public class UsersController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
 
-    [HttpGet()]
+    [HttpGet]
     [Authorize(Policy = Constants.RequireSuperAdminRole)]
     public async Task<ActionResult> GetAllUsers(CancellationToken ct = default)
     {

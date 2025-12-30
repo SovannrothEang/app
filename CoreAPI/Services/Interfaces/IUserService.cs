@@ -9,15 +9,17 @@ public interface IUserService
 {
     Task<IdentityResult> RegisterAsync(RegisterDto dto);
     Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default);
-    Task<UserProfileResponseDto> GetCurrentUserProfileAsync(string userId);
+
+    Task<UserProfileDto> CreateUserAsync(RegisterDto dto, CancellationToken ct = default);
+    Task<UserProfileDto> GetCurrentUserProfileAsync(string userId);
     Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordCommand command);
     //Task SendPasswordResetEmailAsync(string email);
     Task CompleteInviteAsync(string userId, string token, string newPassword);
     Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword);
     Task<(string userId, string token)> CreateTenantAndUserAsync(TenantCreateDto dto, CancellationToken ct = default);
 
-    Task<IEnumerable<UserProfileResponseDto>> GetAllUserAsync(CancellationToken ct = default);
-    Task<UserProfileResponseDto?> GetUserById(string id, CancellationToken ct = default);
+    Task<IEnumerable<UserProfileDto>> GetAllUserAsync(CancellationToken ct = default);
+    Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default);
 
     // Email verification
     //Task SendEmailVerificationEmailAsync(User user);

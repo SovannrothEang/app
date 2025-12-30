@@ -32,7 +32,7 @@ public class TenantsController(
     private readonly ILogger<TenantsController> _logger = logger;
 
     [HttpGet]
-    // [Authorize(Policy = Constants.RequireTenantOwnerOrAdminRole)]
+    [Authorize(Policy = Constants.PlatformRootPolicy)]
     public async Task<ActionResult> GetAllTenantsAsync(CancellationToken ct = default)
     {
         var tenants = await _tenantService.GetAllAsync(cancellationToken: ct);
@@ -40,7 +40,7 @@ public class TenantsController(
     }
     
     [HttpGet("{id}")]
-    // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
+    [Authorize(Policy = Constants.PlatformRootPolicy)]
     public async Task<ActionResult> GetTenantByIdAsync(string id, CancellationToken ct = default)
     {
         using (_logger.BeginScope("Tenants retrieval operation for id: {tenantId}", id))
@@ -63,36 +63,9 @@ public class TenantsController(
             Token = token
         });
     }
-
-    // [HttpPut("{tenantId}")]
-    // // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
-    // public async Task<ActionResult> UpdateTenantAsync(
-    //     [FromRoute] string tenantId,
-    //     [FromBody] TenantUpdateDto dto,
-    //     CancellationToken ct = default)
-    // {
-    //     var tenant = await _repository.GetByIdAsync(tenantId, ct);
-    //     if (tenant is null)
-    //         return NotFound($"No Tenant was found with id: {tenantId}");
-    //     
-    //     _mapper.Map(dto, tenant);
-    //     await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
-    //     try
-    //     {
-    //         _repository.Update(tenant);
-    //         await _unitOfWork.SaveChangesAsync(ct);
-    //         await  transaction.CommitAsync(ct);
-    //     }
-    //     catch
-    //     {
-    //         await transaction.RollbackAsync(ct);
-    //         throw;
-    //     }
-    //     return NoContent();
-    // }
     
     [HttpPut("{tenantId}/deactivate")]
-    // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
+    [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> DeactivateTenantAsync(
         [FromRoute] string tenantId,
         CancellationToken ct = default)
@@ -101,7 +74,7 @@ public class TenantsController(
         return NoContent();
     }
     [HttpPut("{tenantId}/activate")]
-    // [Authorize(Constants.RequireAdminRole)]
+    [Authorize(Policy = Constants.PlatformRootPolicy)]
     public async Task<ActionResult> ActivateTenantAsync(
         [FromRoute] string tenantId,
         CancellationToken ct = default)
@@ -114,16 +87,8 @@ public class TenantsController(
         return NoContent();
     }
 
-    /// <summary>
-    ///     Tenant awards customer via points
-    /// </summary>
-    /// <param name="tenantId"></param>
-    /// <param name="customerId"></param>
-    /// <param name="dto"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpPost("{tenantId}/customers/{customerId}/earn")]
-    // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
+    [Authorize(Constants.PointTransactionAccessPolicy)]
     public async Task<ActionResult> CustomerEarnPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -139,7 +104,7 @@ public class TenantsController(
     }
     
     [HttpPost("{tenantId}/customers/{customerId}/redeem")]
-    // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
+    [Authorize(Constants.PointTransactionAccessPolicy)]
     public async Task<ActionResult> CustomerRedeemPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -167,7 +132,7 @@ public class TenantsController(
     }
     
     [HttpPost("{tenantId}/customers/{customerId}/adjust")]
-    // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
+    [Authorize(Constants.PointTransactionAccessPolicy)]
     public async Task<ActionResult> CustomerAdjustmentPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -185,7 +150,7 @@ public class TenantsController(
     }
 
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
-    // [Authorize(Constants.RequireTenantOwnerOrAdminRole)]
+    [Authorize(Constants.PointTransactionAccessPolicy)]
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,

@@ -12,6 +12,7 @@ public class CurrentUserProvider(IHttpContextAccessor httpContextAccessor) : ICu
                            ?? _httpContextAccessor.HttpContext?.User?.Identity?.Name;
 
     public string? TenantId { get; private set; } = httpContextAccessor.HttpContext?.User?.FindFirst("tenant_id")?.Value;
+    public string? CustomerId { get; } = httpContextAccessor.HttpContext?.User?.FindFirst("customer_id")?.Value;
     public void SetTenantId(string tenantId) => TenantId = tenantId;
     public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 

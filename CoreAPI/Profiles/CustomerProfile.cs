@@ -18,13 +18,13 @@ public class CustomerProfile : Profile
                     src.LoyaltyAccounts.ToList(),
                     src.CreatedAt,
                     src.UpdatedAt));
-        CreateMap<CustomerCreateDto, Customer>()
-            .ConstructUsing(src =>
-                new Customer(
-                    Guid.NewGuid().ToString(),
-                    src.Name,
-                    src.Email,
-                    src.PhoneNumber));
+        // CreateMap<CustomerCreateDto, Customer>()
+        //     .ConstructUsing(src =>
+        //         new Customer(
+        //             Guid.NewGuid().ToString(),
+        //             src.Name,
+        //             src.Email,
+        //             src.PhoneNumber));
         CreateMap<CustomerUpdateDto, Customer>()
             .ForAllMembers(opts
                 => opts.Condition((src, dest, srcMember, destMember) => srcMember != null));
