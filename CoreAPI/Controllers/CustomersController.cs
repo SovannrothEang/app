@@ -13,12 +13,10 @@ namespace CoreAPI.Controllers;
 [RequireHttps]
 public class CustomersController(
     IMapper mapper,
-    IUserService userService,
     ITransactionService transactionService,
     ICustomerService customerService) : ControllerBase
 {
     private readonly IMapper _mapper = mapper;
-    private readonly IUserService _userService = userService;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly ICustomerService _customerService = customerService;
     
@@ -47,27 +45,17 @@ public class CustomersController(
         return Ok(_mapper.Map<CustomerDto>(customer));
     }
     
-    [HttpPost]
-    [AllowAnonymous] // I think I'll need a route for this ???
-    public async Task<ActionResult> CreateCustomerAsync(
-        [FromBody] CustomerCreateDto dto,
-        CancellationToken cancellationToken = default)
-    {
-        var customer = await _customerService.CreateAsync(dto, cancellationToken);
-        return CreatedAtAction(
-            nameof(GetCustomerByIdAsync),
-            new { id = customer.Id },
-            customer);
-    }
-    
     [HttpGet("transactions")]
+    [Authorize(Policy = Constants.PlatformRootPolicy)]
     public async Task<ActionResult> GetAllCustomersTransactionsAsync(CancellationToken ct = default)
     {
+        // TODO: make sure that this route return all of the transactions
         var transactions = await _transactionService.GetAllTransactionsAsync(ct);
         return Ok(transactions);
     }
 
     [HttpGet("{customerId}/transactions")]
+    [Authorize(Policy = Constants.TransactionAccessPolicy)]
     public ActionResult GetCustomerTransactionsByIdAsync(string customerId, CancellationToken ct = default)
     {
         return Ok();

@@ -1,4 +1,5 @@
 ﻿using CoreAPI.DTOs.Auth;
+using CoreAPI.DTOs.Customers;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,9 +11,11 @@ namespace CoreAPI.Controllers;
 [Tags("Authentications")]
 public class AuthController(
     IUserService userService,
+    ICustomerService customerService,
     ICurrentUserProvider currentUser) : ControllerBase
 {
     private readonly IUserService _userService = userService;
+    private readonly ICustomerService _customerService = customerService;
     private readonly ICurrentUserProvider _currentUser = currentUser;
 
     [HttpPost("register")]
@@ -41,6 +44,21 @@ public class AuthController(
         return result is null 
             ? BadRequest("Invalid credentials!")
             : Ok(result);
+    }
+    
+    [HttpPost("register/customer")]
+    [AllowAnonymous] // I think I'll need a route for this ???
+    public async Task<ActionResult> CreateCustomerAsync(
+        [FromBody] CustomerCreateDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var customer = await _customerService.CreateAsync(dto, cancellationToken);
+        return Ok(new
+        {
+            Message = "Register successfully!",
+            UserName = dto.UserName,
+            Email = customer.Email
+        });
     }
 
     [HttpGet("me")]

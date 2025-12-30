@@ -23,7 +23,8 @@ public static class DependencyInjections
         {
             builder.Services.AddDbContext<AppDbContext>(
                 options => options
-                    .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                    .UseSqlServer(builder.Configuration.GetConnectionString("DockerConnection"))
+                    // .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
                     // .EnableSensitiveDataLogging() // Development 
             );
         }
@@ -106,7 +107,7 @@ public static class DependencyInjections
                     p.Requirements.Add(new PlatformRootAccessRequirement()))
                 .AddPolicy(Constants.TenantScopeAccessPolicy, p =>
                     p.Requirements.Add(new TenantScopeAccessRequirement()))
-                .AddPolicy(Constants.PointTransactionAccessPolicy, p =>
+                .AddPolicy(Constants.TransactionAccessPolicy, p =>
                     p.Requirements.Add(new PointTransactionAccessRequirement()));
         }
     }

@@ -88,7 +88,7 @@ public class TenantsController(
     }
 
     [HttpPost("{tenantId}/customers/{customerId}/earn")]
-    [Authorize(Constants.PointTransactionAccessPolicy)]
+    [Authorize(Constants.TransactionAccessPolicy)]
     public async Task<ActionResult> CustomerEarnPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -104,7 +104,7 @@ public class TenantsController(
     }
     
     [HttpPost("{tenantId}/customers/{customerId}/redeem")]
-    [Authorize(Constants.PointTransactionAccessPolicy)]
+    [Authorize(Constants.TransactionAccessPolicy)]
     public async Task<ActionResult> CustomerRedeemPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -132,7 +132,7 @@ public class TenantsController(
     }
     
     [HttpPost("{tenantId}/customers/{customerId}/adjust")]
-    [Authorize(Constants.PointTransactionAccessPolicy)]
+    [Authorize(Constants.TransactionAccessPolicy)]
     public async Task<ActionResult> CustomerAdjustmentPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -150,7 +150,7 @@ public class TenantsController(
     }
 
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
-    [Authorize(Constants.PointTransactionAccessPolicy)]
+    [Authorize(Constants.TransactionAccessPolicy)]
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
