@@ -1,0 +1,6 @@
+# Enforce Unix style line endings (LF) for most files
+* text=auto eol=lf
+
+# Explicitly declare binary files to avoid corruption
+*.png binary
+*.jpg binary
