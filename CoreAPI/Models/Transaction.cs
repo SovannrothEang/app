@@ -14,7 +14,9 @@ public record Transaction : ITenantEntity
     public string? ReferenceId { get; private set; }
     public DateTimeOffset OccurredAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
-    // Todo: PerformBy which user
+    
+    public string? PerformBy { get; init; }
+    public User? PerformByUser { get; set; }
 
     public Account? LoyaltyAccount { get; init; }
 

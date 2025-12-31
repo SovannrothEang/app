@@ -29,6 +29,8 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(pt => pt.CreatedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .IsRequired();
+        builder.Property(e => e.PerformBy)
+            .HasColumnType("VARCHAR(100)");
 
         builder.Property<string>("TenantId")
             .HasColumnType("VARCHAR(100)")
@@ -42,11 +44,16 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .WithMany(acc => acc.PointTransactions)
             .HasForeignKey(pt => new { pt.TenantId, pt.CustomerId })
             .IsRequired();
-        
+
+        builder.HasIndex(e => e.PerformBy);
         builder.HasIndex(pt => pt.Id)
             .IsUnique();
         builder.HasIndex(pt => pt.Type);
         builder.HasIndex(pt => new { pt.TenantId, pt.CustomerId })
             .IsUnique();
+
+        builder.HasOne(e => e.PerformByUser)
+            .WithMany()
+            .HasForeignKey(pt => pt.PerformBy);
     }
 }
