@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using CoreAPI.DTOs.Customers;
+﻿using CoreAPI.DTOs.Customers;
 using CoreAPI.Exceptions;
 using CoreAPI.Models;
 using CoreAPI.Models.Enums;

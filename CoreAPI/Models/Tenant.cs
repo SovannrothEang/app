@@ -9,13 +9,14 @@ public sealed class Tenant : BaseEntity
     public string Name { get; private set; } = null!;
     public TenantStatus Status { get; private set; } =  TenantStatus.Active;
     public AccountSetting? Setting { get; private set; }
-
+    public string Slug { get; set; } = null!;
 
     
     private readonly List<User> _users = [];
     public IReadOnlyCollection<User> Users => _users;
     private readonly List<Role> _roles = [];
     public IReadOnlyCollection<Role> Roles => _roles;
+    public User? PerformByUser { get; set; }
 
     public Tenant()
     {

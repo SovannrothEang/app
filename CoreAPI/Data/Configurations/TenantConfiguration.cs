@@ -19,9 +19,9 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .HasColumnType("VARCHAR(50)")
             .IsRequired();
         
-        // builder.Property(e => e.Slug)
-        //     .HasColumnType("VARCHAR(50)")
-        //     .IsRequired();
+        builder.Property(e => e.Slug)
+            .HasColumnType("VARCHAR(50)")
+            .IsRequired();
         
         builder.Property(e => e.Status)
             .HasColumnType("TINYINT");
@@ -45,10 +45,24 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.Property(e => e.DeletedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
+
+        builder.Property(e => e.PerformBy)
+            .HasColumnType("VARCHAR(100)");
+
+        builder.HasIndex(e => e.Slug)
+            .IsUnique()
+            .HasFilter(
+                $"[{nameof(Tenant.Slug)}] <> '' AND  [{nameof(Tenant.Slug)}] IS NOT NULL AND [{nameof(Tenant.IsDeleted)}] = 0");
         
         builder.HasIndex(e => e.Id)
             .IsUnique()
             .HasFilter($"[{nameof(Tenant.IsDeleted)}] = 0");
+
+        builder.HasIndex(e => e.PerformBy);
+            
+        builder.HasOne(e => e.PerformByUser)
+            .WithMany()
+            .HasForeignKey(e => e.PerformBy);
         
         builder.OwnsOne(e => e.Setting);
         

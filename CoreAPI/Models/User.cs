@@ -19,9 +19,6 @@ public sealed class User : IdentityUser<string>, ITenantEntity
     public DateTimeOffset? DeletedAt { get; private set; } = null;
 
     public Tenant Tenant { get; set; } = null!;
-    
-    // private readonly List<TenantUser> _tenantUsers = [];
-    // public IReadOnlyCollection<TenantUser> TenantUsers => _tenantUsers;
 
     private User()
     {

@@ -7,6 +7,7 @@ public abstract class BaseEntity
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; private set; } = null;
     public DateTimeOffset? DeletedAt { get; private set; } = null;
+    public string? PerformBy { get; private set; }
 
     protected void Modified()
     {
@@ -30,5 +31,11 @@ public abstract class BaseEntity
             throw new InvalidOperationException("This entity is already deactivated");
         this.IsActive = false;
         this.Modified();
+    }
+
+    protected void AddPerformBy(string userId)
+    {
+        this.PerformBy =  userId;
+        
     }
 }
