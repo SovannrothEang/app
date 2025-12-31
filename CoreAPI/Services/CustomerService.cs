@@ -33,12 +33,7 @@ public class CustomerService(
     {
         var registerDto = new RegisterDto(dto.UserName, dto.Email, dto.Password, dto.Password);
         var user = await _userService.CreateUserAsync(registerDto, cancellationToken);
-        var customer = new Customer(
-            Guid.NewGuid().ToString(),
-            dto.UserName,
-            dto.Email,
-            dto.PhoneNumber,
-            user.Id);
+        var customer = new Customer(Guid.NewGuid().ToString(), user.Id);
         
         await _customerRepository.CreateAsync(customer, cancellationToken);
         await _customerRepository.SaveChangeAsync(cancellationToken);

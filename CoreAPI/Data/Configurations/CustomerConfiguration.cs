@@ -15,16 +15,8 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
         
-        builder.Property(e => e.Name)
-            .HasColumnType("NVARCHAR(100)")
-            .IsRequired();
-        
-        builder.Property(e => e.Email)
+        builder.Property(e => e.UserId)
             .HasColumnType("VARCHAR(100)")
-            .IsRequired();
-        
-        builder.Property(e => e.PhoneNumber)
-            .HasColumnType("VARCHAR(25)")
             .IsRequired();
         
         builder.Property(e => e.IsActive)
@@ -46,23 +38,20 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(e => e.DeletedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
-        
-        builder.Property(e => e.UserId)
-            .HasColumnType("VARCHAR(100)")
-            .IsRequired();
+
+        builder.Property(e => e.PerformBy)
+            .HasColumnType("VARCHAR(100)");
         
         builder.HasIndex(e => e.Id)
             .IsUnique()
             .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
+
+        builder.HasIndex(e => e.PerformBy);
         
         builder.HasIndex(e => e.UserId)
             .IsUnique()
             .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
         
-        builder.HasIndex(e => e.Email)
-            .IsUnique()
-            .HasFilter($"[{nameof(Customer.Email)}] <> '' AND [{nameof(Customer.IsDeleted)}] = 0");
-
         builder.HasMany(e => e.LoyaltyAccounts)
             .WithOne()
             .HasForeignKey(e => e.CustomerId)
@@ -72,5 +61,9 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .WithOne()
             .HasForeignKey<Customer>(e => e.UserId)
             .IsRequired();
+
+        builder.HasOne(e => e.PerformByUser)
+            .WithMany()
+            .HasForeignKey(e => e.PerformBy);
     }
 }

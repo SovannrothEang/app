@@ -12,9 +12,9 @@ public class CustomerProfile : Profile
             .ConstructUsing(src =>
                 new CustomerDto(
                     src.Id,
-                    src.Name,
-                    src.Email,
-                    src.PhoneNumber,
+                    src.User!.UserName,
+                    src.User.Email,
+                    src.User.PhoneNumber,
                     src.LoyaltyAccounts.ToList(),
                     src.CreatedAt,
                     src.UpdatedAt));
