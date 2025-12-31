@@ -58,7 +58,7 @@ public class CustomersController(
     [Authorize(Policy = Constants.TransactionAccessPolicy)]
     public async Task<ActionResult> GetCustomerTransactionsByIdAsync(string customerId, CancellationToken ct = default)
     {
-        var transactions = await _transactionService.GetByCustomerIdAsync(customerId, ct);
+        var transactions = await _transactionService.GetAllByCustomerAsync(customerId, ct);
         return Ok(transactions);
     }
     

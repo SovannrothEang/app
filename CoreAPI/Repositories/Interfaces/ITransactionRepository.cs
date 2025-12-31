@@ -13,7 +13,7 @@ public interface ITransactionRepository
         string customerId,
         Expression<Func<Transaction, bool>>? filtering = null,
         CancellationToken cancellationToken = default);
-
+    Task<IEnumerable<Transaction>> GetAllByCustomerGlobalAsync(string customerId, CancellationToken cancellationToken = default);
     Task<Transaction?> GetByIdAsync(string id,
         CancellationToken cancellationToken = default);
 

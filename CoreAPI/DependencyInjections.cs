@@ -50,7 +50,7 @@ public static class DependencyInjections
             
             builder.Services.AddTransient<IAuthorizationHandler, PlatformRootAccessHandler>();
             builder.Services.AddTransient<IAuthorizationHandler, TenantScopeAccessHandler>();
-            builder.Services.AddTransient<IAuthorizationHandler, PointTransactionAccessHandler>();
+            builder.Services.AddTransient<IAuthorizationHandler, TransactionAccessHandler>();
         }
 
         public IServiceCollection AddIdentity()
@@ -108,7 +108,7 @@ public static class DependencyInjections
                 .AddPolicy(Constants.TenantScopeAccessPolicy, p =>
                     p.Requirements.Add(new TenantScopeAccessRequirement()))
                 .AddPolicy(Constants.TransactionAccessPolicy, p =>
-                    p.Requirements.Add(new PointTransactionAccessRequirement()));
+                    p.Requirements.Add(new TransactionAccessRequirement()));
         }
     }
 }

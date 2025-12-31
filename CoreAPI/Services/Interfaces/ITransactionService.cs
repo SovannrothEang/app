@@ -10,9 +10,9 @@ public interface ITransactionService
         string tenantId,
         string customerId,
         CancellationToken cancellationToken = default);
-    
+    Task<IEnumerable<Transaction>> GetAllByCustomerAsync(string customerId, CancellationToken cancellationToken = default);
     Task<Transaction?> GetByIdAsync(
-        string customerId,
+        string id,
         CancellationToken cancellationToken = default);
 
     Task<IEnumerable<Transaction>> GetByTenantIdAsync(

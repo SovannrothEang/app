@@ -43,6 +43,15 @@ public class TransactionService(
             cancellationToken: cancellationToken);
     }
 
+    public async Task<IEnumerable<Transaction>> GetAllByCustomerAsync(
+        string customerId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _transactionRepository.GetAllByCustomerGlobalAsync(
+            customerId,
+            cancellationToken);
+    }
+
     public async Task<Transaction?> GetByIdAsync(string customerId,
         CancellationToken cancellationToken = default)
     {

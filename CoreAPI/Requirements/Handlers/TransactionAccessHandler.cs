@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CoreAPI.Requirements.Handlers;
 
-public class PointTransactionAccessHandler(
+public class TransactionAccessHandler(
     IConfiguration configuration,
     IHttpContextAccessor httpContextAccessor,
-    ICurrentUserProvider currentUserProvider) : AuthorizationHandler<PointTransactionAccessRequirement>
+    ICurrentUserProvider currentUserProvider) : AuthorizationHandler<TransactionAccessRequirement>
 {
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
@@ -15,7 +15,7 @@ public class PointTransactionAccessHandler(
                                           ?? throw new Exception("Tenant host not found");
 
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext context,
-        PointTransactionAccessRequirement requirement)
+        TransactionAccessRequirement requirement)
     {
         if (!_currentUserProvider.IsAuthenticated)
             return Task.CompletedTask;

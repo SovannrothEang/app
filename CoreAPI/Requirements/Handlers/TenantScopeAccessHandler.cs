@@ -31,17 +31,21 @@ namespace CoreAPI.Requirements.Handlers;
 
         var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
         // Tenant Route Access
-        // TODO: Need to check the Tenant's role, and permissions
-        if (_currentUserProvider.TenantId == tenantRouteValue)
-        {
-            context.Succeed(requirement);
-            return Task.CompletedTask;
-        }
+        // TODO: Config the role and permissions for the Tenant access.
+        // if (_currentUserProvider.TenantId == tenantRouteValue)
+        // {
+        //     context.Succeed(requirement);
+        //     return Task.CompletedTask;
+        // }
 
         // Tenant Owner
-        // TODO: Check this whether it's violence or not
-        if (_currentUserProvider.TenantId != null && _currentUserProvider.IsInRole("TenantOwner"))
+        // Security Fix: Ensure TenantOwner can only access their OWN tenant.
+        if (_currentUserProvider.TenantId != null &&
+            _currentUserProvider.IsInRole("TenantOwner") &&
+            _currentUserProvider.TenantId == tenantRouteValue)
+        {
             context.Succeed(requirement);
+        }
 
         return Task.CompletedTask;
     }

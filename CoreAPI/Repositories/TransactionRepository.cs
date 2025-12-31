@@ -10,9 +10,17 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
 {
     private readonly AppDbContext _dbContext = dbContext;
 
+    /// <summary>
+    /// This is for the SuperAdminGetting the Overall transactions
+    /// </summary>
+    /// <param name="filtering"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     public async Task<IEnumerable<Transaction>> GetAllAsync(Expression<Func<Transaction, bool>>? filtering = null, CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.PointTransactions.AsQueryable();
+        var queryable = _dbContext.PointTransactions
+            .AsQueryable()
+            .IgnoreQueryFilters();
             
         if (filtering != null)
             queryable = queryable.Where(filtering);
@@ -36,6 +44,15 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
         return await queryable
             .AsNoTracking()
             .Where(e => e.CustomerId == customerId && e.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<Transaction>> GetAllByCustomerGlobalAsync(string customerId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.PointTransactions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => e.CustomerId == customerId)
             .ToListAsync(cancellationToken);
     }
 

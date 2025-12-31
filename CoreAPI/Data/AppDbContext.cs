@@ -8,9 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserProvider currentUserProvider) : IdentityDbContext<User, Role, string>(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserProvider currentUserProvider, IConfiguration configuration) : IdentityDbContext<User, Role, string>(options)
 {
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+    private readonly string _hostTenantId = configuration["Tenancy:Host"] ?? throw new Exception("Tenancy:Host is missing.");
 
     public DbSet<Tenant>  Tenants { get; set; }
     // public DbSet<TenantUser>  TenantUsers { get; set; }
@@ -22,7 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserPr
         where TEntity : class, ITenantEntity
     {
         builder.Entity<TEntity>()
-            .HasQueryFilter(e => (e.TenantId == _currentUserProvider.TenantId));
+            .HasQueryFilter(e => (e.TenantId == _currentUserProvider.TenantId || _currentUserProvider.TenantId == _hostTenantId));
     }
     
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

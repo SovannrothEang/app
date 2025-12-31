@@ -2,4 +2,4 @@
 
 namespace CoreAPI.Requirements;
 
-public class PointTransactionAccessRequirement : IAuthorizationRequirement { }
+public class TransactionAccessRequirement : IAuthorizationRequirement { }
