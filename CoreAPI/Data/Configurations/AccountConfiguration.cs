@@ -22,13 +22,12 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.HasKey("TenantId", "CustomerId");
         
         builder.Property(e => e.Balance)
-            .HasColumnType("INT")
+            .HasColumnType("DECIMAL(18,2)")
             .IsRequired();
         
         builder.Property(e => e.Tier)
             .HasColumnType("TINYINT")
             .IsRequired();
-        
         
         builder.Property(e => e.IsActive)
             .HasColumnType("BIT")
@@ -50,7 +49,11 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
 
+        builder.Property(e => e.PerformBy)
+            .HasColumnType("VARCHAR(100)");
+
         builder.HasIndex(e => e.TenantId);
+        builder.HasIndex(e => e.PerformBy);
         builder.HasIndex(e => new { e.TenantId, e.CustomerId })
             .IsUnique();
 
@@ -58,5 +61,9 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .WithOne()
             .HasForeignKey(e => new { e.TenantId, e.CustomerId })
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.PerformByUser)
+            .WithMany()
+            .HasForeignKey(e => e.PerformBy);
     }
 }

@@ -7,11 +7,12 @@ public sealed class Account : BaseEntity, ITenantEntity
 {
     public string TenantId { get; set; } = null!;
     public string CustomerId { get; private set; } = null!;
-    public int Balance { get; private set; }
+    public decimal Balance { get; private set; }
     public TierLevel Tier { get; private set; } = TierLevel.Bronze;
     
     private readonly List<Transaction> _pointTransactions = [];
     public IReadOnlyCollection<Transaction> PointTransactions => _pointTransactions.AsReadOnly();
+    public User? PerformByUser { get; set; }
 
     public Account() { }
 
@@ -21,9 +22,9 @@ public sealed class Account : BaseEntity, ITenantEntity
         CustomerId = customerId;
     }
    
-    public (int balanace, Transaction transaction)
+    public (decimal balanace, Transaction transaction)
         EarnPoint(
-            int amount,
+            decimal amount,
             string? reason,
             string? referenceId)
     {
@@ -32,8 +33,8 @@ public sealed class Account : BaseEntity, ITenantEntity
         return (this.Balance, transaction);
     }
     
-    public (int balance, Transaction transaction)
-        Redemption (int amount, string? reason)
+    public (decimal balance, Transaction transaction)
+        Redemption (decimal amount, string? reason)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (amount > Balance)
@@ -42,8 +43,8 @@ public sealed class Account : BaseEntity, ITenantEntity
         return (this.Balance, transaction);
     }
 
-    public (int balance, Transaction transaction)
-        Adjustment (int amount, string? reason, string? referenceId)
+    public (decimal balance, Transaction transaction)
+        Adjustment (decimal amount, string? reason, string? referenceId)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         var transaction = ApplyTransaction(amount, TransactionType.Adjustment, reason, referenceId);
@@ -51,7 +52,7 @@ public sealed class Account : BaseEntity, ITenantEntity
     }
 
     private Transaction ApplyTransaction(
-        int amount,
+        decimal amount,
         TransactionType type,
         string? reason,
         string? referenceId)

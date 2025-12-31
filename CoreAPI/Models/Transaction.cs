@@ -51,7 +51,7 @@ public Transaction(
     public static Transaction Create(
         string tenantId,
         string customerId,
-        int amount,
+        decimal amount,
         TransactionType type,
         string? reason,
         string? referenceId = null,
