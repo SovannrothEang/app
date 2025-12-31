@@ -9,8 +9,7 @@ using CoreAPI.Services.Interfaces;
 namespace CoreAPI.Services;
 
 public class TransactionService(
-    IUnitOfWork unitOfWork,
-    IMapper mapper)
+    IUnitOfWork unitOfWork)
     : ITransactionService
 {
     private readonly ITransactionRepository _transactionRepository =
@@ -22,7 +21,6 @@ public class TransactionService(
         unitOfWork.CustomerRepository;
 
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IMapper _mapper = mapper;
 
     public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync(
         CancellationToken ct = default)
@@ -58,7 +56,7 @@ public class TransactionService(
         return await _transactionRepository.GetByIdAsync(customerId, cancellationToken);
     }
 
-    public async Task<IEnumerable<Transaction>> GetByCustomerIdAsync(
+    public async Task<IEnumerable<Transaction>> GetByCustomerIdForTenantAsync(
         string customerId,
         CancellationToken cancellationToken = default)
     {

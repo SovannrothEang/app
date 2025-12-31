@@ -19,7 +19,7 @@ public interface ITransactionService
         string tenantId,
         CancellationToken ct = default);
     
-    Task<IEnumerable<Transaction>> GetByCustomerIdAsync(
+    Task<IEnumerable<Transaction>> GetByCustomerIdForTenantAsync(
         string customerId,
         CancellationToken cancellationToken = default);
     

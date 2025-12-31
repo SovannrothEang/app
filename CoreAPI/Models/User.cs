@@ -5,6 +5,12 @@ namespace CoreAPI.Models;
 
 public sealed class User : IdentityUser<string>, ITenantEntity
 {
+    public string FirstName { get; set; } = null!;
+    public string LastName { get; set; } = null!;
+    
+    public string AuthProvider { get; set; } = "Local";
+    public string? ProviderKey { get; set; }
+    
     public string TenantId { get; set; } = null!;
     public bool IsActive { get; private set; } = true;
     public bool IsDeleted { get; private set; } = false;
