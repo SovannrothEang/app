@@ -8,7 +8,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserProvider currentUserProvider, IConfiguration configuration) : IdentityDbContext<User, Role, string>(options)
+public class AppDbContext(
+    DbContextOptions<AppDbContext> options,
+    ICurrentUserProvider currentUserProvider,
+    IConfiguration configuration) 
+    : IdentityDbContext<
+        User,
+        Role,
+        string,
+        IdentityUserClaim<string>,
+        UserRole,
+        IdentityUserLogin<string>,
+        IdentityRoleClaim<string>,
+        IdentityUserToken<string>>(options)
 {
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly string _hostTenantId = configuration["Tenancy:Host"] ?? throw new Exception("Tenancy:Host is missing.");
@@ -28,17 +40,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUserPr
     
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // TODO: Keep tracking, and ensure tenant owner can only modify their data
         foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
         {
             switch (entry.State)
             {
                 case EntityState.Added:
                 case EntityState.Modified:
-                    if (string.IsNullOrEmpty(entry.Entity?.TenantId) &&
+                    // 1. Auto-fill TenantId if missing
+                    if (string.IsNullOrEmpty(entry.Entity.TenantId) &&
                         _currentUserProvider.TenantId is not null)
                     {
-                        entry.Entity?.TenantId = _currentUserProvider.TenantId;
+                        entry.Entity.TenantId = _currentUserProvider.TenantId;
+                    }
+
+                    // 2. Security Enforcement
+                    // If the current user is SuperAdmin (Host User), they can bypass this check.
+                    if (_currentUserProvider.TenantId == _hostTenantId)
+                    {
+                        continue;
+                    }
+                    
+                    // Otherwise, strictly enforce that the entity's TenantId matches the User's TenantId.
+                    if (entry.Entity.TenantId != _currentUserProvider.TenantId)
+                    {
+                        throw new UnauthorizedAccessException(
+                            $"Cross-tenant write denied. User from tenant '{_currentUserProvider.TenantId}' " +
+                            $"cannot modify entity belonging to '{entry.Entity.TenantId}'.");
                     }
                     break;
             }

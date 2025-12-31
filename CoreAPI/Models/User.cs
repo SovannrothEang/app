@@ -20,7 +20,9 @@ public sealed class User : IdentityUser<string>, ITenantEntity
     public string? PerformBy { get; set; }
     
     public User? PerformByUser { get; set; }
-    public Tenant Tenant { get; set; } = null!;
+    public Tenant? Tenant { get; set; }
+
+    public ICollection<UserRole>? UserRoles { get; set; } = [];
 
     private User()
     {

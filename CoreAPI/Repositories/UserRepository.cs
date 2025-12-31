@@ -13,10 +13,11 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
 
     public async Task AddToRoleAsync(string userId, string roleId)
     {
-        var userRole = new IdentityUserRole<string>
+        var userRole = new UserRole
         {
             UserId = userId,
-            RoleId = roleId
+            RoleId = roleId,
+            TenantId = string.Empty // Will be strictly populated by AppDbContext.SaveChangesAsync
         };
         
         await _dbContext.UserRoles.AddAsync(userRole);

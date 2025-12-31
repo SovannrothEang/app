@@ -15,7 +15,7 @@ public sealed class Role : IdentityRole<string>, ITenantEntity
     public string? PerformBy { get; set; }
     
     public User? PerformByUser { get; set; }
-
+    public ICollection<UserRole>? UserRoles { get; set; } = [];
     public Tenant? Tenant { get; set; }
 
     public Role()

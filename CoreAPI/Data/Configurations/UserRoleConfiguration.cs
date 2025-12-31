@@ -19,13 +19,17 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         builder.Property(e => e.TenantId)
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
-        
+
         builder.HasOne(e => e.User)
-            .WithMany()
-            .HasForeignKey(e => new  { e.UserId, e.TenantId });
+            .WithMany(e => e.UserRoles)
+            .HasForeignKey(e => new { e.UserId, e.TenantId })
+            .HasPrincipalKey(e => new { e.Id, e.TenantId })
+            .IsRequired();
         builder.HasOne(e => e.Role)
             .WithMany()
-            .HasForeignKey(e => new  { e.Role, e.TenantId });
+            .HasForeignKey(e => new  { e.RoleId, e.TenantId })
+            .HasPrincipalKey(e => new { e.Id, e.TenantId })
+            .IsRequired();
         
         builder.HasIndex(e => new { e.UserId, e.RoleId, e.TenantId })
             .IsUnique();

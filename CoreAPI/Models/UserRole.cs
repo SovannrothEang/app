@@ -8,7 +8,10 @@ public sealed class UserRole : IdentityUserRole<string>, ITenantEntity
     public string TenantId { get; set; } = null!;
 
     
+    [System.ComponentModel.DataAnnotations.Schema.ForeignKey("UserId, TenantId")]
     public User? User { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.ForeignKey("RoleId, TenantId")]
     public Role? Role { get; set; }
     
     public UserRole() { }

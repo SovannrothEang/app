@@ -103,7 +103,7 @@ public class TransactionService(
 
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         Transaction transactionDetail;
-        int balance;
+        decimal balance;
 
         var account =
             customer.LoyaltyAccounts.FirstOrDefault(e => e.TenantId == tenant.Id);
