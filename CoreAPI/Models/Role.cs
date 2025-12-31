@@ -12,6 +12,9 @@ public sealed class Role : IdentityRole<string>, ITenantEntity
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
+    public string? PerformBy { get; set; }
+    
+    public User? PerformByUser { get; set; }
 
     public Tenant? Tenant { get; set; }
 

@@ -33,10 +33,13 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             builder.Property(e => e.DeletedAt)
                 .HasColumnType("DATETIMEOFFSET(3)")
                 .HasDefaultValue(null);
+            builder.Property(e => e.PerformBy)
+                .HasColumnType("VARCHAR(100)");
             
             builder.HasIndex(e => new { e.TenantId, e.Id })
                 .IsUnique()
                 .HasFilter($"[{nameof(Role.Id)}] <> '' AND [{nameof(Role.IsDeleted)}] = 0");
+            builder.HasIndex(e => e.PerformBy);
             builder.HasIndex(e => new { e.TenantId, e.Name })
                 .IsUnique()
                 .HasFilter($"[{nameof(Role.Name)}] <> '' AND [{nameof(Role.IsDeleted)}] = 0");
@@ -46,6 +49,8 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
                 .WithMany(e => e.Roles)
                 .HasForeignKey(e => e.TenantId)
                 .OnDelete(DeleteBehavior.NoAction);
-
+            builder.HasOne(e => e.PerformByUser)
+                .WithMany()
+                .HasForeignKey(e => e.PerformBy);
     }
 }

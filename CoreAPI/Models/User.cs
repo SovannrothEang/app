@@ -17,7 +17,9 @@ public sealed class User : IdentityUser<string>, ITenantEntity
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; private set; } = null;
     public DateTimeOffset? DeletedAt { get; private set; } = null;
-
+    public string? PerformBy { get; set; }
+    
+    public User? PerformByUser { get; set; }
     public Tenant Tenant { get; set; } = null!;
 
     private User()

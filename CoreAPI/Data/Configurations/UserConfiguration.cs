@@ -56,6 +56,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.DeletedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
+        builder.Property(e => e.PerformBy)
+            .HasColumnType("VARCHAR(100)");
             
         // Fixed Index Filter later
         builder.HasIndex(e => new { e.TenantId, e.Id })
@@ -74,5 +76,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(e => e.TenantId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
+        builder.HasOne(e => e.PerformByUser)
+            .WithMany()
+            .HasForeignKey(e => e.PerformBy);
     }
 }
