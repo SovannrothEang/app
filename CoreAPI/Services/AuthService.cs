@@ -199,10 +199,10 @@ public class AuthService(
         return new UserProfileDto(user.Id, user.UserName!, user.Email!, roles);
     }
 
-    public async Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordCommand command)
+    public async Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordRequest request)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        return await _userManager.ChangePasswordAsync(user!, command.CurrentPassword, command.NewPassword);
+        return await _userManager.ChangePasswordAsync(user!, request.CurrentPassword, request.NewPassword);
     }
 
     //public Task SendPasswordResetEmailAsync(string email)

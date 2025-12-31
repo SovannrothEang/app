@@ -73,7 +73,7 @@ public class AuthController(
 
     [HttpPost("change-password")]
     [Authorize(Policy = Constants.RequireAuthenticatedUser)]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         if (!_currentUser.IsAuthenticated)
             return Unauthorized();
@@ -81,7 +81,7 @@ public class AuthController(
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _userService.ChangePasswordAsync(_currentUser.UserId!, command);
+        var result = await _userService.ChangePasswordAsync(_currentUser.UserId!, request);
 
         return result.Succeeded
             ? Ok(new { message = "Changed successfully." })

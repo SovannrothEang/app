@@ -1,6 +1,5 @@
-﻿namespace CoreAPI.DTOs.Auth;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class RoleCreateDto
-{
-    public string Name { get; set; } = default!;
-}
+namespace CoreAPI.DTOs.Auth;
+
+public record RoleCreateDto([StringLength(100)] string Name);

@@ -65,7 +65,7 @@ public class TenantsController(
     }
     
     [HttpPut("{tenantId}/deactivate")]
-    [Authorize(Constants.TenantScopeAccessPolicy)]
+    [Authorize(Constants.PlatformRootPolicy)]
     public async Task<ActionResult> DeactivateTenantAsync(
         [FromRoute] string tenantId,
         CancellationToken ct = default)

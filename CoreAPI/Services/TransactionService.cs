@@ -13,19 +13,28 @@ public class TransactionService(
     IMapper mapper)
     : ITransactionService
 {
-    private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
+    private readonly ITransactionRepository _transactionRepository =
+        unitOfWork.TransactionRepository;
+
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
-    private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
+
+    private readonly ICustomerRepository _customerRepository =
+        unitOfWork.CustomerRepository;
+
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync(
+        CancellationToken ct = default)
     {
-        var transactions = await _transactionRepository.GetAllAsync(cancellationToken: ct);
+        var transactions =
+            await _transactionRepository.GetAllAsync(cancellationToken: ct);
         return transactions;
     }
 
-    public async Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(string tenantId, string customerId,
+    public async Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(
+        string tenantId,
+        string customerId,
         CancellationToken cancellationToken = default)
     {
         return await _transactionRepository.GetAllByTenantAndCustomerAsync(
@@ -34,9 +43,26 @@ public class TransactionService(
             cancellationToken: cancellationToken);
     }
 
-    public async Task<Transaction?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Transaction?> GetByIdAsync(string customerId,
+        CancellationToken cancellationToken = default)
     {
-        return await _transactionRepository.GetByIdAsync(id, cancellationToken);
+        return await _transactionRepository.GetByIdAsync(customerId, cancellationToken);
+    }
+
+    public async Task<IEnumerable<Transaction>> GetByCustomerIdAsync(
+        string customerId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _transactionRepository.GetByCustomerIdAsync(customerId,
+            cancellationToken);
+    }
+
+    public async Task<IEnumerable<Transaction>> GetByTenantIdAsync(
+        string tenantId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _transactionRepository.GetByTenantIdAsync(tenantId,
+            cancellationToken);
     }
 
     public async Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
@@ -45,40 +71,46 @@ public class TransactionService(
         CancellationToken cancellationToken = default)
     {
         var tenant = await _tenantRepository.GetByIdAsync(tenantId, cancellationToken);
-        if (tenant is null) 
+        if (tenant is null)
             throw new KeyNotFoundException($"No Tenant was found with id: {tenantId}.");
-       
+
         if (tenant.Status != TenantStatus.Active)
             throw new BadHttpRequestException("Tenant is not active!");
-       
-        var customer = await _customerRepository.GetByIdAsync(customerId, childIncluded: true, cancellationToken)
-                       ?? throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
+
+        var customer = await _customerRepository.GetByIdAsync(customerId,
+                           childIncluded: true, cancellationToken)
+                       ?? throw new KeyNotFoundException(
+                           $"No Customer was found with id: {customerId}.");
 
         return (customer, tenant);
     }
 
     public async Task<(decimal balance, Transaction transactionDetail)>
-        EarnPointAsync (
+        EarnPointAsync(
             string customerId,
             string tenantId,
             CustomerEarnPointDto dto,
             CancellationToken cancellationToken = default)
     {
-        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
-        
+        var (customer, tenant) =
+            await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         Transaction transactionDetail;
         int balance;
-            
-        var account = customer.LoyaltyAccounts.FirstOrDefault(e => e.TenantId == tenant.Id);
+
+        var account =
+            customer.LoyaltyAccounts.FirstOrDefault(e => e.TenantId == tenant.Id);
         if (account is not null)
         {
-            (balance, transactionDetail) = account.EarnPoint(dto.Amount, dto.Reason, null);
+            (balance, transactionDetail) =
+                account.EarnPoint(dto.Amount, dto.Reason, null);
         }
         else
         {
             var newAccount = customer.CreateLoyaltyAccount(tenant.Id);
-            (balance, transactionDetail) = newAccount.EarnPoint(dto.Amount, dto.Reason, null);
+            (balance, transactionDetail) =
+                newAccount.EarnPoint(dto.Amount, dto.Reason, null);
         }
 
         await _unitOfWork.CommitAsync(cancellationToken);
@@ -92,9 +124,10 @@ public class TransactionService(
             CustomerRedeemPointDto dto,
             CancellationToken cancellationToken = default)
     {
-        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+        var (customer, tenant) =
+            await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
         IsCustomerLinkedWithTenant(customer, tenant);
-        
+
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         var account = customer.LoyaltyAccounts.First(e => e.TenantId == tenant.Id);
         if (dto.Amount > account.Balance)
@@ -113,22 +146,24 @@ public class TransactionService(
             CustomerAdjustPointDto dto,
             CancellationToken cancellationToken = default)
     {
-        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+        var (customer, tenant) =
+            await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
         IsCustomerLinkedWithTenant(customer, tenant);
-        
+
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
         var account = customer.LoyaltyAccounts.First(e => e.TenantId == tenant.Id);
-        var (balance, transactionDetail) = account.Adjustment(dto.Amount, dto.Reason, null);
+        var (balance, transactionDetail) =
+            account.Adjustment(dto.Amount, dto.Reason, null);
 
         await _unitOfWork.CommitAsync(cancellationToken);
         return (balance, transactionDetail);
     }
-    
+
     private static void IsCustomerLinkedWithTenant(Customer customer, Tenant tenant)
     {
         var exist = customer.LoyaltyAccounts.Any(acc => acc.TenantId == tenant.Id);
         if (!exist)
-            throw new KeyNotFoundException($"Customer does not has account with tenant, tenant id: {tenant.Id}.");
+            throw new KeyNotFoundException(
+                $"Customer does not has account with tenant, tenant id: {tenant.Id}.");
     }
-
 }

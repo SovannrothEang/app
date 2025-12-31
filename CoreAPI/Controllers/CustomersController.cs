@@ -56,9 +56,10 @@ public class CustomersController(
 
     [HttpGet("{customerId}/transactions")]
     [Authorize(Policy = Constants.TransactionAccessPolicy)]
-    public ActionResult GetCustomerTransactionsByIdAsync(string customerId, CancellationToken ct = default)
+    public async Task<ActionResult> GetCustomerTransactionsByIdAsync(string customerId, CancellationToken ct = default)
     {
-        return Ok();
+        var transactions = await _transactionService.GetByCustomerIdAsync(customerId, ct);
+        return Ok(transactions);
     }
     
     // TODO: Fix Load customer dashboard

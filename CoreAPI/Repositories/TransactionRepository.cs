@@ -45,4 +45,20 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
+    
+    public async Task<IEnumerable<Transaction>> GetByCustomerIdAsync(string customerId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.PointTransactions
+            .AsNoTracking()
+            .Where(e => e.CustomerId == customerId)
+            .ToListAsync(cancellationToken);
+    }
+    
+    public async Task<IEnumerable<Transaction>> GetByTenantIdAsync(string tenantId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.PointTransactions
+            .AsNoTracking()
+            .Where(e => e.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -25,6 +25,11 @@ public class IdentityProfile : Profile
         // Role
         CreateMap<RoleCreateDto, Role>();
         CreateMap<Role, RoleDto>()
+            .ConstructUsing(src => new RoleDto(
+                src.Id,
+                src.Name ?? string.Empty,
+                src.CreatedAt,
+                src.UpdatedAt))
             .ReverseMap();
     }
 }

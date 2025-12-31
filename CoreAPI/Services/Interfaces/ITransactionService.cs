@@ -12,7 +12,15 @@ public interface ITransactionService
         CancellationToken cancellationToken = default);
     
     Task<Transaction?> GetByIdAsync(
-        string id,
+        string customerId,
+        CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<Transaction>> GetByTenantIdAsync(
+        string tenantId,
+        CancellationToken ct = default);
+    
+    Task<IEnumerable<Transaction>> GetByCustomerIdAsync(
+        string customerId,
         CancellationToken cancellationToken = default);
     
     Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(

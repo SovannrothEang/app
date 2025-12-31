@@ -12,7 +12,7 @@ public interface IUserService
 
     Task<UserProfileDto> CreateUserAsync(RegisterDto dto, CancellationToken ct = default);
     Task<UserProfileDto> GetCurrentUserProfileAsync(string userId);
-    Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordCommand command);
+    Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordRequest request);
     //Task SendPasswordResetEmailAsync(string email);
     Task CompleteInviteAsync(string userId, string token, string newPassword);
     Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword);
