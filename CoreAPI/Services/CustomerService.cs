@@ -29,38 +29,26 @@ public class CustomerService(
         return customers.Select(e => _mapper.Map<CustomerDto>(e));
     }
 
-    public async Task<CustomerDto> CreateAsync(CustomerCreateDto dto, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<CustomerDto>> GetCustomersPerTenantAsync(
+        bool childIncluded = false,
+        CancellationToken ct = default)
     {
-        var registerDto = new RegisterDto(dto.UserName, dto.Email, dto.Password, dto.Password);
-        var user = await _userService.CreateUserAsync(registerDto, cancellationToken);
-        var customer = new Customer(Guid.NewGuid().ToString(), user.Id);
-        
-        await _customerRepository.CreateAsync(customer, cancellationToken);
-        await _customerRepository.SaveChangeAsync(cancellationToken);
-        return _mapper.Map<CustomerDto>(customer);
-    }
-
-    public async Task UpdateAsync(string id, CustomerUpdateDto dto, CancellationToken ct = default)
-    {
-        var customer = await _customerRepository.GetByIdAsync(id, cancellationToken: ct)
-            ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
-        
-        await _customerRepository.Update(customer);
-        await _customerRepository.SaveChangeAsync(ct);
-    }
-
-    public async Task DeleteAsync(string id, CancellationToken ct = default)
-    {
-        var customer = await _customerRepository.GetByIdAsync(id, cancellationToken: ct)
-            ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
-        
-        await _customerRepository.Remove(customer);
-        await _customerRepository.SaveChangeAsync(ct);
+        var customers =  await _customerRepository.GetAllCustomersPerTenantAsync(childIncluded, cancellationToken: ct);
+        return customers.Select(e => _mapper.Map<Customer,CustomerDto>(e));
     }
 
     public async Task<CustomerDto?> GetByIdAsync(string id, bool childIncluded = false, CancellationToken ct = default)
     {
         var customer = await _customerRepository.GetByIdAsync(id, childIncluded, cancellationToken: ct);
+        return _mapper.Map<CustomerDto>(customer);
+    }
+
+    public async Task<CustomerDto?> GetByIdInTenantScopeAsync(
+        string id,
+        bool childIncluded = false,
+        CancellationToken ct = default)
+    {
+        var customer = await _customerRepository.GetByIdInTenantScopeAsync(id, childIncluded, cancellationToken: ct);
         return _mapper.Map<CustomerDto>(customer);
     }
 
@@ -94,5 +82,34 @@ public class CustomerService(
         // Do a pagination
 
         return (account.Balance, lastActivities);
+    }
+
+    public async Task<CustomerDto> CreateAsync(CustomerCreateDto dto, CancellationToken cancellationToken = default)
+    {
+        var registerDto = new RegisterDto(dto.UserName, dto.Email, dto.Password, dto.Password);
+        var user = await _userService.CreateUserAsync(registerDto, cancellationToken);
+        var customer = new Customer(Guid.NewGuid().ToString(), user.Id);
+        
+        await _customerRepository.CreateAsync(customer, cancellationToken);
+        await _customerRepository.SaveChangeAsync(cancellationToken);
+        return _mapper.Map<CustomerDto>(customer);
+    }
+
+    public async Task UpdateAsync(string id, CustomerUpdateDto dto, CancellationToken ct = default)
+    {
+        var customer = await _customerRepository.GetByIdAsync(id, cancellationToken: ct)
+                       ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
+        
+        await _customerRepository.Update(customer);
+        await _customerRepository.SaveChangeAsync(ct);
+    }
+
+    public async Task DeleteAsync(string id, CancellationToken ct = default)
+    {
+        var customer = await _customerRepository.GetByIdAsync(id, cancellationToken: ct)
+                       ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
+        
+        await _customerRepository.Remove(customer);
+        await _customerRepository.SaveChangeAsync(ct);
     }
 }

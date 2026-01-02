@@ -32,7 +32,7 @@ public class TenantsController(
     private readonly ILogger<TenantsController> _logger = logger;
 
     [HttpGet]
-    [Authorize(Policy = Constants.PlatformRootPolicy)]
+    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllTenantsAsync(CancellationToken ct = default)
     {
         var tenants = await _tenantService.GetAllAsync(cancellationToken: ct);
@@ -40,7 +40,7 @@ public class TenantsController(
     }
     
     [HttpGet("{id}")]
-    [Authorize(Policy = Constants.PlatformRootPolicy)]
+    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetTenantByIdAsync(string id, CancellationToken ct = default)
     {
         using (_logger.BeginScope("Tenants retrieval operation for id: {tenantId}", id))
@@ -51,7 +51,7 @@ public class TenantsController(
     }
 
     [HttpPost]
-    [Authorize(Constants.PlatformRootPolicy)]
+    [Authorize(Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> CreateTenantAsync(
         [FromBody] TenantCreateDto dto,
         CancellationToken ct = default)
@@ -65,7 +65,7 @@ public class TenantsController(
     }
     
     [HttpPut("{tenantId}/deactivate")]
-    [Authorize(Constants.PlatformRootPolicy)]
+    [Authorize(Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> DeactivateTenantAsync(
         [FromRoute] string tenantId,
         CancellationToken ct = default)
@@ -74,7 +74,7 @@ public class TenantsController(
         return NoContent();
     }
     [HttpPut("{tenantId}/activate")]
-    [Authorize(Policy = Constants.PlatformRootPolicy)]
+    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> ActivateTenantAsync(
         [FromRoute] string tenantId,
         CancellationToken ct = default)
@@ -88,7 +88,7 @@ public class TenantsController(
     }
 
     [HttpPost("{tenantId}/customers/{customerId}/earn")]
-    [Authorize(Constants.TransactionAccessPolicy)]
+    [Authorize(Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> CustomerEarnPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -104,7 +104,7 @@ public class TenantsController(
     }
     
     [HttpPost("{tenantId}/customers/{customerId}/redeem")]
-    [Authorize(Constants.TransactionAccessPolicy)]
+    [Authorize(Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> CustomerRedeemPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -132,7 +132,7 @@ public class TenantsController(
     }
     
     [HttpPost("{tenantId}/customers/{customerId}/adjust")]
-    [Authorize(Constants.TransactionAccessPolicy)]
+    [Authorize(Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> CustomerAdjustmentPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -150,7 +150,7 @@ public class TenantsController(
     }
 
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
-    [Authorize(Constants.TransactionAccessPolicy)]
+    [Authorize(Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,

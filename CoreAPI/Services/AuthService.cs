@@ -143,13 +143,6 @@ public class AuthService(
             await _tenantRepository.CreateAsync(tenant, ct);
             await _unitOfWork.SaveChangesAsync(ct);
 
-            // Role Creation
-            const string roleName = "TenantOwner";
-            var role = new Role(Guid.NewGuid().ToString(), roleName, tenant.Id);
-            var roleCreated = await _roleManager.CreateAsync(role);
-            if (!roleCreated.Succeeded)
-                throw new Exception(roleCreated.Errors.First().Description);
-            
             // User Creation
             var user = new User(Guid.NewGuid().ToString(), dto.Owner.Email, dto.Owner.UserName, tenant.Id)
             {
@@ -158,6 +151,10 @@ public class AuthService(
             var result = await _userManager.CreateAsync(user);
             if (!result.Succeeded)
                 throw new Exception(result.Errors.First().Description);
+            
+            // Make sure role exist
+            const string roleName = "TenantOwner";
+            var role = await EnsuringRoleExistsAsync(roleName, tenant.Id);
             
             // Assign role to user
             await _userRepository.AddToRoleAsync(user.Id, role.Id);
@@ -174,6 +171,22 @@ public class AuthService(
             await _unitOfWork.RollbackAsync(ct);
             throw;
         }
+    }
+
+    private async Task<Role> EnsuringRoleExistsAsync(string roleName, string tenantId)
+    {
+        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        if (role != null)
+        {
+            return role;
+        }
+
+        var newRole = new Role(Guid.NewGuid().ToString(), roleName, tenantId);
+        var result = await _roleManager.CreateAsync(newRole);
+        return result.Succeeded
+            ? newRole
+            : throw new BadHttpRequestException(
+                string.Join(", ", result.Errors.Select(e => e.Description)));
     }
     
     public async Task CompleteInviteAsync(string userId, string token, string newPassword)
@@ -224,9 +237,9 @@ public class AuthService(
 
         foreach (var user in users)
         {
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await _userRepository.GetAllRolesAsync(user.Id, ct);
             var dto = _mapper.Map<UserProfileDto>(user);
-            result.Add(dto with { Roles = roles });
+            result.Add(dto with { Roles = roles.ToList() });
         }
         return result;
     }

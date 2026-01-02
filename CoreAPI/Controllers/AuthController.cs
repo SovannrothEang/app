@@ -46,7 +46,7 @@ public class AuthController(
             : Ok(result);
     }
     
-    [HttpPost("register/customer")]
+    [HttpPost("onboarding/customer")]
     [AllowAnonymous] // I think I'll need a route for this ???
     public async Task<ActionResult> CreateCustomerAsync(
         [FromBody] CustomerCreateDto dto,
@@ -59,6 +59,21 @@ public class AuthController(
             UserName = dto.UserName,
             Email = customer.Email
         });
+    }
+    
+    [HttpPost("complete-invite")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CompleteInvite([FromBody] SetupPasswordRequest req)
+    {
+        try 
+        {
+            await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
+            return Ok(new { Message = "Account activated." });
+        }
+        catch(Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
     }
 
     [HttpGet("me")]
@@ -87,20 +102,4 @@ public class AuthController(
             ? Ok(new { message = "Changed successfully." })
             : BadRequest(new { message = "Failed to change password. Please check your current password." });
     }
-    
-    [HttpPost("complete-invite")]
-    [AllowAnonymous]
-    public async Task<IActionResult> CompleteInvite([FromBody] SetupPasswordRequest req)
-    {
-        try 
-        {
-            await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
-            return Ok(new { Message = "Account activated." });
-        }
-        catch(Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
-    }
-    
 }

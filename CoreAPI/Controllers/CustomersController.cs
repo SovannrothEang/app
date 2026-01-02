@@ -19,7 +19,30 @@ public class CustomersController(
     private readonly IMapper _mapper = mapper;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly ICustomerService _customerService = customerService;
+
+    /// <summary>
+    /// Get all customers by a SuperAdmin, or root access (not tenant scope)
+    /// </summary>
+    /// <param name="childIncluded"></param>
+    /// <param name="ct"></param>
+    /// <returns>List of customer dto</returns>
+    [HttpGet("global")]
+    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
+    public async Task<ActionResult> GetAllCustomersAsync(
+        bool? childIncluded = false,
+        CancellationToken ct = default)
+    {
+        childIncluded ??= false;
+        var customers = await _customerService.GetAllAsync(childIncluded.Value, ct);
+        return Ok(customers);
+    }
     
+    /// <summary>
+    /// Get customers per tenants, (not all)
+    /// </summary>
+    /// <param name="childIncluded"></param>
+    /// <param name="ct"></param>
+    /// <returns>List of customer dto</returns>
     [HttpGet]
     [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetCustomersAsync(
@@ -27,14 +50,28 @@ public class CustomersController(
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var customers = await _customerService.GetAllAsync(childIncluded.Value, ct);
+        var customers = await _customerService.GetCustomersPerTenantAsync(childIncluded.Value, ct);
         return Ok(customers.Select(c => _mapper.Map<CustomerDto>(c)));
+    }
+    
+    [HttpGet("{id}/global")]
+    [ActionName(nameof(GetCustomerByIdAsync))]
+    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
+    public async Task<ActionResult> GetCustomerByIdAsync(
+        [FromRoute] string id,
+        [FromQuery] bool? childIncluded = false,
+        CancellationToken cancellationToken = default)
+    {
+        childIncluded ??= false;
+        var customer = await _customerService.GetByIdAsync(id, childIncluded.Value, cancellationToken);
+        if (customer == null) return NotFound();
+        return Ok(_mapper.Map<CustomerDto>(customer));
     }
 
     [HttpGet("{id}")]
     [ActionName(nameof(GetCustomerByIdAsync))]
     [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
-    public async Task<ActionResult> GetCustomerByIdAsync(
+    public async Task<ActionResult> GetCustomerByIdInTenantScopeAsync(
         [FromRoute] string id,
         [FromQuery] bool? childIncluded = false,
         CancellationToken cancellationToken = default)
@@ -46,7 +83,7 @@ public class CustomersController(
     }
     
     [HttpGet("transactions")]
-    [Authorize(Policy = Constants.PlatformRootPolicy)]
+    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllCustomersTransactionsAsync(CancellationToken ct = default)
     {
         // TODO: make sure that this route return all of the transactions
@@ -55,7 +92,7 @@ public class CustomersController(
     }
 
     [HttpGet("{customerId}/transactions")]
-    [Authorize(Policy = Constants.TransactionAccessPolicy)]
+    [Authorize(Policy = Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerTransactionsByIdAsync(string customerId, CancellationToken ct = default)
     {
         var transactions = await _transactionService.GetAllByCustomerAsync(customerId, ct);

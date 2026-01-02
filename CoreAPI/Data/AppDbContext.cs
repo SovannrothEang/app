@@ -35,7 +35,7 @@ public class AppDbContext(
         where TEntity : class, ITenantEntity
     {
         builder.Entity<TEntity>()
-            .HasQueryFilter(e => (e.TenantId == _currentUserProvider.TenantId || _currentUserProvider.TenantId == _hostTenantId));
+            .HasQueryFilter(e => (e.TenantId == _currentUserProvider.TenantId));
     }
     
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

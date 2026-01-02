@@ -23,11 +23,26 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
         await _dbContext.UserRoles.AddAsync(userRole);
     }
 
+    public async Task<IEnumerable<string>> GetAllRolesAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.UserRoles
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(r => r.UserId == userId)
+            .Where(r => r.Role != null && r.Role.Name != null)
+            .Select(r => r.Role!.Name!)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IEnumerable<User>> GetAllAsync(
         Expression<Func<User, bool>>? filtering = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.Users.AsQueryable();
+        var queryable = _dbContext.Users
+            .AsQueryable()
+            .IgnoreQueryFilters(); // TODO: make sure only a specific group of users will access this
             
         if (filtering != null)
             queryable = queryable.Where(filtering);

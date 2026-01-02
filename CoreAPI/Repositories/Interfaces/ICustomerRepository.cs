@@ -9,5 +9,18 @@ public interface ICustomerRepository : IRepository<Customer>
         bool childIncluded = false,
         Expression<Func<Customer, bool>>? filtering = null,
         CancellationToken cancellationToken = default);
-    Task<Customer?> GetByIdAsync(string id, bool childIncluded = false, CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<Customer>> GetAllCustomersPerTenantAsync(
+        bool childIncluded = false,
+        Expression<Func<Customer, bool>>? filtering = null,
+        CancellationToken cancellationToken = default);
+    Task<Customer?> GetByIdAsync(
+        string id,
+        bool childIncluded = false,
+        CancellationToken cancellationToken = default);
+
+    Task<Customer?> GetByIdInTenantScopeAsync(
+        string id,
+        bool childIncluded = false,
+        CancellationToken cancellationToken = default);
 }
