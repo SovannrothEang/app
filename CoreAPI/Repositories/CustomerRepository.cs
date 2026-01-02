@@ -35,19 +35,21 @@ public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(d
     }
     
     // TODO: Fix this logic and return the customer that has relationship with tenant
+    // Customer is belong to the Host tenant, but to get the scope tenant, we have to go through the accounts
     public async Task<IEnumerable<Customer>> GetAllCustomersPerTenantAsync(
         bool childIncluded = false,
         Expression<Func<Customer, bool>>? filtering = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.Accounts
+        var queryable = _dbContext.Customers
             .AsQueryable();
-        queryable = queryable.Select(a => a.C)
+        
+        queryable = queryable.Where(e => e.Accounts.Any());
         
         if (childIncluded)
             queryable = queryable
-                .Include(e => e.LoyaltyAccounts)
-                .ThenInclude(e => e.PointTransactions);
+                .Include(e => e.Accounts)
+                .ThenInclude(e => e.Transactions);
         
         if (filtering != null)
             queryable = queryable.Where(filtering);
@@ -69,7 +71,6 @@ public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(d
                 .ThenInclude(e => e.Transactions);
         
         return await queryable
-            .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
     
@@ -87,7 +88,6 @@ public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(d
                 .ThenInclude(e => e.Transactions);
         
         return await queryable
-            .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 }

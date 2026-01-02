@@ -102,25 +102,34 @@ public class TransactionService(
             await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
 
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        Transaction transactionDetail;
-        decimal balance;
-
-        var account =
-            customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
-        if (account is not null)
+        try
         {
-            (balance, transactionDetail) =
-                account.EarnPoint(dto.Amount, dto.Reason, null);
-        }
-        else
-        {
-            var newAccount = customer.CreateLoyaltyAccount(tenant.Id);
-            (balance, transactionDetail) =
-                newAccount.EarnPoint(dto.Amount, dto.Reason, null);
-        }
+            Transaction transactionDetail;
+            decimal balance;
 
-        await _unitOfWork.CommitAsync(cancellationToken);
-        return (balance, transactionDetail);
+            var account = // TODO: ReadOnly problem
+                customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
+            if (account is not null)
+            {
+                (balance, transactionDetail) =
+                    account.EarnPoint(dto.Amount, dto.Reason, null);
+            }
+            else
+            {
+                var newAccount = customer.CreateLoyaltyAccount(tenant.Id);
+                (balance, transactionDetail) =
+                    newAccount.EarnPoint(dto.Amount, dto.Reason, null);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
+            return (balance, transactionDetail);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task<(decimal balance, Transaction transactionDetail)>

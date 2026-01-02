@@ -51,6 +51,7 @@ public static class DependencyInjections
             builder.Services.AddTransient<IAuthorizationHandler, PlatformRootAccessHandler>();
             builder.Services.AddTransient<IAuthorizationHandler, TenantScopeAccessHandler>();
             builder.Services.AddTransient<IAuthorizationHandler, TenantCustomerAccessHandler>();
+            builder.Services.AddTransient<IAuthorizationHandler, CustomerAccessPolicyHandler>();
         }
 
         public IServiceCollection AddIdentity()

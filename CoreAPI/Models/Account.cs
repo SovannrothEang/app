@@ -13,6 +13,7 @@ public sealed class Account : BaseEntity, ITenantEntity
     private readonly List<Transaction> _pointTransactions = [];
     public IReadOnlyCollection<Transaction> Transactions => _pointTransactions.AsReadOnly();
     public User? PerformByUser { get; set; }
+    public Customer? Customer { get; set; }
 
     public Account() { }
 

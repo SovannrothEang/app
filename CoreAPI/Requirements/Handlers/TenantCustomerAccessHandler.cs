@@ -23,6 +23,14 @@ public class TenantCustomerAccessHandler(
         // Customer, access by checking their ID
         // I still think that there will be a leak, TODO: make sure everything is fine
         var customerRouteId = _httpContextAccessor.HttpContext?.GetRouteValue("customerId")?.ToString();
+        if (string.IsNullOrEmpty(customerRouteId) &&
+            _currentUserProvider.CustomerId != null &&
+            _currentUserProvider.IsInRole("Customer"))
+        {
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+        
         if (_currentUserProvider.IsInRole("Customer") && _currentUserProvider.CustomerId == customerRouteId)
         {
             context.Succeed(requirement);

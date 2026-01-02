@@ -53,7 +53,7 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
         
         builder.HasMany(e => e.Accounts)
-            .WithOne()
+            .WithOne(e => e.Customer)
             .HasForeignKey(e => e.CustomerId)
             .OnDelete(DeleteBehavior.Cascade);
 

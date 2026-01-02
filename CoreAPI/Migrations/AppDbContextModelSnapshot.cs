@@ -597,7 +597,7 @@ namespace Infrastructure.Migrations
 
                             b1.HasKey("TenantId");
 
-                            b1.ToTable("Tenants");
+                            b1.ToTable("Tenants", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TenantId");

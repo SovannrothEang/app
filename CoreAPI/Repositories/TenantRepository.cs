@@ -28,7 +28,6 @@ public class TenantRepository(AppDbContext dbContext) : Repository<Tenant>(dbCon
     public async Task<Tenant?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Tenants
-            .AsNoTracking()
             .AsQueryable();
         
         return await queryable

@@ -38,6 +38,14 @@ namespace CoreAPI.Requirements.Handlers;
         // }
 
         var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
+        if (string.IsNullOrEmpty(tenantRouteValue) &&
+            _currentUserProvider.TenantId != null &&
+            _currentUserProvider.IsInRole("TenantOwner"))
+        {
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+        
         // Tenant Owner
         // Security Fix: Ensure TenantOwner can only access their OWN tenant.
         if (_currentUserProvider.TenantId != null &&

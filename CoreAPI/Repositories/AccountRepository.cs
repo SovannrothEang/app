@@ -66,7 +66,6 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
             queryable = queryable.Include(e => e.Transactions);
         
         return await queryable
-            .AsNoTracking()
             .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CustomerId == customerId, cancellationToken);
     }
     
