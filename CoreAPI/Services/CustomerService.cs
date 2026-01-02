@@ -66,19 +66,19 @@ public class CustomerService(
         
         if (options!.TransactionType is not null)
         {
-            lastActivities = account.PointTransactions.Where(t 
+            lastActivities = account.Transactions.Where(t 
                 => string.Equals(t.Type.ToString(), options.TransactionType, StringComparison.InvariantCultureIgnoreCase)).ToList();
         }
 
         if (options.StartDate is not null)
-            lastActivities = [..account.PointTransactions.Where(p => p.OccurredAt >= options.StartDate.Value).ToList()];
+            lastActivities = [..account.Transactions.Where(p => p.OccurredAt >= options.StartDate.Value).ToList()];
        
         if (options.EndDate is not null)
             lastActivities = lastActivities.Where(act => act.OccurredAt <= options.EndDate.Value).ToList();
 
         // Defect as always showing even query param is not null
         if (lastActivities.Count <= 0)
-            lastActivities.Add(account.PointTransactions.Last());
+            lastActivities.Add(account.Transactions.Last());
         // Do a pagination
 
         return (account.Balance, lastActivities);

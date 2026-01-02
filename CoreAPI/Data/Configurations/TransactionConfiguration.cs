@@ -41,7 +41,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .IsRequired();
         
         builder.HasOne(pt => pt.LoyaltyAccount)
-            .WithMany(acc => acc.PointTransactions)
+            .WithMany(acc => acc.Transactions)
             .HasForeignKey(pt => new { pt.TenantId, pt.CustomerId })
             .IsRequired();
 

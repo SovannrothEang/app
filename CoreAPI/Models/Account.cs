@@ -11,7 +11,7 @@ public sealed class Account : BaseEntity, ITenantEntity
     public TierLevel Tier { get; private set; } = TierLevel.Bronze;
     
     private readonly List<Transaction> _pointTransactions = [];
-    public IReadOnlyCollection<Transaction> PointTransactions => _pointTransactions.AsReadOnly();
+    public IReadOnlyCollection<Transaction> Transactions => _pointTransactions.AsReadOnly();
     public User? PerformByUser { get; set; }
 
     public Account() { }

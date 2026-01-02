@@ -9,7 +9,7 @@ public sealed class Customer : BaseEntity
     public User? User { get; set; }
 
     private readonly List<Account> _accounts = [];
-    public IReadOnlyCollection<Account> LoyaltyAccounts => _accounts;
+    public IReadOnlyCollection<Account> Accounts => _accounts;
     
     public User? PerformByUser { get; set; }
     

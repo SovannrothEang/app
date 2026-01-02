@@ -15,7 +15,7 @@ public class CustomerProfile : Profile
                     src.User!.UserName,
                     src.User.Email,
                     src.User.PhoneNumber,
-                    src.LoyaltyAccounts.ToList(),
+                    src.Accounts.ToList(),
                     src.CreatedAt,
                     src.UpdatedAt));
         // CreateMap<CustomerCreateDto, Customer>()

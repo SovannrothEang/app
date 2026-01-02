@@ -106,7 +106,7 @@ public class TransactionService(
         decimal balance;
 
         var account =
-            customer.LoyaltyAccounts.FirstOrDefault(e => e.TenantId == tenant.Id);
+            customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
         if (account is not null)
         {
             (balance, transactionDetail) =
@@ -135,7 +135,7 @@ public class TransactionService(
         IsCustomerLinkedWithTenant(customer, tenant);
 
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        var account = customer.LoyaltyAccounts.First(e => e.TenantId == tenant.Id);
+        var account = customer.Accounts.First(e => e.TenantId == tenant.Id);
         if (dto.Amount > account.Balance)
             throw new InsufficientBalanceException(account.Balance, dto.Amount);
         var (balance, transactionDetail) = account.Redemption(dto.Amount, dto.Reason);
@@ -157,7 +157,7 @@ public class TransactionService(
         IsCustomerLinkedWithTenant(customer, tenant);
 
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        var account = customer.LoyaltyAccounts.First(e => e.TenantId == tenant.Id);
+        var account = customer.Accounts.First(e => e.TenantId == tenant.Id);
         var (balance, transactionDetail) =
             account.Adjustment(dto.Amount, dto.Reason, null);
 
@@ -167,7 +167,7 @@ public class TransactionService(
 
     private static void IsCustomerLinkedWithTenant(Customer customer, Tenant tenant)
     {
-        var exist = customer.LoyaltyAccounts.Any(acc => acc.TenantId == tenant.Id);
+        var exist = customer.Accounts.Any(acc => acc.TenantId == tenant.Id);
         if (!exist)
             throw new KeyNotFoundException(
                 $"Customer does not has account with tenant, tenant id: {tenant.Id}.");

@@ -28,8 +28,8 @@ public class AppDbContext(
     public DbSet<Tenant>  Tenants { get; set; }
     // public DbSet<TenantUser>  TenantUsers { get; set; }
     public DbSet<Customer> Customers { get; set; }
-    public DbSet<Account> LoyaltyAccounts { get; set; }
-    public DbSet<Transaction> PointTransactions { get; set; }
+    public DbSet<Account> Accounts { get; set; }
+    public DbSet<Transaction> Transactions { get; set; }
 
     private void ApplyTenantFilter<TEntity>(ModelBuilder builder)
         where TEntity : class, ITenantEntity

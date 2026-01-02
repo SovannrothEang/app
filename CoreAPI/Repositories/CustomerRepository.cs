@@ -23,8 +23,8 @@ public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(d
 
         if (childIncluded)
             queryable = queryable
-                .Include(e => e.LoyaltyAccounts)
-                .ThenInclude(e => e.PointTransactions);
+                .Include(e => e.Accounts)
+                .ThenInclude(e => e.Transactions);
         
         if (filtering != null)
             queryable = queryable.Where(filtering);
@@ -40,11 +40,10 @@ public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(d
         Expression<Func<Customer, bool>>? filtering = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.Customers
+        var queryable = _dbContext.Accounts
             .AsQueryable();
+        queryable = queryable.Select(a => a.C)
         
-        queryable = queryable.Include(e => e.User);
-
         if (childIncluded)
             queryable = queryable
                 .Include(e => e.LoyaltyAccounts)
@@ -66,8 +65,8 @@ public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(d
 
         if (childIncluded)
             queryable = queryable
-                .Include(e => e.LoyaltyAccounts)
-                .ThenInclude(e => e.PointTransactions);
+                .Include(e => e.Accounts)
+                .ThenInclude(e => e.Transactions);
         
         return await queryable
             .AsNoTracking()
@@ -84,8 +83,8 @@ public class CustomerRepository(AppDbContext dbContext) : Repository<Customer>(d
 
         if (childIncluded)
             queryable = queryable
-                .Include(e => e.LoyaltyAccounts)
-                .ThenInclude(e => e.PointTransactions);
+                .Include(e => e.Accounts)
+                .ThenInclude(e => e.Transactions);
         
         return await queryable
             .AsNoTracking()

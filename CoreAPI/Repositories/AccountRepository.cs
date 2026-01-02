@@ -41,10 +41,10 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
         bool childIncluded = false,
         CancellationToken cancellationToken = default) 
     {
-        var queryable = _dbContext.LoyaltyAccounts.AsQueryable();
+        var queryable = _dbContext.Accounts.AsQueryable();
 
         if (childIncluded)
-            queryable = queryable.Include(e => e.PointTransactions);
+            queryable = queryable.Include(e => e.Transactions);
         
         if (filtering != null)
             queryable = queryable.Where(filtering);
@@ -60,10 +60,10 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.LoyaltyAccounts.AsQueryable();
+        var queryable = _dbContext.Accounts.AsQueryable();
         
         if (childIncluded)
-            queryable = queryable.Include(e => e.PointTransactions);
+            queryable = queryable.Include(e => e.Transactions);
         
         return await queryable
             .AsNoTracking()
@@ -76,10 +76,10 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.LoyaltyAccounts.AsQueryable();
+        var queryable = _dbContext.Accounts.AsQueryable();
         
         if (childIncluded)
-            queryable = queryable.Include(e => e.PointTransactions);
+            queryable = queryable.Include(e => e.Transactions);
         
         if (filtering != null)
             queryable = queryable.Where(filtering);
@@ -96,10 +96,10 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.LoyaltyAccounts.AsQueryable();
+        var queryable = _dbContext.Accounts.AsQueryable();
         
         if (childIncluded)
-            queryable = queryable.Include(e => e.PointTransactions);
+            queryable = queryable.Include(e => e.Transactions);
         
         if (filtering != null)
             queryable = queryable.Where(filtering);

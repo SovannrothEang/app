@@ -18,7 +18,7 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
     /// <returns></returns>
     public async Task<IEnumerable<Transaction>> GetAllAsync(Expression<Func<Transaction, bool>>? filtering = null, CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.PointTransactions
+        var queryable = _dbContext.Transactions
             .AsQueryable()
             .IgnoreQueryFilters();
             
@@ -36,7 +36,7 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
         Expression<Func<Transaction, bool>>? filtering = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.PointTransactions.AsQueryable();
+        var queryable = _dbContext.Transactions.AsQueryable();
             
         if (filtering != null)
             queryable = queryable.Where(filtering);
@@ -49,7 +49,7 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
 
     public async Task<IEnumerable<Transaction>> GetAllByCustomerGlobalAsync(string customerId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.PointTransactions
+        return await _dbContext.Transactions
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(e => e.CustomerId == customerId)
@@ -58,14 +58,14 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
 
     public async Task<Transaction?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.PointTransactions
+        return await _dbContext.Transactions
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
     
     public async Task<IEnumerable<Transaction>> GetByCustomerIdAsync(string customerId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.PointTransactions
+        return await _dbContext.Transactions
             .AsNoTracking()
             .Where(e => e.CustomerId == customerId)
             .ToListAsync(cancellationToken);
@@ -73,7 +73,7 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
     
     public async Task<IEnumerable<Transaction>> GetByTenantIdAsync(string tenantId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.PointTransactions
+        return await _dbContext.Transactions
             .AsNoTracking()
             .Where(e => e.TenantId == tenantId)
             .ToListAsync(cancellationToken);

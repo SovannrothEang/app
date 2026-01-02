@@ -57,7 +57,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.HasIndex(e => new { e.TenantId, e.CustomerId })
             .IsUnique();
 
-        builder.HasMany(e => e.PointTransactions)
+        builder.HasMany(e => e.Transactions)
             .WithOne()
             .HasForeignKey(e => new { e.TenantId, e.CustomerId })
             .OnDelete(DeleteBehavior.Cascade);
