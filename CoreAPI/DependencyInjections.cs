@@ -74,7 +74,7 @@ public static class DependencyInjections
             var jwtIssuer = builder.Configuration["Jwt:Issuer"];
             var jwtAudience = builder.Configuration["Jwt:Audience"];
             var jwtKey = builder.Configuration["Jwt:Key"]
-                         ?? throw new Exception("Jwt key hasn't been configured yet!");
+                         ?? throw new InvalidOperationException("Jwt key hasn't been configured yet!");
             
             builder.Services.AddAuthentication(options =>
                 {

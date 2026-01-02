@@ -24,11 +24,13 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
             .WithMany(e => e.UserRoles)
             .HasForeignKey(e => new { e.UserId, e.TenantId })
             .HasPrincipalKey(e => new { e.Id, e.TenantId })
+            .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
         builder.HasOne(e => e.Role)
-            .WithMany()
+            .WithMany(r => r.UserRoles)
             .HasForeignKey(e => new  { e.RoleId, e.TenantId })
             .HasPrincipalKey(e => new { e.Id, e.TenantId })
+            .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
         
         builder.HasIndex(e => new { e.UserId, e.RoleId, e.TenantId })
