@@ -7,13 +7,12 @@ namespace CoreAPI.Controllers;
 [Route("api/admin/[controller]")]
 [ApiController]
 [Tags("Users")]
-[Authorize(Policy = Constants.RequireSuperAdminRole)]
+[Authorize(Policy = Constants.PlatformRootAccessPolicy)]
 public class UsersController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
 
     [HttpGet]
-    [Authorize(Policy = Constants.RequireSuperAdminRole)]
     public async Task<ActionResult> GetAllUsers(CancellationToken ct = default)
     {
         var users = await _userService.GetAllUserAsync(ct);
@@ -21,7 +20,6 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Policy = Constants.RequireSuperAdminRole)]
     public async Task<ActionResult> GetUserById(string id, CancellationToken ct = default)
     {
         var user = await _userService.GetUserById(id, ct);

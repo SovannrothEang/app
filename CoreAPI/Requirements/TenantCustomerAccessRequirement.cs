@@ -2,4 +2,4 @@
 
 namespace CoreAPI.Requirements;
 
-public class TransactionAccessRequirement : IAuthorizationRequirement { }
+public class TenantCustomerAccessRequirement : IAuthorizationRequirement { }

@@ -50,7 +50,7 @@ public static class DependencyInjections
             
             builder.Services.AddTransient<IAuthorizationHandler, PlatformRootAccessHandler>();
             builder.Services.AddTransient<IAuthorizationHandler, TenantScopeAccessHandler>();
-            builder.Services.AddTransient<IAuthorizationHandler, TransactionAccessHandler>();
+            builder.Services.AddTransient<IAuthorizationHandler, TenantCustomerAccessHandler>();
         }
 
         public IServiceCollection AddIdentity()
@@ -100,15 +100,16 @@ public static class DependencyInjections
         public void AddAuthorization()
         {
             builder.Services.AddAuthorizationBuilder()
-                .AddPolicy(Constants.RequireAuthenticatedUser, p => p.RequireAuthenticatedUser())
-                .AddPolicy(Constants.RequireSuperAdminRole, p => p.RequireRole("SuperAdmin"))
-                .AddPolicy(Constants.RequireTenantOwner, p => p.RequireRole("SuperAdmin", "TenantOwner"))
-                .AddPolicy(Constants.PlatformRootPolicy, p =>
+                .AddPolicy(Constants.RequireAuthenticatedUser, p =>
+                    p.RequireAuthenticatedUser())
+                .AddPolicy(Constants.PlatformRootAccessPolicy, p =>
                     p.Requirements.Add(new PlatformRootAccessRequirement()))
+                .AddPolicy(Constants.TenantCustomerAccessPolicy, p =>
+                    p.Requirements.Add(new TenantCustomerAccessRequirement()))
                 .AddPolicy(Constants.TenantScopeAccessPolicy, p =>
                     p.Requirements.Add(new TenantScopeAccessRequirement()))
-                .AddPolicy(Constants.TransactionAccessPolicy, p =>
-                    p.Requirements.Add(new TransactionAccessRequirement()));
+                .AddPolicy(Constants.CustomerAccessPolicy, p =>
+                    p.Requirements.Add(new CustomerAccessPolicyRequirement()));
         }
     }
 }

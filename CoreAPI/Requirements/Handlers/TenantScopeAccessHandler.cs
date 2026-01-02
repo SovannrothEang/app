@@ -22,15 +22,14 @@ namespace CoreAPI.Requirements.Handlers;
             return Task.CompletedTask;
 
         // SuperAdmin access
-        if (_currentUserProvider.TenantId == _hostTenantId &&
+        if (_currentUserProvider.TenantId != null &&
+            _currentUserProvider.TenantId == _hostTenantId &&
             context.User.IsInRole("SuperAdmin")) // _currentUserProvider.IsInRole("SuperAdmin") ??
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
 
-        var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
-        // Tenant Route Access
         // TODO: Config the role and permissions for the Tenant access.
         // if (_currentUserProvider.TenantId == tenantRouteValue)
         // {
@@ -38,6 +37,7 @@ namespace CoreAPI.Requirements.Handlers;
         //     return Task.CompletedTask;
         // }
 
+        var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
         // Tenant Owner
         // Security Fix: Ensure TenantOwner can only access their OWN tenant.
         if (_currentUserProvider.TenantId != null &&
