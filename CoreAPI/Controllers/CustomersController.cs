@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
-using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
-using CoreAPI.DTOs.Tenants;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -54,6 +52,13 @@ public class CustomersController(
         return Ok(customers.Select(c => _mapper.Map<CustomerDto>(c)));
     }
     
+    /// <summary>
+    /// Get customer by id (for global usage, can be SuperAdmin retrieving) TODO: Fix logic error for global retrieving
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="childIncluded"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Customer Dto</returns>
     [HttpGet("{id}/global")]
     [ActionName(nameof(GetCustomerByIdAsync))]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
@@ -68,9 +73,16 @@ public class CustomersController(
         return Ok(_mapper.Map<CustomerDto>(customer));
     }
 
+    /// <summary>
+    /// Get customer by id, either the customer themselve or tenant/superadmin
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="childIncluded"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Customer Dto</returns>
     [HttpGet("{id}")]
     [ActionName(nameof(GetCustomerByIdAsync))]
-    [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
+    [Authorize(Policy = Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerByIdInTenantScopeAsync(
         [FromRoute] string id,
         [FromQuery] bool? childIncluded = false,
@@ -82,6 +94,11 @@ public class CustomersController(
         return Ok(_mapper.Map<CustomerDto>(customer));
     }
     
+    /// <summary>
+    /// Get all transactions of all customers, TODO: should implement Pagination for better performance
+    /// </summary>
+    /// <param name="ct"></param>
+    /// <returns>List of transactions</returns>
     [HttpGet("transactions")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllCustomersTransactionsAsync(CancellationToken ct = default)
@@ -91,6 +108,12 @@ public class CustomersController(
         return Ok(transactions);
     }
 
+    /// <summary>
+    /// Get all transactions of a customer by id, TODO: should implement pagination
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="ct"></param>
+    /// <returns>List of transactions</returns>
     [HttpGet("{customerId}/transactions")]
     [Authorize(Policy = Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerTransactionsByIdAsync(string customerId, CancellationToken ct = default)

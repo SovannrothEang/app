@@ -13,7 +13,6 @@ namespace CoreAPI.Controllers;
 [Tags("Tenants")]
 [RequireHttps]
 public class TenantsController(
-    ICurrentUserProvider currentUserProvider,
     IAuthorizationService authorizationService,
     IUserService userService,
     ICustomerService customerService,
@@ -22,7 +21,6 @@ public class TenantsController(
     ILogger<TenantsController> logger,
     ITenantService tenantService) : ControllerBase
 {
-    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IAuthorizationService _authorizationService = authorizationService;
     private readonly IUserService _userService = userService;
     private readonly ICustomerService _customerService = customerService;
@@ -31,6 +29,11 @@ public class TenantsController(
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<TenantsController> _logger = logger;
 
+    /// <summary>
+    /// Get all available tenants, TODO: decide that this will be active tenants, or all tenants 
+    /// </summary>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpGet]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllTenantsAsync(CancellationToken ct = default)
@@ -39,6 +42,12 @@ public class TenantsController(
         return Ok(tenants);
     }
     
+    /// <summary>
+    /// Get tenant profile by id
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetTenantByIdAsync(string id, CancellationToken ct = default)
@@ -50,6 +59,12 @@ public class TenantsController(
         }
     }
 
+    /// <summary>
+    /// Onboarding a tenant
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpPost]
     [Authorize(Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> CreateTenantAsync(
@@ -64,6 +79,12 @@ public class TenantsController(
         });
     }
     
+    /// <summary>
+    /// Deactivate a tenant
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpPut("{tenantId}/deactivate")]
     [Authorize(Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> DeactivateTenantAsync(
@@ -73,6 +94,13 @@ public class TenantsController(
         await _tenantService.DeactivateAsync(tenantId, ct);
         return NoContent();
     }
+    
+    /// <summary>
+    /// Activate a tenant
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpPut("{tenantId}/activate")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> ActivateTenantAsync(
@@ -87,8 +115,16 @@ public class TenantsController(
         return NoContent();
     }
 
+    /// <summary>
+    /// Earn point route
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <param name="customerId"></param>
+    /// <param name="dto"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpPost("{tenantId}/customers/{customerId}/earn")]
-    [Authorize(Constants.TenantCustomerAccessPolicy)]
+    [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> CustomerEarnPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -103,8 +139,16 @@ public class TenantsController(
         });
     }
     
+    /// <summary>
+    /// Redeem point route
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <param name="customerId"></param>
+    /// <param name="dto"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpPost("{tenantId}/customers/{customerId}/redeem")]
-    [Authorize(Constants.TenantCustomerAccessPolicy)]
+    [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> CustomerRedeemPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
@@ -131,17 +175,24 @@ public class TenantsController(
         }
     }
     
+    /// <summary>
+    /// Adjust point route
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <param name="customerId"></param>
+    /// <param name="dto"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpPost("{tenantId}/customers/{customerId}/adjust")]
-    [Authorize(Constants.TenantCustomerAccessPolicy)]
+    [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> CustomerAdjustmentPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
         [FromBody] CustomerAdjustPointDto dto,
         CancellationToken ct = default)
     {
-        var current = _currentUserProvider.UserId;
         var (balance, transactionDetail) =
-            await _transactionService.AdjustPointAsync(customerId, tenantId, current, dto, ct);
+            await _transactionService.AdjustPointAsync(customerId, tenantId, dto, ct);
         return Ok(new
         {
             Balance = balance,
@@ -149,6 +200,14 @@ public class TenantsController(
         });
     }
 
+    /// <summary>
+    /// Checking the customer balance
+    /// </summary>
+    /// <param name="tenantId"></param>
+    /// <param name="customerId"></param>
+    /// <param name="options"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
     [Authorize(Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(

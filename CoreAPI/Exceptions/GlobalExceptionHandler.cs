@@ -13,9 +13,6 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (_logger.IsEnabled(LogLevel.Error))
-            _logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
-        
         var status = exception switch
         {
             ArgumentException or ValidationException or BadHttpRequestException => 400 /*Bad request*/,
@@ -23,12 +20,27 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             _ => 500 /*Internal Server Error*/
         };
 
+        if (_logger.IsEnabled(LogLevel.Error) || _logger.IsEnabled(LogLevel.Warning))
+        {
+            if (status == 500)
+            {
+                _logger.LogError(exception, "Unhandled exception: {Message}, path: {Path}",
+                    exception.Message, context.Request.Path);
+            }
+            else
+            {
+                
+                _logger.LogWarning(exception, "Application exception: {Message}, path: {Path}",
+                    exception.Message, context.Request.Path);
+            }
+        }
+
         var problem = new ProblemDetails
         {
             Status = status,
-            Title = status == 500 ? "Unexpected error" : exception?.Message,
+            Title = status == 500 ? "Server Error" : exception.Message,
             Type = status == 500 ? "https://example.com/problems/unexpected" : "about:blank",
-            Instance = context.Request.Path
+            Instance = context.Request.Path,
         };
 
         context.Response.StatusCode = status;

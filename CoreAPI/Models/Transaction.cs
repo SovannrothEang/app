@@ -25,7 +25,7 @@ public record Transaction : ITenantEntity
         CreatedAt = now;
     }
 
-public Transaction(
+private Transaction(
     string id,
     string tenantId,
     string customerId,
@@ -33,6 +33,7 @@ public Transaction(
     TransactionType type,
     string? reason,
     string? referenceId = null,
+    string? performBy = null,
     DateTimeOffset? occurredAt = null)
     {
         Id = id;
@@ -42,6 +43,7 @@ public Transaction(
         Type = type;
         Reason = reason;
         ReferenceId = referenceId;
+        PerformBy = performBy;
         var now = DateTimeOffset.UtcNow;
         // TODO: recheck this logic, for ensuring if the transaction is correct.
         OccurredAt = occurredAt ?? now;
@@ -55,6 +57,7 @@ public Transaction(
         TransactionType type,
         string? reason,
         string? referenceId = null,
+        string? performBy = null,
         DateTimeOffset? occurredAt = null)
-        => new Transaction(Guid.NewGuid().ToString(), tenantId, customerId, amount, type, reason, referenceId, occurredAt);
+        => new Transaction(Guid.NewGuid().ToString(), tenantId, customerId, amount, type, reason, referenceId, performBy, occurredAt);
 }

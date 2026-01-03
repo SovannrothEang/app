@@ -28,28 +28,29 @@ public sealed class Account : BaseEntity, ITenantEntity
         EarnPoint(
             decimal amount,
             string? reason,
-            string? referenceId)
+            string? referenceId,
+            string? performBy)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
-        var transaction = ApplyTransaction(amount, TransactionType.Earn, reason, referenceId);
+        var transaction = ApplyTransaction(amount, TransactionType.Earn, reason, referenceId, performBy);
         return (this.Balance, transaction);
     }
     
     public (decimal balance, Transaction transaction)
-        Redemption (decimal amount, string? reason)
+        Redemption (decimal amount, string? reason, string? performBy)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (amount > Balance)
             throw new ArgumentOutOfRangeException(nameof(amount), $"Amount cannot be greater than {nameof(Balance)}");
-        var transaction = ApplyTransaction(-amount, TransactionType.Redeem, reason, null);
+        var transaction = ApplyTransaction(-amount, TransactionType.Redeem, reason, null, performBy);
         return (this.Balance, transaction);
     }
 
-    public (decimal balance, Transaction transaction)
-        Adjustment (decimal amount, string? reason, string? referenceId)
+    public (decimal balance, Transaction transaction) Adjustment (decimal amount, string? reason, string? referenceId, string? performBy)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
-        var transaction = ApplyTransaction(amount, TransactionType.Adjustment, reason, referenceId);
+        // Adjustment can be negative number
+        // ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        var transaction = ApplyTransaction(amount, TransactionType.Adjustment, reason, referenceId, performBy);
         return (this.Balance, transaction);
     }
 
@@ -57,7 +58,8 @@ public sealed class Account : BaseEntity, ITenantEntity
         decimal amount,
         TransactionType type,
         string? reason,
-        string? referenceId)
+        string? referenceId,
+        string? performBy)
     {
         this.Balance += amount;
         Tier = this.Balance switch
@@ -73,7 +75,8 @@ public sealed class Account : BaseEntity, ITenantEntity
             amount,
             type,
             reason,
-            referenceId);
+            referenceId,
+            performBy);
         _transactions.Add(transaction);
 
         return transaction;

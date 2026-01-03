@@ -43,7 +43,6 @@ public interface ITransactionService
     Task<(decimal balance, Transaction transactionDetail)> AdjustPointAsync(
         string customerId,
         string tenantId,
-        string? performBy,
         CustomerAdjustPointDto dto,
         CancellationToken cancellationToken = default);
 }

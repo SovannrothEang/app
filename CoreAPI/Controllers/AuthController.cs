@@ -9,6 +9,7 @@ namespace CoreAPI.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Tags("Authentications")]
+[RequireHttps]
 public class AuthController(
     IUserService userService,
     ICustomerService customerService,
@@ -18,6 +19,11 @@ public class AuthController(
     private readonly ICustomerService _customerService = customerService;
     private readonly ICurrentUserProvider _currentUser = currentUser;
 
+    /// <summary>
+    /// Register an account for ... TODO: decide whether this will be a register for customer or admin
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<ActionResult> Register([FromBody] RegisterDto dto)
@@ -31,6 +37,11 @@ public class AuthController(
             : BadRequest("Email is already exist!");
     }
 
+    /// <summary>
+    /// Global login endpoint for all users, no matter what role
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult> Login(
@@ -46,6 +57,12 @@ public class AuthController(
             : Ok(result);
     }
     
+    /// <summary>
+    /// This will act as the register route for a customer
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     [HttpPost("onboarding/customer")]
     [AllowAnonymous] // I think I'll need a route for this ???
     public async Task<ActionResult> CreateCustomerAsync(
@@ -61,6 +78,11 @@ public class AuthController(
         });
     }
     
+    /// <summary>
+    /// Complete invitation for tenant (generated token)
+    /// </summary>
+    /// <param name="req"></param>
+    /// <returns></returns>
     [HttpPost("complete-invite")]
     [AllowAnonymous]
     public async Task<IActionResult> CompleteInvite([FromBody] SetupPasswordRequest req)
@@ -76,6 +98,10 @@ public class AuthController(
         }
     }
 
+    /// <summary>
+    /// Get a profile for authenticated user, TODO: plan for the profile, whether using static structure or using swtich to map: user, tenant, or superadmin
+    /// </summary>
+    /// <returns></returns>
     [HttpGet("me")]
     [Authorize(Policy = Constants.RequireAuthenticatedUser)]
     public ActionResult GetMe()
@@ -85,7 +111,12 @@ public class AuthController(
          
         return Ok(new { _currentUser.UserId, _currentUser.Email, _currentUser.TenantId, _currentUser.Roles });
     }
-
+    
+    /// <summary>
+    /// Change the current authenticated user's password
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     [HttpPost("change-password")]
     [Authorize(Policy = Constants.RequireAuthenticatedUser)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)

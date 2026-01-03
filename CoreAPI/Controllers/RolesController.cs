@@ -8,6 +8,7 @@ namespace CoreAPI.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Tags("Roles")]
+[RequireHttps]
 [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
 public class RolesController(IRoleService roleService) : ControllerBase
 {
@@ -28,22 +29,22 @@ public class RolesController(IRoleService roleService) : ControllerBase
     /// <summary>
     ///     Create role by role name via Admin access only
     /// </summary>
-    /// <param name="roleCreate"></param>
+    /// <param name="dto"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<ActionResult> CreateRole([FromBody] RoleCreateDto roleCreate)
+    public async Task<ActionResult> CreateRole([FromBody] RoleCreateDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _roleService.CreateRoleAsync(roleCreate);
+        var result = await _roleService.CreateRoleAsync(dto);
         return result.Succeeded
-            ? Ok(new { message = $"Role '{roleCreate.Name}' is created" })
+            ? Ok(new { message = $"Role '{dto.Name}' is created" })
             : BadRequest(result.Errors);
     }
 
     /// <summary>
-    ///     Assign role to user via Admin access only, by using username and rolename
+    ///     Assign role to user via Admin access or Tenant owner, by using username and role name
     /// </summary>
     /// <param name="dto"></param>
     /// <returns></returns>
@@ -59,18 +60,21 @@ public class RolesController(IRoleService roleService) : ControllerBase
     [HttpPost("unassign-user")]
     public ActionResult UnassignRole([FromBody] AssignRoleDto dto)
     {
+        // TODO: Add logic for unassign user from specific role
         return Ok();
     }
     
     [HttpPut("{roleId}")]
     public ActionResult UpdateRoleAsync(string roleId)
     {
+        // TODO: Update role's info
         return Ok();
     }
     
     [HttpDelete("{roleId}")]
     public ActionResult RemoveRoleAsync(string roleId)
     {
+        // TODO: delete role by id, soft delete
         return Ok();
     }
 }
