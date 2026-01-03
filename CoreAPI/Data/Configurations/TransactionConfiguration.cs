@@ -40,17 +40,11 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
         
-        builder.HasOne(pt => pt.LoyaltyAccount)
-            .WithMany(acc => acc.Transactions)
-            .HasForeignKey(pt => new { pt.TenantId, pt.CustomerId })
-            .IsRequired();
-
         builder.HasIndex(e => e.PerformBy);
         builder.HasIndex(pt => pt.Id)
             .IsUnique();
         builder.HasIndex(pt => pt.Type);
-        builder.HasIndex(pt => new { pt.TenantId, pt.CustomerId })
-            .IsUnique();
+        builder.HasIndex(pt => new { pt.TenantId, pt.CustomerId });
 
         builder.HasOne(e => e.PerformByUser)
             .WithMany()

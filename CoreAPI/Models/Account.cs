@@ -10,8 +10,9 @@ public sealed class Account : BaseEntity, ITenantEntity
     public decimal Balance { get; private set; }
     public TierLevel Tier { get; private set; } = TierLevel.Bronze;
     
-    private readonly List<Transaction> _pointTransactions = [];
-    public IReadOnlyCollection<Transaction> Transactions => _pointTransactions.AsReadOnly();
+    private readonly List<Transaction> _transactions = [];
+    public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
+
     public User? PerformByUser { get; set; }
     public Customer? Customer { get; set; }
 
@@ -73,7 +74,7 @@ public sealed class Account : BaseEntity, ITenantEntity
             type,
             reason,
             referenceId);
-        _pointTransactions.Add(transaction);
+        _transactions.Add(transaction);
 
         return transaction;
     }

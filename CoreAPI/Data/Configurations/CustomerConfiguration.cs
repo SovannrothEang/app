@@ -59,8 +59,7 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
         builder.HasOne(e => e.User)
             .WithOne()
-            .HasForeignKey<Customer>(e => e.UserId)
-            .IsRequired();
+            .HasForeignKey<Customer>(e => e.UserId);
 
         builder.HasOne(e => e.PerformByUser)
             .WithMany()

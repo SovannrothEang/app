@@ -18,8 +18,6 @@ public record Transaction : ITenantEntity
     public string? PerformBy { get; init; }
     public User? PerformByUser { get; set; }
 
-    public Account? LoyaltyAccount { get; init; }
-
     private Transaction()
     {
         var now = DateTimeOffset.UtcNow;

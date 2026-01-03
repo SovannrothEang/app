@@ -107,7 +107,7 @@ public class TransactionService(
             Transaction transactionDetail;
             decimal balance;
 
-            var account = // TODO: ReadOnly problem
+            var account = 
                 customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
             if (account is not null)
             {

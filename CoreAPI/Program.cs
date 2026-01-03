@@ -58,10 +58,10 @@ builder.Services.Configure<HstsOptions>(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    await IdentitySeeder.SeedAsync(scope.ServiceProvider);
-}
+// using (var scope = app.Services.CreateScope())
+// {
+//     await IdentitySeeder.SeedAsync(scope.ServiceProvider);
+// }
 
 if (app.Environment.IsDevelopment())
 {

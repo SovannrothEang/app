@@ -4,6 +4,7 @@ using CoreAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260103013201_FixTransactionWrongUniqueKey")]
+    partial class FixTransactionWrongUniqueKey
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -598,7 +601,7 @@ namespace Infrastructure.Migrations
 
                             b1.HasKey("TenantId");
 
-                            b1.ToTable("Tenants", (string)null);
+                            b1.ToTable("Tenants");
 
                             b1.WithOwner()
                                 .HasForeignKey("TenantId");
