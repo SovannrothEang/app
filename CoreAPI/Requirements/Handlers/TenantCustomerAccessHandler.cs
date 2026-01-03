@@ -25,13 +25,13 @@ public class TenantCustomerAccessHandler(
         var customerRouteId = _httpContextAccessor.HttpContext?.GetRouteValue("customerId")?.ToString();
         if (string.IsNullOrEmpty(customerRouteId) &&
             _currentUserProvider.CustomerId != null &&
-            _currentUserProvider.IsInRole("Customer"))
+            _currentUserProvider.IsInRole(RoleConstants.Customer))
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
         
-        if (_currentUserProvider.IsInRole("Customer") && _currentUserProvider.CustomerId == customerRouteId)
+        if (_currentUserProvider.IsInRole(RoleConstants.Customer) && _currentUserProvider.CustomerId == customerRouteId)
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
@@ -40,7 +40,14 @@ public class TenantCustomerAccessHandler(
         // Tenant, access by checking their ID
         // Already has RLS, by making sure their scope of use is being shown, no extra
         var tenantRouteValue = _httpContextAccessor.HttpContext?.GetRouteValue("tenantId")?.ToString();
-        if (_currentUserProvider.TenantId == tenantRouteValue) // TODO: Add role checking
+        if (string.IsNullOrEmpty(tenantRouteValue) &&
+            _currentUserProvider.CustomerId != null &&
+            _currentUserProvider.IsInRole(RoleConstants.Customer))
+        {
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+        if (_currentUserProvider.TenantId == tenantRouteValue && _currentUserProvider.IsInRole(RoleConstants.TenantOwner)) // TODO: Add role checking
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
@@ -48,7 +55,7 @@ public class TenantCustomerAccessHandler(
 
         // SuperAdmin
         // Bypass the authorize policy, still need to access through .IgnoreQueryFilters()
-        if (_currentUserProvider.TenantId == _tenantHost && _currentUserProvider.IsInRole("SuperAdmin"))
+        if (_currentUserProvider.TenantId == _tenantHost && _currentUserProvider.IsInRole(RoleConstants.SuperAdmin))
             context.Succeed(requirement);
         
         return Task.CompletedTask;

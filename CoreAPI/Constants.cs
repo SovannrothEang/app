@@ -10,3 +10,10 @@ public static class Constants
     public const string TenantScopeAccessPolicy = "TenantScopeAccessPolicy"; // SuperAdmin, Tenant
     public const string CustomerAccessPolicy = "CustomerAccessPolicy "; // SuperAdmin, Customer
 }
+
+public static class RoleConstants
+{
+    public const string TenantOwner = "TenantOwner";
+    public const string SuperAdmin = "SuperAdmin";
+    public const string Customer= "Customer";
+}

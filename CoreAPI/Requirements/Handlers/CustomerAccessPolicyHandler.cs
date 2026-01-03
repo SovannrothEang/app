@@ -22,14 +22,14 @@ public class CustomerAccessPolicyHandler(
         
         // Checking Customer
         var customerRouteValue = _httpContextAccessor.HttpContext?.GetRouteValue("customerId")?.ToString();
-        if (_currentUserProvider.IsInRole("Customer") && _currentUserProvider.CustomerId == customerRouteValue)
+        if (_currentUserProvider.IsInRole(RoleConstants.Customer) && _currentUserProvider.CustomerId == customerRouteValue)
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
 
         // SuperAdmin
-        if (_currentUserProvider.TenantId == _tenantHost && _currentUserProvider.IsInRole("SuperAdmin"))
+        if (_currentUserProvider.TenantId == _tenantHost && _currentUserProvider.IsInRole(RoleConstants.TenantOwner))
             context.Succeed(requirement);
         
         return Task.CompletedTask;

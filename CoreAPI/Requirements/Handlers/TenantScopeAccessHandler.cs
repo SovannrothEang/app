@@ -24,7 +24,7 @@ namespace CoreAPI.Requirements.Handlers;
         // SuperAdmin access
         if (_currentUserProvider.TenantId != null &&
             _currentUserProvider.TenantId == _hostTenantId &&
-            context.User.IsInRole("SuperAdmin")) // _currentUserProvider.IsInRole("SuperAdmin") ??
+            context.User.IsInRole(RoleConstants.SuperAdmin)) // _currentUserProvider.IsInRole("SuperAdmin") ??
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
@@ -40,7 +40,7 @@ namespace CoreAPI.Requirements.Handlers;
         var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
         if (string.IsNullOrEmpty(tenantRouteValue) &&
             _currentUserProvider.TenantId != null &&
-            _currentUserProvider.IsInRole("TenantOwner"))
+            _currentUserProvider.IsInRole(RoleConstants.TenantOwner))
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
@@ -49,7 +49,7 @@ namespace CoreAPI.Requirements.Handlers;
         // Tenant Owner
         // Security Fix: Ensure TenantOwner can only access their OWN tenant.
         if (_currentUserProvider.TenantId != null &&
-            _currentUserProvider.IsInRole("TenantOwner") &&
+            _currentUserProvider.IsInRole(RoleConstants.TenantOwner) &&
             _currentUserProvider.TenantId == tenantRouteValue)
         {
             context.Succeed(requirement);

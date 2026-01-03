@@ -153,8 +153,7 @@ public class AuthService(
                 throw new Exception(result.Errors.First().Description);
             
             // Make sure role exist
-            const string roleName = "TenantOwner";
-            var role = await EnsuringRoleExistsAsync(roleName, tenant.Id);
+            var role = await EnsuringRoleExistsAsync(RoleConstants.TenantOwner, tenant.Id);
             
             // Assign role to user
             await _userRepository.AddToRoleAsync(user.Id, role.Id);

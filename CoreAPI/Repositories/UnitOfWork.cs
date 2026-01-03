@@ -1,28 +1,24 @@
-﻿using AutoMapper;
-using CoreAPI.Data;
+﻿using CoreAPI.Data;
 using CoreAPI.Repositories.Interfaces;
-using CoreAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CoreAPI.Repositories;
 
 public sealed class UnitOfWork(
     AppDbContext context,
-    IMapper mapper,
-    ICurrentUserProvider currentUserProvider) : IUnitOfWork
+    IServiceProvider serviceProvider) : IUnitOfWork
 {
     private readonly AppDbContext _context = context;
-    private readonly IMapper _mapper = mapper;
-    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+
     // private readonly ConcurrentDictionary<Type, object> _repositories = [];
     private bool _disposed;
     private IDbContextTransaction? _transaction = null;
     
-    public IUserRepository UserRepository { get; private set; } = new UserRepository(context);
-    public ICustomerRepository CustomerRepository { get; private set; } = new CustomerRepository(context);
-    public ITenantRepository TenantRepository { get; private set; } = new TenantRepository(context);
-    public IAccountRepository AccountRepository { get; private set; } = new AccountRepository(context);
-    public ITransactionRepository TransactionRepository { get; private set; } = new TransactionRepository(context);
+    public IUserRepository UserRepository => serviceProvider.GetRequiredService<IUserRepository>();
+    public ICustomerRepository CustomerRepository => serviceProvider.GetRequiredService<ICustomerRepository>();
+    public ITenantRepository TenantRepository => serviceProvider.GetRequiredService<ITenantRepository>();
+    public IAccountRepository AccountRepository => serviceProvider.GetRequiredService<IAccountRepository>();
+    public ITransactionRepository TransactionRepository => serviceProvider.GetRequiredService<ITransactionRepository>();
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {

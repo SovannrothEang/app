@@ -14,7 +14,7 @@ public class PlatformRootAccessHandler(ICurrentUserProvider currentUserProvider,
         if (!_currentUserProvider.IsAuthenticated)
             return Task.CompletedTask;
         
-        if (_currentUserProvider.TenantId == _tenantHost && _currentUserProvider.IsInRole("SuperAdmin"))
+        if (_currentUserProvider.TenantId == _tenantHost && _currentUserProvider.IsInRole(RoleConstants.SuperAdmin))
             context.Succeed(requirement);
         
         return Task.CompletedTask;
