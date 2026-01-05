@@ -13,6 +13,7 @@ public class CustomerService(
     ICustomerRepository customerRepository,
     ITenantRepository tenantRepository,
     IAccountRepository accountRepository,
+    ICurrentUserProvider currentUserProvider,
     IUserService userService,
     IMapper mapper) : ICustomerService
 {
@@ -20,6 +21,7 @@ public class CustomerService(
     private readonly ICustomerRepository _customerRepository = customerRepository;
     private readonly ITenantRepository _tenantRepository = tenantRepository;
     private readonly IAccountRepository _accountRepository = accountRepository;
+    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IUserService _userService = userService;
     private readonly IMapper _mapper = mapper;
 
@@ -86,13 +88,23 @@ public class CustomerService(
 
     public async Task<CustomerDto> CreateAsync(CustomerCreateDto dto, CancellationToken cancellationToken = default)
     {
-        var registerDto = new RegisterDto(dto.UserName, dto.Email, dto.Password, dto.Password);
-        var user = await _userService.CreateUserAsync(registerDto, cancellationToken);
-        var customer = new Customer(Guid.NewGuid().ToString(), user.Id);
-        
-        await _customerRepository.CreateAsync(customer, cancellationToken);
-        await _customerRepository.SaveChangeAsync(cancellationToken);
-        return _mapper.Map<CustomerDto>(customer);
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var registerDto = new RegisterDto(dto.UserName, dto.Email, dto.FirstName, dto.LastName, dto.Password, dto.Password);
+            var user = await _userService.CreateUserAsync(registerDto, cancellationToken);
+            var customer = new Customer(Guid.NewGuid().ToString(), user.Id, _currentUserProvider.UserId);
+
+            await _customerRepository.CreateAsync(customer, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return _mapper.Map<CustomerDto>(customer);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task UpdateAsync(string id, CustomerUpdateDto dto, CancellationToken ct = default)

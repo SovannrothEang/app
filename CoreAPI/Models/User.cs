@@ -19,7 +19,7 @@ public sealed class User : IdentityUser<string>, ITenantEntity
     public DateTimeOffset? DeletedAt { get; private set; } = null;
     public string? PerformBy { get; set; }
     
-    public User? PerformByUser { get; set; }
+    public User? Performer { get; set; }
     public Tenant? Tenant { get; set; }
 
     public ICollection<UserRole>? UserRoles { get; set; } = [];

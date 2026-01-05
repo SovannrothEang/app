@@ -9,7 +9,7 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
     public void Configure(EntityTypeBuilder<UserRole> builder)
     {
         builder.ToTable("UserRoles");
-        builder.HasKey(e => new { e.UserId, e.RoleId, e.TenantId });
+        builder.HasKey(e => new { e.UserId, e.RoleId });
         builder.Property(e => e.UserId)
             .HasColumnType("VARCHAR(100)")
             .IsRequired();

@@ -7,7 +7,7 @@ namespace CoreAPI.Services.Interfaces;
 
 public interface IUserService
 {
-    Task<IdentityResult> RegisterAsync(RegisterDto dto);
+    Task<(string userId, string token)> OnboardingUserAsync(OnboardingUserDto dto, CancellationToken ct = default);
     Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default);
 
     Task<UserProfileDto> CreateUserAsync(RegisterDto dto, CancellationToken ct = default);

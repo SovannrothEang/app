@@ -33,9 +33,8 @@ public abstract class BaseEntity
         this.Modified();
     }
 
-    protected void AddPerformBy(string userId)
+    public void AddPerformBy(string? userId)
     {
         this.PerformBy =  userId;
-        
     }
 }

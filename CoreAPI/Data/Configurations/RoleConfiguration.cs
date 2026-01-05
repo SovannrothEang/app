@@ -49,7 +49,7 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
                 .WithMany(e => e.Roles)
                 .HasForeignKey(e => e.TenantId)
                 .OnDelete(DeleteBehavior.NoAction);
-            builder.HasOne(e => e.PerformByUser)
+            builder.HasOne(e => e.Performer)
                 .WithMany()
                 .HasForeignKey(e => e.PerformBy);
     }

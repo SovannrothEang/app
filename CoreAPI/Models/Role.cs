@@ -14,7 +14,7 @@ public sealed class Role : IdentityRole<string>, ITenantEntity
     public DateTimeOffset? DeletedAt { get; set; }
     public string? PerformBy { get; set; }
     
-    public User? PerformByUser { get; set; }
+    public User? Performer { get; set; }
     public ICollection<UserRole>? UserRoles { get; set; } = [];
     public Tenant? Tenant { get; set; }
 

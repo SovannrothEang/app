@@ -1,4 +1,5 @@
 ﻿using CoreAPI.DTOs.Customers;
+using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
 
 namespace CoreAPI.Services.Interfaces;
@@ -28,7 +29,7 @@ public interface ITransactionService
         string tenantId,
         CancellationToken cancellationToken = default);
     
-    Task<(decimal balance, Transaction transactionDetail)> EarnPointAsync(
+    Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)> EarnPointAsync(
         string customerId,
         string tenantId,
         CustomerEarnPointDto dto,

@@ -11,14 +11,15 @@ public sealed class Customer : BaseEntity
     private readonly List<Account> _accounts = [];
     public IReadOnlyCollection<Account> Accounts => _accounts;
     
-    public User? PerformByUser { get; set; }
+    public User? Performer { get; set; }
     
     private Customer() { }
 
-    public Customer(string id, string userId)
+    public Customer(string id, string userId, string? performBy)
     {
         Id = id;
         UserId = userId;
+        AddPerformBy(performBy);
     }
     
     public Account CreateLoyaltyAccount(string tenantId)

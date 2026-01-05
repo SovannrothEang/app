@@ -23,11 +23,12 @@ public sealed class Tenant : BaseEntity
         Id = Guid.NewGuid().ToString();
     }
     
-    public Tenant(string id, string name, AccountSetting? setting = null)
+    public Tenant(string id, string name, AccountSetting? setting = null, string? performBy = null)
     {
         Id = id;
         Name = name;
         Setting = setting;
+        AddPerformBy(performBy);
     }
 
     public override void Deactivate()

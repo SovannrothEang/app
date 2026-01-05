@@ -1,4 +1,6 @@
-﻿using CoreAPI.DTOs.Customers;
+﻿using AutoMapper;
+using CoreAPI.DTOs.Customers;
+using CoreAPI.DTOs.Tenants;
 using CoreAPI.Exceptions;
 using CoreAPI.Models;
 using CoreAPI.Models.Enums;
@@ -11,7 +13,8 @@ namespace CoreAPI.Services;
 public class TransactionService(
     IUnitOfWork unitOfWork,
     ICurrentUserProvider currentUserProvider,
-    ILogger<TransactionService> logger)
+    ILogger<TransactionService> logger,
+    IMapper mapper)
     : ITransactionService
 {
     private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
@@ -20,6 +23,7 @@ public class TransactionService(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly ILogger<TransactionService> _logger = logger;
+    private readonly IMapper _mapper = mapper;
 
     public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync(
         CancellationToken ct = default)
@@ -85,7 +89,7 @@ public class TransactionService(
         return (customer, tenant);
     }
 
-    public async Task<(decimal balance, Transaction transactionDetail)>
+    public async Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)>
         EarnPointAsync(
             string customerId,
             string tenantId,
@@ -103,12 +107,8 @@ public class TransactionService(
             await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
             try
             {
-                var (customer, tenant) =
-                    await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+                var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
                 
-                // Simulate concurrency conflict
-                Thread.Sleep(1000);
-
                 Transaction transactionDetail;
                 decimal balance;
 
@@ -135,7 +135,8 @@ public class TransactionService(
                     _logger.LogInformation(
                         "Transaction was created with id: {TransactionId}, with Reason {Reason}.",
                         transactionDetail.Id, dto.Reason);
-                return (balance, transactionDetail);
+                var tenantDto = _mapper.Map<TenantDto>(tenant);
+                return (balance, transactionDetail, tenantDto);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -277,7 +278,6 @@ public class TransactionService(
         {
             try
             {
-                
                 return await action();
             }
             catch (DbUpdateConcurrencyException ex)

@@ -46,7 +46,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasIndex(pt => pt.Type);
         builder.HasIndex(pt => new { pt.TenantId, pt.CustomerId });
 
-        builder.HasOne(e => e.PerformByUser)
+        builder.HasOne(e => e.Performer)
             .WithMany()
             .HasForeignKey(pt => pt.PerformBy);
     }

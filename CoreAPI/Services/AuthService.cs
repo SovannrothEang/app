@@ -36,11 +36,14 @@ public class AuthService(
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly ILogger<AuthService> _logger = logger;
 
-    public async Task<IdentityResult> RegisterAsync(RegisterDto dto)
+    public async Task<(string userId, string token)> OnboardingUserAsync(OnboardingUserDto dto, CancellationToken ct = default)
     {
+        var userId = _currentUserProvider.UserId!;
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Onboarding user by admin: {userId}", userId);
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            _logger.LogInformation("[AuthService] > Register a user");
             var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
             if (emailIsExist != null)
                 throw new BadHttpRequestException("Email is already exist!");
@@ -49,88 +52,85 @@ public class AuthService(
             if (userNameIsExist != null)
                 throw new BadHttpRequestException("UserName is already exist!");
 
-            var user = _mapper.Map<RegisterDto, User>(dto);
-            var result = await _userManager.CreateAsync(user, dto.Password);
+            var user = _mapper.Map<OnboardingUserDto, User>(dto);
+            user.TenantId = _tenantHost;
+            var result = await _userManager.CreateAsync(user);
             //if (!result.Succeeded) return false;
 
+            var roleCreated = dto.Role is null
+                ? await _userManager.AddToRoleAsync(user, RoleConstants.SuperAdmin)
+                : await _userManager.AddToRoleAsync(user, dto.Role);
+            if (!roleCreated.Succeeded)
+                throw new BadHttpRequestException(string.Join(", ",
+                    roleCreated.Errors.Select(error => error.Description)));
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
             //await SendEmailVerificationEmailAsync(user);
-            return result;
+            await _unitOfWork.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return (user.Id, token);
         }
-        catch(Exception ex)
+        catch 
         {
-            _logger.LogError(ex, ex.Message);
+            await transaction.RollbackAsync(ct);
             throw;
         }
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default)
     {
-        try
-        {
-            var user = await _userManager.Users
-                // Ignore filtering for search for a user
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.NormalizedUserName == dto.UserName.ToUpper(), ct);
-            if (user == null) return null;
+        var user = await _userManager.Users
+            // Ignore filtering for search for a user
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.NormalizedUserName == dto.UserName.ToUpper(), ct);
+        if (user == null) return null;
 
-            var signinResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: false);
-            if (!signinResult.Succeeded) return null;
+        var signinResult = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: false);
+        if (!signinResult.Succeeded) return null;
 
-            var (token, expiresAt) = await _tokenService.GenerateToken(user);
-            var roles = await _userManager.GetRolesAsync(user);
+        var (token, expiresAt) = await _tokenService.GenerateToken(user);
+        var roles = await _userManager.GetRolesAsync(user);
 
-            return new AuthResponseDto(
-                token,
-                expiresAt,
-                null!,
-                user.Id,
-                user.Email!,
-                roles
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            throw;
-        }
+        return new AuthResponseDto(
+            token,
+            expiresAt,
+            null!,
+            user.Id,
+            user.Email!,
+            roles
+        );
     }
 
     public async Task<UserProfileDto> CreateUserAsync(RegisterDto dto,
         CancellationToken ct = default)
     {
-        try
+        _currentUserProvider.SetTenantId(_tenantHost);
+        var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
+        if (emailIsExist != null)
+            throw new BadHttpRequestException("Email is already exist!");
+
+        var userNameIsExist = await _userManager.FindByNameAsync(dto.UserName);
+        if (userNameIsExist != null)
+            throw new BadHttpRequestException("UserName is already exist!");
+
+        var user = _mapper.Map<RegisterDto, User>(dto);
+        user.TenantId = _tenantHost; // Global customer
+        var result = await _userManager.CreateAsync(user, dto.Password);
+        if (!result.Succeeded)
+            throw new BadHttpRequestException(string.Join(",\n",
+                result.Errors.Select(e => e.Description)));
+
+        if (!await _roleManager.RoleExistsAsync(RoleConstants.Customer))
         {
-            _currentUserProvider.SetTenantId(_tenantHost);
-            var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
-            if (emailIsExist != null)
-                throw new BadHttpRequestException("Email is already exist!");
-
-            var userNameIsExist = await _userManager.FindByNameAsync(dto.UserName);
-            if (userNameIsExist != null)
-                throw new BadHttpRequestException("UserName is already exist!");
-
-            var user = _mapper.Map<RegisterDto, User>(dto);
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded)
-                throw new BadHttpRequestException(string.Join(",\n",
-                    result.Errors.Select(e => e.Description)));
-
-            if (!await _roleManager.RoleExistsAsync("Customer"))
-            {
-                var role = new Role(Guid.NewGuid().ToString(), "Customer", _tenantHost);
-                await _roleManager.CreateAsync(role);
-            }
-
-            await _userManager.AddToRoleAsync(user, "Customer");
-
-            //await SendEmailVerificationEmailAsync(user);
-            return _mapper.Map<UserProfileDto>(user);
+            var role = new Role(Guid.NewGuid().ToString(), RoleConstants.Customer, _tenantHost);
+            await _roleManager.CreateAsync(role);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            throw;
-        }
+
+        await _userManager.AddToRoleAsync(user, RoleConstants.Customer);
+
+        //await SendEmailVerificationEmailAsync(user);
+        return _mapper.Map<UserProfileDto>(user);
     }
     
     public async Task<(string userId, string token)> CreateTenantAndUserAsync(TenantCreateDto dto, CancellationToken ct = default)
@@ -140,6 +140,7 @@ public class AuthService(
         {
             // Tenant Creation
             var tenant = _mapper.Map<Tenant>(dto.Tenant);
+            tenant.AddPerformBy(_currentUserProvider.UserId);
             await _tenantRepository.CreateAsync(tenant, ct);
             await _unitOfWork.SaveChangesAsync(ct);
 

@@ -76,7 +76,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(e => e.TenantId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
-        builder.HasOne(e => e.PerformByUser)
+        builder.HasOne(e => e.Performer)
             .WithMany()
             .HasForeignKey(e => e.PerformBy);
     }

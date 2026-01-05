@@ -16,7 +16,7 @@ public record Transaction : ITenantEntity
     public DateTimeOffset CreatedAt { get; private set; }
     
     public string? PerformBy { get; init; }
-    public User? PerformByUser { get; set; }
+    public User? Performer { get; set; }
 
     private Transaction()
     {

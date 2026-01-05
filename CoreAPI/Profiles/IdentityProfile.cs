@@ -12,6 +12,7 @@ public class IdentityProfile : Profile
     {
         // User
         CreateMap<LoginDto, User>();
+        CreateMap<OnboardingUserDto, User>();
         CreateMap<RegisterDto, User>();
         CreateMap<TenantOwnerCreate, User>();
         CreateMap<User, UserProfileDto>()

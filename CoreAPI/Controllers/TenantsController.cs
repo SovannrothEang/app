@@ -131,11 +131,12 @@ public class TenantsController(
         [FromBody] CustomerEarnPointDto dto,
         CancellationToken ct = default)
     {
-        var (balance, transactionDetail) = await _transactionService.EarnPointAsync(customerId, tenantId, dto, ct);
+        var (balance, transactionDetail, tenantDto) = await _transactionService.EarnPointAsync(customerId, tenantId, dto, ct);
         return Ok(new
         {
             Balance = balance,
             TransactionDetail = transactionDetail,
+            Tenant = tenantDto
         });
     }
     

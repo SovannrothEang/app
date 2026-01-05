@@ -20,21 +20,20 @@ public class AuthController(
     private readonly ICurrentUserProvider _currentUser = currentUser;
 
     /// <summary>
-    /// Register an account for ... TODO: decide whether this will be a register for customer or admin
+    /// Register an account for admin by superadmin
     /// </summary>
     /// <param name="dto"></param>
     /// <returns></returns>
-    [HttpPost("register")]
-    [AllowAnonymous]
-    public async Task<ActionResult> Register([FromBody] RegisterDto dto)
+    [HttpPost("onboarding/admin")]
+    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
+    public async Task<ActionResult> Register([FromBody] OnboardingUserDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var result = await _userService.RegisterAsync(dto);
-        return result.Succeeded
-            ? Ok(new { message = "User registered successfully" })
-            : BadRequest("Email is already exist!");
+        var (userId, token) = await _userService.OnboardingUserAsync(dto);
+        return Ok( new
+        {
+            UserId = userId,
+            Token = token,
+        });
     }
 
     /// <summary>
@@ -47,9 +46,6 @@ public class AuthController(
     public async Task<ActionResult> Login(
         [FromBody] LoginDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var result = await _userService.LoginAsync(dto);
 
         return result is null 
@@ -63,8 +59,8 @@ public class AuthController(
     /// <param name="dto"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    [HttpPost("onboarding/customer")]
-    [AllowAnonymous] // I think I'll need a route for this ???
+    [HttpPost("register")]
+    [AllowAnonymous] 
     public async Task<ActionResult> CreateCustomerAsync(
         [FromBody] CustomerCreateDto dto,
         CancellationToken cancellationToken = default)
