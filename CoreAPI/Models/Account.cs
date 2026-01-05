@@ -1,5 +1,6 @@
 ﻿using CoreAPI.Models.Enums;
 using CoreAPI.Models.Shared;
+using System.ComponentModel.DataAnnotations;
 
 namespace CoreAPI.Models;
 
@@ -15,6 +16,9 @@ public sealed class Account : BaseEntity, ITenantEntity
 
     public User? PerformByUser { get; set; }
     public Customer? Customer { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = [];
 
     public Account() { }
 

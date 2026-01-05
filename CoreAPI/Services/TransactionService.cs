@@ -4,6 +4,7 @@ using CoreAPI.Models;
 using CoreAPI.Models.Enums;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Services;
 
@@ -13,14 +14,9 @@ public class TransactionService(
     ILogger<TransactionService> logger)
     : ITransactionService
 {
-    private readonly ITransactionRepository _transactionRepository =
-        unitOfWork.TransactionRepository;
-
+    private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
-
-    private readonly ICustomerRepository _customerRepository =
-        unitOfWork.CustomerRepository;
-
+    private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly ILogger<TransactionService> _logger = logger;
@@ -28,6 +24,8 @@ public class TransactionService(
     public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync(
         CancellationToken ct = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Get all transactions");
         return await _transactionRepository.GetAllAsync(cancellationToken: ct);
     }
 
@@ -99,46 +97,57 @@ public class TransactionService(
             _logger.LogInformation(
                 "Tenant with id: {TenantId} awards point to Customer with id: {CustomerId}, perform by user {PerformBy}.",
                 tenantId, customerId, performBy);
-        
-        var (customer, tenant) =
-            await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
 
-        await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        try
+        return await ExecuteWithRetryAsync(async () =>
         {
-            Transaction transactionDetail;
-            decimal balance;
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var (customer, tenant) =
+                    await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+                
+                // Simulate concurrency conflict
+                Thread.Sleep(1000);
 
-            var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
-            if (account is not null)
-            {
-                (balance, transactionDetail) = account.EarnPoint(dto.Amount, dto.Reason, null, performBy);
-            }
-            else
-            {
+                Transaction transactionDetail;
+                decimal balance;
+
+                var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
+                if (account is not null)
+                {
+                    (balance, transactionDetail) = account.EarnPoint(dto.Amount, dto.Reason, null, performBy);
+                }
+                else
+                {
+                    if (_logger.IsEnabled(LogLevel.Information))
+                        _logger.LogInformation(
+                            "Creating account for Tenant with id: {TenantId} for Customer with id: {CustomerId}!",
+                            tenantId, customerId);
+
+                    var newAccount = customer.CreateLoyaltyAccount(tenant.Id);
+                    (balance, transactionDetail) = newAccount.EarnPoint(dto.Amount, dto.Reason, null, performBy);
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation(
-                        "Creating account for Tenant with id: {TenantId} for Customer with id: {CustomerId}!",
-                        tenantId, customerId);
-                
-                var newAccount = customer.CreateLoyaltyAccount(tenant.Id);
-                (balance, transactionDetail) = newAccount.EarnPoint(dto.Amount, dto.Reason, null, performBy);
+                        "Transaction was created with id: {TransactionId}, with Reason {Reason}.",
+                        transactionDetail.Id, dto.Reason);
+                return (balance, transactionDetail);
             }
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            await _unitOfWork.CommitAsync(cancellationToken);
-
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation(
-                    "Transaction was created with id: {TransactionId}, with Reason {Reason}.",
-                    transactionDetail.Id, dto.Reason);
-            return (balance, transactionDetail);
-        }
-        catch (Exception)
-        {
-            await _unitOfWork.RollbackAsync(cancellationToken);
-            throw;
-        }
+            catch (DbUpdateConcurrencyException)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
     }
 
     public async Task<(decimal balance, Transaction transactionDetail)>
@@ -153,47 +162,57 @@ public class TransactionService(
             _logger.LogInformation(
                 "Redeeming point for tenant with id: {TenantId} and customer with id: {CustomerId} by user {PerformBy}",
                 tenantId, customerId, performBy);
-        
-        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
-        IsCustomerLinkedWithTenant(customer, tenant);
 
-        await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        try
+        return await ExecuteWithRetryAsync(async () =>
         {
-            var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
-            if (account is null)
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            try
             {
-                if (_logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning(
-                        "Invalid attempt! No account was found for Tenant {TenantId} and Customer {CustomerId}.",
-                        tenantId, customerId);
-                throw new BadHttpRequestException($"No account was found for Tenant {tenantId} and Customer {customerId}.");
-            }
-            
-            if (dto.Amount > account.Balance)
-            {
-                if (_logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning(
-                        "Invalid amount attempt. Amount {Amount} is too much for Balance {Balance}.",
-                        dto.Amount, account.Balance);
-                throw new InsufficientBalanceException(account.Balance, dto.Amount);
-            }
-            var (balance, transactionDetail) = account.Redemption(dto.Amount, dto.Reason, performBy);
+                var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+                IsCustomerLinkedWithTenant(customer, tenant);
 
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            await _unitOfWork.CommitAsync(cancellationToken);
-            
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation(
-                    "Transaction was created with id: {TransactionId}, with Reason {Reason}",
-                    transactionDetail.Id, dto.Reason);
-            return (balance, transactionDetail);
-        }
-        catch (Exception)
-        {
-            await _unitOfWork.RollbackAsync(cancellationToken);
-            throw;
-        }
+                var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
+                if (account is null)
+                {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning(
+                            "Invalid attempt! No account was found for Tenant {TenantId} and Customer {CustomerId}.",
+                            tenantId, customerId);
+                    throw new BadHttpRequestException(
+                        $"No account was found for Tenant {tenantId} and Customer {customerId}.");
+                }
+
+                if (dto.Amount > account.Balance)
+                {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning(
+                            "Invalid amount attempt. Amount {Amount} is too much for Balance {Balance}.",
+                            dto.Amount, account.Balance);
+                    throw new InsufficientBalanceException(account.Balance, dto.Amount);
+                }
+
+                var (balance, transactionDetail) = account.Redemption(dto.Amount, dto.Reason, performBy);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation(
+                        "Transaction was created with id: {TransactionId}, with Reason {Reason}",
+                        transactionDetail.Id, dto.Reason);
+                return (balance, transactionDetail);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
     }
 
     public async Task<(decimal balance, Transaction transactionDetail)>
@@ -208,39 +227,70 @@ public class TransactionService(
             _logger.LogInformation(
                 "Adjusting point for tenant with id: {TenantId} and customer with id: {CustomerId} by user {PerformBy}",
                 tenantId, customerId, performBy);
-        
-        var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
-        IsCustomerLinkedWithTenant(customer, tenant);
 
-        await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        try
+        return await ExecuteWithRetryAsync(async () =>
         {
-            var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
-            if (account is null)
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            try
             {
-                if (_logger.IsEnabled(LogLevel.Warning))
-                    _logger.LogWarning(
-                        "Invalid attempt! No account was found for Tenant {TenantId} and Customer {CustomerId}.",
-                        tenantId, customerId);
-                throw new BadHttpRequestException($"No account was found for Tenant {tenantId} and Customer {customerId}.");
-            }
-            
-            var (balance, transactionDetail) = account.Adjustment(dto.Amount, dto.Reason, null, performBy);
+                var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
+                IsCustomerLinkedWithTenant(customer, tenant);
 
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-            await _unitOfWork.CommitAsync(cancellationToken);
-            
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation(
-                    "Transaction was created with id: {TransactionId}, with Reason {Reason}",
-                    transactionDetail.Id, dto.Reason);
-            return (balance, transactionDetail);
-        }
-        catch (Exception)
+                var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
+                if (account is null)
+                {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning(
+                            "Invalid attempt! No account was found for Tenant {TenantId} and Customer {CustomerId}.",
+                            tenantId, customerId);
+                    throw new BadHttpRequestException(
+                        $"No account was found for Tenant {tenantId} and Customer {customerId}.");
+                }
+
+                var (balance, transactionDetail) = account.Adjustment(dto.Amount, dto.Reason, null, performBy);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation(
+                        "Transaction was created with id: {TransactionId}, with Reason {Reason}",
+                        transactionDetail.Id, dto.Reason);
+                return (balance, transactionDetail);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
+    }
+
+    private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> action, int maxRetries = 3)
+    {
+        for (var i = 0; i < maxRetries; i++)
         {
-            await _unitOfWork.RollbackAsync(cancellationToken);
-            throw;
+            try
+            {
+                
+                return await action();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                if (i == maxRetries - 1) throw;
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning(ex, "Concurrency conflict detected. Retrying... Attempt {Attempt}", i + 1);
+                
+                // Backoff
+                await Task.Delay(100);
+            }
         }
+        throw new InvalidOperationException("Should never be reached");
     }
 
     private static void IsCustomerLinkedWithTenant(Customer customer, Tenant tenant)

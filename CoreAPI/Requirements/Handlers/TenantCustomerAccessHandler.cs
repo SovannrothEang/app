@@ -1,5 +1,4 @@
-﻿using CoreAPI.Data;
-using CoreAPI.Services.Interfaces;
+﻿using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CoreAPI.Requirements.Handlers;

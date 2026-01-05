@@ -10,8 +10,6 @@ public interface IUnitOfWork : IDisposable
     IAccountRepository AccountRepository { get; }
     ITransactionRepository TransactionRepository { get; }
 
-    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
-    Task CommitAsync(CancellationToken cancellationToken = default);
-    Task RollbackAsync(CancellationToken cancellationToken = default);
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

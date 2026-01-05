@@ -135,7 +135,7 @@ public class AuthService(
     
     public async Task<(string userId, string token)> CreateTenantAndUserAsync(TenantCreateDto dto, CancellationToken ct = default)
     {
-        await _unitOfWork.BeginTransactionAsync(ct);
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             // Tenant Creation
@@ -159,7 +159,7 @@ public class AuthService(
             await _userRepository.AddToRoleAsync(user.Id, role.Id);
 
             await _unitOfWork.SaveChangesAsync(ct);
-            await _unitOfWork.CommitAsync(ct);
+            await transaction.CommitAsync(ct);
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             
             // TODO: use EmailService, and send the invited-link to the tenant's email instead
@@ -167,7 +167,7 @@ public class AuthService(
         }
         catch
         {
-            await _unitOfWork.RollbackAsync(ct);
+            await transaction.RollbackAsync(ct);
             throw;
         }
     }
