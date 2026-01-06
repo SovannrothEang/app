@@ -26,6 +26,7 @@ public class AuthController(
     /// <returns></returns>
     [HttpPost("onboarding/admin")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
+    [EndpointDescription("This endpoint will act the registration endpoint for admin, action is done by SuperAdmin only")]
     public async Task<ActionResult> Register([FromBody] OnboardingUserDto dto)
     {
         var (userId, token) = await _userService.OnboardingUserAsync(dto);
@@ -60,6 +61,7 @@ public class AuthController(
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpPost("register")]
+    [EndpointDescription("This endpoint act a public endpoint for customer to register")]
     [AllowAnonymous] 
     public async Task<ActionResult> CreateCustomerAsync(
         [FromBody] CustomerCreateDto dto,
@@ -69,8 +71,8 @@ public class AuthController(
         return Ok(new
         {
             Message = "Register successfully!",
-            UserName = dto.UserName,
-            Email = customer.Email
+            dto.UserName,
+            customer.Email
         });
     }
     
@@ -95,7 +97,7 @@ public class AuthController(
     }
 
     /// <summary>
-    /// Get a profile for authenticated user, TODO: plan for the profile, whether using static structure or using swtich to map: user, tenant, or superadmin
+    /// Get a profile for authenticated user, TODO: plan for the profile, whether using static structure or using switch to map: user, tenant, or superadmin
     /// </summary>
     /// <returns></returns>
     [HttpGet("me")]

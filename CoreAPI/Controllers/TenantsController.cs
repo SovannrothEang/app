@@ -192,8 +192,7 @@ public class TenantsController(
         [FromBody] CustomerAdjustPointDto dto,
         CancellationToken ct = default)
     {
-        var (balance, transactionDetail) =
-            await _transactionService.AdjustPointAsync(customerId, tenantId, dto, ct);
+        var (balance, transactionDetail) = await _transactionService.AdjustPointAsync(customerId, tenantId, dto, ct);
         return Ok(new
         {
             Balance = balance,

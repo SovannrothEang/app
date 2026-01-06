@@ -66,6 +66,8 @@ public sealed class Account : BaseEntity, ITenantEntity
         string? performBy)
     {
         this.Balance += amount;
+        if (this.Balance < 0)
+            throw new ArgumentOutOfRangeException(nameof(Balance), $"Balance cannot be negative");
         Tier = this.Balance switch
         {
             >= 1000 => TierLevel.Gold,
