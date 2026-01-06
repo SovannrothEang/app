@@ -2,7 +2,6 @@
 using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.Models;
-using CoreAPI.Repositories;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 
@@ -11,7 +10,6 @@ namespace CoreAPI.Services;
 public class CustomerService(
     IUnitOfWork unitOfWork,
     ICustomerRepository customerRepository,
-    ITenantRepository tenantRepository,
     IAccountRepository accountRepository,
     ICurrentUserProvider currentUserProvider,
     IUserService userService,
@@ -19,7 +17,6 @@ public class CustomerService(
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICustomerRepository _customerRepository = customerRepository;
-    private readonly ITenantRepository _tenantRepository = tenantRepository;
     private readonly IAccountRepository _accountRepository = accountRepository;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IUserService _userService = userService;
@@ -66,17 +63,21 @@ public class CustomerService(
 
         List<Transaction> lastActivities = [];
         
-        if (options!.TransactionType is not null)
-        {
-            lastActivities = account.Transactions.Where(t 
-                => string.Equals(t.Type.ToString(), options.TransactionType, StringComparison.InvariantCultureIgnoreCase)).ToList();
-        }
 
-        if (options.StartDate is not null)
-            lastActivities = [..account.Transactions.Where(p => p.OccurredAt >= options.StartDate.Value).ToList()];
-       
-        if (options.EndDate is not null)
-            lastActivities = lastActivities.Where(act => act.OccurredAt <= options.EndDate.Value).ToList();
+        if (options is not null)
+        {
+            // TODO: check the existence of the Transaction (maybe use name instead of ID)
+            // if (options!.TransactionType is not null)
+            // {
+            //     lastActivities = account.Transactions.Where(t 
+            //         => string.Equals(t.TransactionTypeId, options.TransactionType, StringComparison.InvariantCultureIgnoreCase)).ToList();
+            // }
+            if (options.StartDate is not null)
+                lastActivities = [..account.Transactions.Where(p => p.OccurredAt >= options.StartDate.Value).ToList()];
+
+            if (options.EndDate is not null)
+                lastActivities = lastActivities.Where(act => act.OccurredAt <= options.EndDate.Value).ToList();
+        }
 
         // Defect as always showing even query param is not null
         if (lastActivities.Count <= 0)

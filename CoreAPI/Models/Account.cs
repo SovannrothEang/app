@@ -9,7 +9,6 @@ public sealed class Account : BaseEntity, ITenantEntity
     public string TenantId { get; set; } = null!;
     public string CustomerId { get; private set; } = null!;
     public decimal Balance { get; private set; }
-    public TierLevel Tier { get; private set; } = TierLevel.Bronze;
     
     private readonly List<Transaction> _transactions = [];
     public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
@@ -28,39 +27,47 @@ public sealed class Account : BaseEntity, ITenantEntity
         CustomerId = customerId;
     }
    
-    public (decimal balanace, Transaction transaction)
-        EarnPoint(
+    public (decimal balanace, Transaction transaction) EarnPoint(
             decimal amount,
             string? reason,
+            string transactionTypeId,
             string? referenceId,
             string? performBy)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
-        var transaction = ApplyTransaction(amount, TransactionType.Earn, reason, referenceId, performBy);
+        var transaction = ApplyTransaction(amount, transactionTypeId, reason, referenceId, performBy);
         return (this.Balance, transaction);
     }
     
-    public (decimal balance, Transaction transaction)
-        Redemption (decimal amount, string? reason, string? performBy)
+    public (decimal balance, Transaction transaction) Redemption (
+        decimal amount,
+        string? reason,
+        string transactionTypeId,
+        string? performBy)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (amount > Balance)
             throw new ArgumentOutOfRangeException(nameof(amount), $"Amount cannot be greater than {nameof(Balance)}");
-        var transaction = ApplyTransaction(-amount, TransactionType.Redeem, reason, null, performBy);
+        var transaction = ApplyTransaction(-amount, transactionTypeId, reason, null, performBy);
         return (this.Balance, transaction);
     }
 
-    public (decimal balance, Transaction transaction) Adjustment (decimal amount, string? reason, string? referenceId, string? performBy)
+    public (decimal balance, Transaction transaction) Adjustment (
+        decimal amount,
+        string? reason,
+        string? referenceId,
+        string transactionTypeId,
+        string? performBy)
     {
         // Adjustment can be negative number
         // ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
-        var transaction = ApplyTransaction(amount, TransactionType.Adjustment, reason, referenceId, performBy);
+        var transaction = ApplyTransaction(amount, transactionTypeId, reason, referenceId, performBy);
         return (this.Balance, transaction);
     }
 
     private Transaction ApplyTransaction(
         decimal amount,
-        TransactionType type,
+        string type,
         string? reason,
         string? referenceId,
         string? performBy)
@@ -68,12 +75,6 @@ public sealed class Account : BaseEntity, ITenantEntity
         this.Balance += amount;
         if (this.Balance < 0)
             throw new ArgumentOutOfRangeException(nameof(Balance), $"Balance cannot be negative");
-        Tier = this.Balance switch
-        {
-            >= 1000 => TierLevel.Gold,
-            >= 500 => TierLevel.Silver,
-            _ => TierLevel.Bronze
-        };
 
         var transaction = Transaction.Create(
             TenantId,

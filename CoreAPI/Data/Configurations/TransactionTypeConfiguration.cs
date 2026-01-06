@@ -1,28 +1,23 @@
-﻿using CoreAPI.Models;
+using CoreAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CoreAPI.Data.Configurations;
 
-public class AccountConfiguration : IEntityTypeConfiguration<Account>
+public class TransactionTypeConfiguration : IEntityTypeConfiguration<TransactionType>
 {
-    public void Configure(EntityTypeBuilder<Account> builder)
+    public void Configure(EntityTypeBuilder<TransactionType> builder)
     {
-        builder.ToTable("Accounts");
-        builder.HasKey(e => new { e.TenantId, e.CustomerId });
-
-        builder.Property(e => e.CustomerId)
+        builder.Property(e => e.Id)
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
 
+        builder.Property(e => e.Name)
+            .HasColumnType("VARCHAR(15)")
+            .IsRequired();
+        
         builder.Property(e => e.TenantId)
             .HasColumnType("VARCHAR(100)")
-            .IsRequired();
-        
-        builder.HasKey("TenantId", "CustomerId");
-        
-        builder.Property(e => e.Balance)
-            .HasColumnType("DECIMAL(18,2)")
             .IsRequired();
         
         builder.Property(e => e.IsActive)
@@ -47,19 +42,26 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(e => e.PerformBy)
             .HasColumnType("VARCHAR(100)");
-
-        builder.HasIndex(e => e.TenantId);
+        
+        // Index
+        builder.HasIndex(e => e.Id)
+            .IsUnique()
+            .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
         builder.HasIndex(e => e.PerformBy);
-        builder.HasIndex(e => new { e.TenantId, e.CustomerId })
-            .IsUnique();
-
+        builder.HasIndex(e => e.Name)
+            .IsUnique()
+            .HasFilter($"[{nameof(TransactionType.IsDeleted)}] = 0");
+        builder.HasIndex(e => e.TenantId);
+        builder.HasIndex(e => new { e.IsActive, e.IsDeleted });
+        
+        // Relationships
         builder.HasMany(e => e.Transactions)
             .WithOne()
-            .HasForeignKey(e => new { e.TenantId, e.CustomerId })
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasOne(e => e.PerformByUser)
+            .HasForeignKey(e => e.TransactionTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.HasOne(e => e.Performer)
             .WithMany()
-            .HasForeignKey(e => e.PerformBy);
+            .HasForeignKey(pt => pt.PerformBy);
     }
 }

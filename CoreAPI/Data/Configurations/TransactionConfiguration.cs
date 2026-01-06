@@ -16,8 +16,8 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(pt => pt.Amount)
             .HasColumnType("DECIMAL(18,2)")
             .IsRequired();
-        builder.Property(pt => pt.Type)
-            .HasColumnType("TINYINT")
+        builder.Property(pt => pt.TransactionTypeId)
+            .HasColumnType("VARCHAR(100)")
             .IsRequired();
         builder.Property(pt => pt.Reason)
             .HasColumnType("NVARCHAR(100)");
@@ -40,10 +40,9 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
         
+        builder.HasIndex(pt => pt.Id).IsUnique();
         builder.HasIndex(e => e.PerformBy);
-        builder.HasIndex(pt => pt.Id)
-            .IsUnique();
-        builder.HasIndex(pt => pt.Type);
+        builder.HasIndex(pt => pt.TransactionTypeId);
         builder.HasIndex(pt => new { pt.TenantId, pt.CustomerId });
 
         builder.HasOne(e => e.Performer)

@@ -1,5 +1,4 @@
-﻿using CoreAPI.Models.Enums;
-using CoreAPI.Models.Shared;
+﻿using CoreAPI.Models.Shared;
 
 namespace CoreAPI.Models;
 
@@ -9,7 +8,7 @@ public record Transaction : ITenantEntity
     public string TenantId { get; set; } = null!;
     public string CustomerId { get; private set; } = null!;
     public decimal Amount { get; private set; }
-    public TransactionType Type { get; private set; } // TODO: Create a new model for TransactionType in tenant's scope
+    public string TransactionTypeId { get; set; } = null!;
     public string? Reason { get; private set; }
     public string? ReferenceId { get; private set; }
     public DateTimeOffset OccurredAt { get; private set; }
@@ -30,7 +29,7 @@ private Transaction(
     string tenantId,
     string customerId,
     decimal amount,
-    TransactionType type,
+    string type,
     string? reason,
     string? referenceId = null,
     string? performBy = null,
@@ -40,7 +39,7 @@ private Transaction(
         TenantId = tenantId;
         CustomerId = customerId;
         Amount = amount;
-        Type = type;
+        TransactionTypeId = type;
         Reason = reason;
         ReferenceId = referenceId;
         PerformBy = performBy;
@@ -54,7 +53,7 @@ private Transaction(
         string tenantId,
         string customerId,
         decimal amount,
-        TransactionType type,
+        string type,
         string? reason,
         string? referenceId = null,
         string? performBy = null,
