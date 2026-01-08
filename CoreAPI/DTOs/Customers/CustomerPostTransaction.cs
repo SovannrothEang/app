@@ -3,4 +3,5 @@
 public record CustomerPostTransaction(
     decimal Amount,
     string? Reason,
-    string? ReferenceId);
+    string? ReferenceId,
+    DateTimeOffset? OccurredAt);

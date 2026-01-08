@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
-using CoreAPI.Exceptions;
 using CoreAPI.Models;
 using CoreAPI.Models.Enums;
 using CoreAPI.Repositories.Interfaces;
@@ -153,13 +152,13 @@ public class TransactionService(
                 }
 
                 // Process the Transaction (Generic form, support all transaction type)
-                // TODO: make a test to make sure that this is working fine
                 var (balance, transactionDetail) = account.ProcessTransaction(
                     finalAmount,
                     type.Id,
                     dto.Reason,
                     dto.ReferenceId,
-                    performBy);
+                    performBy,
+                    dto.OccurredAt);
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

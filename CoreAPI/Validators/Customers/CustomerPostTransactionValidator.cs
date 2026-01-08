@@ -17,7 +17,11 @@ public class CustomerPostTransactionValidator : AbstractValidator<CustomerPostTr
             .Length(3, 50).WithMessage("Reason length must be between 3 and 50 characters.");
         RuleFor(x => x.ReferenceId)
             .MaximumLength(100).WithMessage("Reference id must not exceed 100 characters.")
-            .MustAsync(async (id, cancellation) => await repo.ExistsWithinTenantScopeAsync(id, cancellation))
+            .MustAsync(async (id, cancellation) =>
+            {
+                if (id is null) return true;
+                return await repo.ExistsWithinTenantScopeAsync(id, cancellation);
+            })
             .WithMessage("The specified reference does not exist.");
     }
 }

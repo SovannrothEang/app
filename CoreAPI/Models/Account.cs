@@ -33,7 +33,8 @@ public sealed class Account : BaseEntity, ITenantEntity
         string transactionTypeId,
         string? reason,
         string? referenceId,
-        string? performBy)
+        string? performBy,
+        DateTimeOffset? occurredAt)
     {
         // Safety Force: If negative (Redemption), ensure balance is sufficient
         if (signedAmount < 0 && (Balance + signedAmount) < 0)
@@ -41,7 +42,7 @@ public sealed class Account : BaseEntity, ITenantEntity
             throw new InsufficientBalanceException(Balance, Math.Abs(signedAmount));
         }
         
-        var transaction = ApplyTransaction(signedAmount, transactionTypeId, reason, referenceId, performBy);
+        var transaction = ApplyTransaction(signedAmount, transactionTypeId, reason, referenceId, performBy, occurredAt);
         return (this.Balance, transaction);
     }
 
@@ -50,7 +51,8 @@ public sealed class Account : BaseEntity, ITenantEntity
         string type,
         string? reason,
         string? referenceId,
-        string? performBy)
+        string? performBy,
+        DateTimeOffset? occurredAt)
     {
         this.Balance += amount;
         if (this.Balance < 0)
@@ -63,7 +65,8 @@ public sealed class Account : BaseEntity, ITenantEntity
             type,
             reason,
             referenceId,
-            performBy);
+            performBy,
+            occurredAt);
         _transactions.Add(transaction);
 
         return transaction;

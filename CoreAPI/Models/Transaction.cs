@@ -44,7 +44,6 @@ private Transaction(
         ReferenceId = referenceId;
         PerformBy = performBy;
         var now = DateTimeOffset.UtcNow;
-        // TODO: recheck this logic, for ensuring if the transaction is correct.
         OccurredAt = occurredAt ?? now;
         CreatedAt = now;
     }
