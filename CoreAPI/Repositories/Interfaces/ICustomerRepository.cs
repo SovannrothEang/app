@@ -23,4 +23,6 @@ public interface ICustomerRepository : IRepository<Customer>
         string id,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsWithinTenantScopeAsync(string id, CancellationToken cancellationToken = default);
 }

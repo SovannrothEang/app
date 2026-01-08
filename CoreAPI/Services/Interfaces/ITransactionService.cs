@@ -29,21 +29,10 @@ public interface ITransactionService
         string tenantId,
         CancellationToken cancellationToken = default);
     
-    Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)> EarnPointAsync(
+    Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)> PostTransactionAsync(
         string customerId,
         string tenantId,
-        CustomerEarnPointDto dto,
-        CancellationToken cancellationToken = default);
-    
-    Task<(decimal balance, Transaction transactionDetail)> RedeemPointAsync(
-        string customerId,
-        string tenantId,
-        CustomerRedeemPointDto dto,
-        CancellationToken cancellationToken = default);
-    
-    Task<(decimal balance, Transaction transactionDetail)> AdjustPointAsync(
-        string customerId,
-        string tenantId,
-        CustomerAdjustPointDto dto,
+        string slug,
+        CustomerPostTransaction dto,
         CancellationToken cancellationToken = default);
 }

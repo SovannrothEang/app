@@ -11,7 +11,9 @@ public interface ITransactionTypeService
 {
     Task<IEnumerable<TransactionTypeDto>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<TransactionTypeDto?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OperationDto>> GetAllOperationsAsync(CancellationToken cancellationToken = default);
     Task<TransactionTypeDto?> GetByNameAsync(string name,  CancellationToken cancellationToken = default);
+    Task<TransactionTypeDto?> GetBySlugAsync(string slug,  CancellationToken cancellationToken = default);
     Task<bool> IsExistAsync(string id, CancellationToken cancellationToken = default);
     Task<bool> IsTypeExistAsync(string name, CancellationToken cancellationToken = default);
     Task<TransactionTypeDto> CreateAsync(TransactionTypeCreateDto dto, CancellationToken cancellationToken = default);
@@ -28,6 +30,19 @@ public class TransactionTypeService(AppDbContext context, IMapper mapper) : ITra
             .AsNoTracking()
             .ProjectTo<TransactionTypeDto>(_mapper.ConfigurationProvider)
             .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<OperationDto>> GetAllOperationsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.TransactionTypes
+            .AsNoTracking()
+            .Where(e => e.IsActive == true)
+            .Select(e => new OperationDto(
+                e.Slug,
+                e.Name,
+                e.Description,
+                e.Url))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<TransactionTypeDto?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -48,6 +63,15 @@ public class TransactionTypeService(AppDbContext context, IMapper mapper) : ITra
             .SingleOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<TransactionTypeDto?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        return await _context.TransactionTypes
+            .AsNoTracking()
+            .Where(e => e.Slug == slug)
+            .ProjectTo<TransactionTypeDto>(_mapper.ConfigurationProvider)
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<bool> IsExistAsync(string id, CancellationToken cancellationToken = default)
     {
         return await _context.TransactionTypes
@@ -62,7 +86,8 @@ public class TransactionTypeService(AppDbContext context, IMapper mapper) : ITra
             .AnyAsync(e => e.Name == name, cancellationToken);
     }
 
-    public async Task<TransactionTypeDto> CreateAsync(TransactionTypeCreateDto dto,
+    public async Task<TransactionTypeDto> CreateAsync(
+        TransactionTypeCreateDto dto,
         CancellationToken cancellationToken = default)
     {
         var type = _mapper.Map<TransactionType>(dto);

@@ -22,7 +22,7 @@ public sealed class Customer : BaseEntity
         AddPerformBy(performBy);
     }
     
-    public Account CreateLoyaltyAccount(string tenantId)
+    public Account CreateAccount(string tenantId)
     {
         if (_accounts.Any(e => Equals(e.TenantId, tenantId)))
             throw new ArgumentException($"The tenant {tenantId} is already created.");

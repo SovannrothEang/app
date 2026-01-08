@@ -6,6 +6,7 @@ using CoreAPI.Models;
 using CoreAPI.Models.Enums;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
+using CoreAPI.Validators.Customers;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Services;
@@ -14,12 +15,14 @@ public class TransactionService(
     IUnitOfWork unitOfWork,
     ICurrentUserProvider currentUserProvider,
     ILogger<TransactionService> logger,
-    IMapper mapper)
+    IMapper mapper,
+    ITransactionTypeService transactionTypeService)
     : ITransactionService
 {
     private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
     private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
+    private readonly ITransactionTypeService _transactionTypeService = transactionTypeService;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly ILogger<TransactionService> _logger = logger;
@@ -90,43 +93,73 @@ public class TransactionService(
     }
 
     public async Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)>
-        EarnPointAsync(
+        PostTransactionAsync(
             string customerId,
             string tenantId,
-            CustomerEarnPointDto dto,
+            string slug,
+            CustomerPostTransaction dto,
             CancellationToken cancellationToken = default)
     {
+        var validator = new CustomerPostTransactionValidator(_customerRepository);
+        var result = await validator.ValidateAsync(dto,cancellationToken);
+        
+        if (!result.IsValid)
+            throw new BadHttpRequestException(string.Join(", ", result.Errors.Select(e => e.ErrorMessage)));
+        
         var performBy = _currentUserProvider.UserId;
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation(
-                "Tenant with id: {TenantId} awards point to Customer with id: {CustomerId}, perform by user {PerformBy}.",
-                tenantId, customerId, performBy);
+                "Tenant: {TenantId} perform {slug} operation to Customer: {CustomerId}, perform by user {PerformBy}.",
+                tenantId, slug, customerId, performBy);
 
         return await ExecuteWithRetryAsync(async () =>
         {
             await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
             try
             {
+                var type = await _transactionTypeService.GetBySlugAsync(slug, cancellationToken);
+                if (type == null)
+                    throw new BadHttpRequestException($"Invalid Transaction Type");
+
+                if (!type.AllowNegative && dto.Amount < 0)
+                    throw new BadHttpRequestException(
+                        $"Negative amounts are not allowed for transaction type '{type.Name}'.");
+                
+                var finalAmount = dto.Amount * type.Multiplier;
                 var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
                 
-                Transaction transactionDetail;
-                decimal balance;
-
                 var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
-                if (account is not null)
-                {
-                    (balance, transactionDetail) = account.EarnPoint(dto.Amount, dto.Reason, null, performBy);
-                }
-                else
-                {
-                    if (_logger.IsEnabled(LogLevel.Information))
-                        _logger.LogInformation(
-                            "Creating account for Tenant with id: {TenantId} for Customer with id: {CustomerId}!",
-                            tenantId, customerId);
 
-                    var newAccount = customer.CreateLoyaltyAccount(tenant.Id);
-                    (balance, transactionDetail) = newAccount.EarnPoint(dto.Amount, dto.Reason, null, performBy);
+                if (account is null)
+                {
+                    if (finalAmount > 0)
+                    {
+                        account = customer.CreateAccount(tenantId);
+                        if (_logger.IsEnabled(LogLevel.Information))
+                            _logger.LogInformation(
+                                "Account was create for customer {CustomerId} and tenant {TenantId}",
+                                customerId, tenantId);
+                        
+                        // Save the state if the context won't save it
+                        // await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    }
+                    else
+                    {
+                        // If customer doesn't account with tenant, and the first amount is not positive,
+                        // It won't trigger the account creation
+                        throw new BadHttpRequestException(
+                            $"No account was found for customer: {customerId}, and tenant: {tenantId}");
+                    }
                 }
+
+                // Process the Transaction (Generic form, support all transaction type)
+                // TODO: make a test to make sure that this is working fine
+                var (balance, transactionDetail) = account.ProcessTransaction(
+                    finalAmount,
+                    type.Id,
+                    dto.Reason,
+                    dto.ReferenceId,
+                    performBy);
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -137,127 +170,6 @@ public class TransactionService(
                         transactionDetail.Id, dto.Reason);
                 var tenantDto = _mapper.Map<TenantDto>(tenant);
                 return (balance, transactionDetail, tenantDto);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                throw;
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                throw;
-            }
-        });
-    }
-
-    public async Task<(decimal balance, Transaction transactionDetail)>
-        RedeemPointAsync(
-            string customerId,
-            string tenantId,
-            CustomerRedeemPointDto dto,
-            CancellationToken cancellationToken = default)
-    {
-        var performBy = _currentUserProvider.UserId;
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation(
-                "Redeeming point for tenant with id: {TenantId} and customer with id: {CustomerId} by user {PerformBy}",
-                tenantId, customerId, performBy);
-
-        return await ExecuteWithRetryAsync(async () =>
-        {
-            await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
-                IsCustomerLinkedWithTenant(customer, tenant);
-
-                var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
-                if (account is null)
-                {
-                    if (_logger.IsEnabled(LogLevel.Warning))
-                        _logger.LogWarning(
-                            "Invalid attempt! No account was found for Tenant {TenantId} and Customer {CustomerId}.",
-                            tenantId, customerId);
-                    throw new BadHttpRequestException(
-                        $"No account was found for Tenant {tenantId} and Customer {customerId}.");
-                }
-
-                if (dto.Amount > account.Balance)
-                {
-                    if (_logger.IsEnabled(LogLevel.Warning))
-                        _logger.LogWarning(
-                            "Invalid amount attempt. Amount {Amount} is too much for Balance {Balance}.",
-                            dto.Amount, account.Balance);
-                    throw new InsufficientBalanceException(account.Balance, dto.Amount);
-                }
-
-                var (balance, transactionDetail) = account.Redemption(dto.Amount, dto.Reason, performBy);
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation(
-                        "Transaction was created with id: {TransactionId}, with Reason {Reason}",
-                        transactionDetail.Id, dto.Reason);
-                return (balance, transactionDetail);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                throw;
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                throw;
-            }
-        });
-    }
-
-    public async Task<(decimal balance, Transaction transactionDetail)>
-        AdjustPointAsync(
-            string customerId,
-            string tenantId,
-            CustomerAdjustPointDto dto,
-            CancellationToken cancellationToken = default)
-    {
-        var performBy = _currentUserProvider.UserId;
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation(
-                "Adjusting point for tenant with id: {TenantId} and customer with id: {CustomerId} by user {PerformBy}",
-                tenantId, customerId, performBy);
-
-        return await ExecuteWithRetryAsync(async () =>
-        {
-            await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, cancellationToken);
-                IsCustomerLinkedWithTenant(customer, tenant);
-
-                var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id);
-                if (account is null)
-                {
-                    if (_logger.IsEnabled(LogLevel.Warning))
-                        _logger.LogWarning(
-                            "Invalid attempt! No account was found for Tenant {TenantId} and Customer {CustomerId}.",
-                            tenantId, customerId);
-                    throw new BadHttpRequestException(
-                        $"No account was found for Tenant {tenantId} and Customer {customerId}.");
-                }
-
-                var (balance, transactionDetail) = account.Adjustment(dto.Amount, dto.Reason, null, performBy);
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation(
-                        "Transaction was created with id: {TransactionId}, with Reason {Reason}",
-                        transactionDetail.Id, dto.Reason);
-                return (balance, transactionDetail);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -291,12 +203,5 @@ public class TransactionService(
             }
         }
         throw new InvalidOperationException("Should never be reached");
-    }
-
-    private static void IsCustomerLinkedWithTenant(Customer customer, Tenant tenant)
-    {
-        var exist = customer.Accounts.Any(acc => acc.TenantId == tenant.Id);
-        if (!exist)
-            throw new KeyNotFoundException( $"Customer does not have account with tenant, tenant id: {tenant.Id}.");
     }
 }

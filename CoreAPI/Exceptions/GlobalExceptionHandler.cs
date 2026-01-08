@@ -38,9 +38,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         var problem = new ProblemDetails
         {
             Status = status,
-            Title = status == 500 ? "Server Error" : exception.Message,
+            Title = status == 500 ? "Server Error" : "Unhandled exception",
             Type = status == 500 ? "https://example.com/problems/unexpected" : "about:blank",
             Instance = context.Request.Path,
+            Detail = status != 500 ? exception.Message : null,
         };
 
         context.Response.StatusCode = status;

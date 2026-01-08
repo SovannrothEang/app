@@ -43,6 +43,7 @@ public static class DependencyInjections
             builder.Services.AddScoped<ITenantService, TenantService>();
             builder.Services.AddScoped<IAccountService, AccountService>();
             builder.Services.AddScoped<ITransactionService, TransactionService>();
+            builder.Services.AddScoped<ITransactionTypeService, TransactionTypeService>();
         
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IRoleService, RoleService>();

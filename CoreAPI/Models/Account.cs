@@ -1,6 +1,7 @@
 ﻿using CoreAPI.Models.Enums;
 using CoreAPI.Models.Shared;
 using System.ComponentModel.DataAnnotations;
+using CoreAPI.Exceptions;
 
 namespace CoreAPI.Models;
 
@@ -27,41 +28,20 @@ public sealed class Account : BaseEntity, ITenantEntity
         CustomerId = customerId;
     }
    
-    public (decimal balanace, Transaction transaction) EarnPoint(
-            decimal amount,
-            string? reason,
-            string transactionTypeId,
-            string? referenceId,
-            string? performBy)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
-        var transaction = ApplyTransaction(amount, transactionTypeId, reason, referenceId, performBy);
-        return (this.Balance, transaction);
-    }
-    
-    public (decimal balance, Transaction transaction) Redemption (
-        decimal amount,
-        string? reason,
+    public (decimal balance, Transaction transaction) ProcessTransaction(
+        decimal signedAmount,
         string transactionTypeId,
-        string? performBy)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
-        if (amount > Balance)
-            throw new ArgumentOutOfRangeException(nameof(amount), $"Amount cannot be greater than {nameof(Balance)}");
-        var transaction = ApplyTransaction(-amount, transactionTypeId, reason, null, performBy);
-        return (this.Balance, transaction);
-    }
-
-    public (decimal balance, Transaction transaction) Adjustment (
-        decimal amount,
         string? reason,
         string? referenceId,
-        string transactionTypeId,
         string? performBy)
     {
-        // Adjustment can be negative number
-        // ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
-        var transaction = ApplyTransaction(amount, transactionTypeId, reason, referenceId, performBy);
+        // Safety Force: If negative (Redemption), ensure balance is sufficient
+        if (signedAmount < 0 && (Balance + signedAmount) < 0)
+        {
+            throw new InsufficientBalanceException(Balance, Math.Abs(signedAmount));
+        }
+        
+        var transaction = ApplyTransaction(signedAmount, transactionTypeId, reason, referenceId, performBy);
         return (this.Balance, transaction);
     }
 

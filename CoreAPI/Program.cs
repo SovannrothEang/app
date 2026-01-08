@@ -35,6 +35,7 @@ try
         cfg.AddProfile<IdentityProfile>();
         cfg.AddProfile<TenantProfile>();
         cfg.AddProfile<CustomerProfile>();
+        cfg.AddProfile<TransactionTypeProfile>();
 
         cfg.AllowNullCollections = true;
     }, typeof(Program).Assembly);
