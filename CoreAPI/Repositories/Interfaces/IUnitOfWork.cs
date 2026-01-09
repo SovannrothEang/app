@@ -11,5 +11,5 @@ public interface IUnitOfWork : IDisposable
     ITransactionRepository TransactionRepository { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+    Task<int> CompleteAsync(CancellationToken cancellationToken);
 }

@@ -160,7 +160,7 @@ public class TransactionService(
                     performBy,
                     dto.OccurredAt);
 
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _unitOfWork.CompleteAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 if (_logger.IsEnabled(LogLevel.Information))

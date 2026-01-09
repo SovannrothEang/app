@@ -67,11 +67,11 @@ public class AuthService(
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
             //await SendEmailVerificationEmailAsync(user);
-            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CompleteAsync(ct);
             await transaction.CommitAsync(ct);
             return (user.Id, token);
         }
-        catch 
+        catch
         {
             await transaction.RollbackAsync(ct);
             throw;
@@ -132,7 +132,7 @@ public class AuthService(
         //await SendEmailVerificationEmailAsync(user);
         return _mapper.Map<UserProfileDto>(user);
     }
-    
+
     public async Task<(string userId, string token)> CreateTenantAndUserAsync(TenantCreateDto dto, CancellationToken ct = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
@@ -142,7 +142,6 @@ public class AuthService(
             var tenant = _mapper.Map<Tenant>(dto.Tenant);
             tenant.AddPerformBy(_currentUserProvider.UserId);
             await _tenantRepository.CreateAsync(tenant, ct);
-            await _unitOfWork.SaveChangesAsync(ct);
 
             // User Creation
             var user = new User(Guid.NewGuid().ToString(), dto.Owner.Email, dto.Owner.UserName, tenant.Id)
@@ -152,17 +151,17 @@ public class AuthService(
             var result = await _userManager.CreateAsync(user);
             if (!result.Succeeded)
                 throw new Exception(result.Errors.First().Description);
-            
+
             // Make sure role exist
             var role = await EnsuringRoleExistsAsync(RoleConstants.TenantOwner, tenant.Id);
-            
+
             // Assign role to user
             await _userRepository.AddToRoleAsync(user.Id, role.Id);
 
-            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CompleteAsync(ct);
             await transaction.CommitAsync(ct);
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            
+
             // TODO: use EmailService, and send the invited-link to the tenant's email instead
             return (user.Id, token); // Development
         }
@@ -188,18 +187,17 @@ public class AuthService(
             : throw new BadHttpRequestException(
                 string.Join(", ", result.Errors.Select(e => e.Description)));
     }
-    
+
     public async Task CompleteInviteAsync(string userId, string token, string newPassword)
     {
         var user = await _userManager.Users
             .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null) throw new Exception("User not found");
-
+            .FirstOrDefaultAsync(u => u.Id == userId)
+                ?? throw new Exception("User not found");
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
-        
-        if (!result.Succeeded) 
-            throw new Exception("Invalid token or password complexity failed.");
+
+        if (!result.Succeeded)
+            throw new BadHttpRequestException("Invalid token or password complexity failed.");
     }
 
     #region Auth
@@ -227,7 +225,7 @@ public class AuthService(
     {
         throw new NotImplementedException();
     }
-    
+
     #endregion
 
     public async Task<IEnumerable<UserProfileDto>> GetAllUserAsync(CancellationToken ct = default)

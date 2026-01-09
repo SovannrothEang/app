@@ -26,7 +26,7 @@ public sealed class UnitOfWork(
         return await _context.Database.BeginTransactionAsync(cancellationToken);
     }
 
-    public async Task<int> SaveChangesAsync(CancellationToken ct = default)
+    public async Task<int> CompleteAsync(CancellationToken ct = default)
     {
         return await _context.SaveChangesAsync(ct);
     }

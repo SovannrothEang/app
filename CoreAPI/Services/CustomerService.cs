@@ -97,7 +97,7 @@ public class CustomerService(
             var customer = new Customer(Guid.NewGuid().ToString(), user.Id, _currentUserProvider.UserId);
 
             await _customerRepository.CreateAsync(customer, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.CompleteAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return _mapper.Map<CustomerDto>(customer);
         }
