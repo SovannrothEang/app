@@ -36,18 +36,20 @@ public class CustomerService(
         return customers.Select(e => _mapper.Map<Customer,CustomerDto>(e));
     }
 
-    public async Task<CustomerDto?> GetByIdAsync(string id, bool childIncluded = false, CancellationToken ct = default)
+    public async Task<CustomerDto> GetByIdAsync(string id, bool childIncluded = false, CancellationToken ct = default)
     {
-        var customer = await _customerRepository.GetByIdAsync(id, childIncluded, cancellationToken: ct);
+        var customer = await _customerRepository.GetByIdAsync(id, childIncluded, cancellationToken: ct)
+            ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
         return _mapper.Map<CustomerDto>(customer);
     }
 
-    public async Task<CustomerDto?> GetByIdInTenantScopeAsync(
+    public async Task<CustomerDto> GetByIdInTenantScopeAsync(
         string id,
         bool childIncluded = false,
         CancellationToken ct = default)
     {
-        var customer = await _customerRepository.GetByIdInTenantScopeAsync(id, childIncluded, cancellationToken: ct);
+        var customer = await _customerRepository.GetByIdInTenantScopeAsync(id, childIncluded, cancellationToken: ct)
+            ?? throw  new KeyNotFoundException($"Customer with id: {id} not found.");
         return _mapper.Map<CustomerDto>(customer);
     }
 

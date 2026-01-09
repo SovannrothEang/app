@@ -2,6 +2,7 @@
 using CoreAPI.Models.Shared;
 using System.ComponentModel.DataAnnotations;
 using CoreAPI.Exceptions;
+using Newtonsoft.Json;
 
 namespace CoreAPI.Models;
 
@@ -15,6 +16,7 @@ public sealed class Account : BaseEntity, ITenantEntity
     public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
 
     public User? PerformByUser { get; set; }
+    [JsonIgnore]
     public Customer? Customer { get; set; }
 
     [Timestamp]

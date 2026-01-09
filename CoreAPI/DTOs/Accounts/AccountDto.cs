@@ -6,6 +6,16 @@ namespace CoreAPI.DTOs.Accounts;
 public record AccountDto(
     string TenantId,
     string CustomerId,
-    int Balance,
-    TierLevel Tier,
-    IReadOnlyList<Transaction> PointTransactions);
+    decimal Balance,
+    IReadOnlyList<Transaction> Transactions,
+    string? PerformBy,
+    UserProfileDto? Performer)
+{
+    public AccountDto() : this(
+        string.Empty,
+        string.Empty,
+        0,
+        [],
+        null,
+        null) { }
+}

@@ -1,4 +1,5 @@
-﻿using CoreAPI.Models;
+﻿using CoreAPI.DTOs.Accounts;
+using CoreAPI.Models;
 
 namespace CoreAPI.DTOs.Customers;
 
@@ -7,6 +8,16 @@ public record CustomerDto(
     string? UserName,
     string? Email,
     string? PhoneNumber,
-    IList<Account> LoyaltyAccounts,
+    IList<AccountDto> Accounts,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt);
+    DateTimeOffset? UpdatedAt)
+{
+    public CustomerDto() : this(
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        [],
+        new DateTimeOffset(),
+        null) { }
+}

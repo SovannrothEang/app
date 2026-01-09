@@ -42,7 +42,7 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         var queryable = _dbContext.Users
             .AsQueryable()
-            .IgnoreQueryFilters(); // TODO: make sure only a specific group of users will access this
+            .IgnoreQueryFilters(); 
             
         if (filtering != null)
             queryable = queryable.Where(filtering);

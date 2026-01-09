@@ -34,7 +34,7 @@ public class TenantsController(
     private readonly ILogger<TenantsController> _logger = logger;
 
     /// <summary>
-    /// Get all available tenants, TODO: decide that this will be active tenants, or all tenants 
+    /// Get all available tenants
     /// </summary>
     /// <param name="ct"></param>
     /// <returns></returns>
@@ -119,27 +119,26 @@ public class TenantsController(
         return NoContent();
     }
     
-    [HttpPost("{tenantId}/customers")]
+    [HttpGet("{tenantId}/customers")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
-    public ActionResult GetAllCustomerInTenantScopeAsync(
+    public async Task<ActionResult> GetAllCustomerInTenantScopeAsync(
         [FromRoute] string tenantId,
-        [FromRoute] string customerId,
-        [FromBody] CustomerPostTransaction dto,
+        [FromQuery] bool? childIncluded = false, // won't include transactions
         CancellationToken ct = default)
     {
-        // TODO: Implement the get customer for tenant scope for this route
-        throw new NotImplementedException();
+        childIncluded ??= false;
+        var customers = await _customerService.GetCustomersPerTenantAsync(childIncluded.Value, ct);
+        return Ok(customers);
     }
     
-    [HttpPost("{tenantId}/customers/{customerId}")]
+    [HttpGet("{tenantId}/customers/{customerId}")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
-    public ActionResult GetCustomerByIdInTenantScopeAsync(
+    public async Task<ActionResult> GetCustomerByIdInTenantScopeAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
-        [FromBody] CustomerPostTransaction dto,
+        [FromQuery] bool? childIncluded = false, // won't include transactions
         CancellationToken ct = default)
     {
-        // TODO: Implement the get customer by id for this route, with the _link for explicit operations
         // Example:
         // {
         //   "id": "cust_001",
@@ -158,7 +157,19 @@ public class TenantsController(
         //     }
         //   ]
         // }
-        throw new NotImplementedException();
+        childIncluded ??= false;
+        var customer = await _customerService.GetByIdInTenantScopeAsync(customerId, childIncluded.Value, ct);
+        var operations = await _transactionTypeService.GetAllOperationsAsync(ct);
+        return Ok(new
+        {
+            customer,
+            _links = operations.Select(o => new
+            {
+                rel = o.Slug,
+                href = "/api/tenants/{tenantId}/customers/{customerId}" + o.Slug,
+                method = "POST"
+            })
+        });
     }
 
     /// <summary>
@@ -200,6 +211,8 @@ public class TenantsController(
         }
     }
     
+    // TODO: I think of moving this to /api/tenants/{tenantId}/operations
+    // No need customers to involved to actually know what we can do
     [HttpGet("{tenantId}/customers/{customerId}/operations")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetAllTransactionTypeAsync(
