@@ -65,16 +65,17 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
         CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Customers
+            .AsNoTracking()
             .AsQueryable()
             .IgnoreQueryFilters();
-
+        
+        queryable = queryable.Include(e => e.User);
         if (childIncluded)
             queryable = queryable
                 .Include(e => e.Accounts)
                 .ThenInclude(e => e.Transactions);
 
-        return await queryable
-            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        return await queryable.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
     public async Task<Customer?> GetByIdInTenantScopeAsync(
