@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
+using CoreAPI.DTOs.Transactions;
 using CoreAPI.Models;
 using CoreAPI.Models.Enums;
 using CoreAPI.Repositories.Interfaces;
@@ -27,12 +29,25 @@ public class TransactionService(
     private readonly ILogger<TransactionService> _logger = logger;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<IEnumerable<Transaction>> GetAllTransactionsAsync(
+    public async Task<PagedResult<TransactionDto>> GetAllTransactionsAsync(
+        PaginationOption option,
+        bool childIncluded = false,
         CancellationToken ct = default)
     {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all transactions");
-        return await _transactionRepository.GetAllAsync(cancellationToken: ct);
+        var (transactions, totalCount) = await _transactionRepository.GetAllAsync(
+            option,
+            childIncluded: childIncluded,
+            cancellationToken: ct);
+        var dtos = transactions.Select(t => _mapper.Map<TransactionDto>(t)).ToList();
+        return new PagedResult<TransactionDto>
+        {
+            Items = dtos,
+            PageNumber = option.Page,
+            PageSize = option.PageSize,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(
@@ -85,7 +100,7 @@ public class TransactionService(
 
         if (tenant.Status != TenantStatus.Active) throw new BadHttpRequestException("Tenant is not active!");
 
-        var customer = await _customerRepository.GetByIdAsync(customerId, childIncluded: true, cancellationToken)
+        var customer = await _customerRepository.GetByIdForCustomerAsync(customerId, childIncluded: true, cancellationToken)
                        ?? throw new KeyNotFoundException( $"No Customer was found with id: {customerId}.");
 
         return (customer, tenant);
@@ -118,7 +133,7 @@ public class TransactionService(
             {
                 var type = await _transactionTypeService.GetBySlugAsync(slug, cancellationToken);
                 if (type == null)
-                    throw new BadHttpRequestException($"Invalid Transaction Type");
+                    throw new BadHttpRequestException("Invalid Transaction Type, get available type with: /api/transactions/{transactionId}/operations");
 
                 if (!type.AllowNegative && dto.Amount < 0)
                     throw new BadHttpRequestException(

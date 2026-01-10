@@ -10,19 +10,20 @@ public interface ICustomerRepository : IRepository<Customer>
         Expression<Func<Customer, bool>>? filtering = null,
         CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<Customer>> GetAllCustomersPerTenantAsync(
+    Task<IEnumerable<Customer>> GetAllForTenantAsync(
         bool childIncluded = false,
         Expression<Func<Customer, bool>>? filtering = null,
         CancellationToken cancellationToken = default);
-    Task<Customer?> GetByIdAsync(
+    Task<Customer?> GetByIdForCustomerAsync(
         string id,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
 
-    Task<Customer?> GetByIdInTenantScopeAsync(
+    Task<Customer?> GetByIdForTenantAsync(
         string id,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
 
-    Task<bool> ExistsWithinTenantScopeAsync(string id, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default);
+    Task<bool> ExistsInTenantAsync(string id, CancellationToken cancellationToken = default);
 }

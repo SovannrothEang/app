@@ -76,7 +76,7 @@ public class TransactionTypeConfiguration : IEntityTypeConfiguration<Transaction
 
         // Relationships
         builder.HasMany(e => e.Transactions)
-            .WithOne() // One Type has many Transactions
+            .WithOne(e => e.TransactionType)
             .HasForeignKey(e => e.TransactionTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 

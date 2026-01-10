@@ -1,12 +1,14 @@
-﻿using CoreAPI.DTOs.Customers;
+﻿using CoreAPI.DTOs;
+using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
+using CoreAPI.DTOs.Transactions;
 using CoreAPI.Models;
 
 namespace CoreAPI.Services.Interfaces;
 
 public interface ITransactionService
 {
-    Task<IEnumerable<Transaction>> GetAllTransactionsAsync(CancellationToken ct = default);
+    Task<PagedResult<TransactionDto>> GetAllTransactionsAsync(PaginationOption option, bool childIncluded = false, CancellationToken ct = default);
     Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(
         string tenantId,
         string customerId,

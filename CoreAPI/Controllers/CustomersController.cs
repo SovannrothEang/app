@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +38,6 @@ public class CustomersController(
     
     /// <summary>
     /// Get customer by id (for global usage, can be SuperAdmin retrieving, or customer themselves)
-    /// TODO: Fix logic error for global retrieving
     /// </summary>
     /// <param name="id"></param>
     /// <param name="childIncluded"></param>
@@ -52,22 +52,26 @@ public class CustomersController(
         CancellationToken cancellationToken = default)
     {
         childIncluded ??= false;
-        var customer = await _customerService.GetByIdAsync(id, childIncluded.Value, cancellationToken);
+        var customer = await _customerService.GetByIdForCustomerAsync(id, childIncluded.Value, cancellationToken);
         return Ok(_mapper.Map<CustomerDto>(customer));
     }
 
     /// <summary>
     /// Get all transactions of all customers,
-    /// TODO: should implement Pagination for better performance, also consider moving this to TransactionController
     /// </summary>
+    /// <param name="childIncluded"></param>
+    /// <param name="option"></param>
     /// <param name="ct"></param>
     /// <returns>List of transactions</returns>
     [HttpGet("transactions")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
-    public async Task<ActionResult> GetAllCustomersTransactionsAsync(CancellationToken ct = default)
+    public async Task<ActionResult> GetAllCustomersTransactionsAsync(
+        [FromQuery] bool? childIncluded,
+        [FromQuery] PaginationOption option,
+        CancellationToken ct = default)
     {
-        // TODO: make sure that this route return all of the transactions
-        var transactions = await _transactionService.GetAllTransactionsAsync(ct);
+        childIncluded ??= false;
+        var transactions = await _transactionService.GetAllTransactionsAsync(option, childIncluded.Value, ct);
         return Ok(transactions);
     }
 

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Exceptions;
@@ -127,7 +128,7 @@ public class TenantsController(
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var customers = await _customerService.GetCustomersPerTenantAsync(childIncluded.Value, ct);
+        var customers = await _customerService.GetCustomersForTenantAsync(childIncluded.Value, ct);
         return Ok(customers);
     }
     
@@ -158,7 +159,7 @@ public class TenantsController(
         //   ]
         // }
         childIncluded ??= false;
-        var customer = await _customerService.GetByIdInTenantScopeAsync(customerId, childIncluded.Value, ct);
+        var customer = await _customerService.GetByIdForTenantAsync(customerId, childIncluded.Value, ct);
         var operations = await _transactionTypeService.GetAllOperationsAsync(ct);
         return Ok(new
         {
@@ -211,9 +212,8 @@ public class TenantsController(
         }
     }
     
-    // TODO: I think of moving this to /api/tenants/{tenantId}/operations
     // No need customers to involved to actually know what we can do
-    [HttpGet("{tenantId}/customers/{customerId}/operations")]
+    [HttpGet("{tenantId}/customers/operations")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetAllTransactionTypeAsync(
         [FromRoute] string tenantId,
@@ -236,13 +236,14 @@ public class TenantsController(
         var result = await _transactionTypeService.GetAllOperationsAsync(ct);
         return Ok(result);
     }
-    
+
     /// <summary>
     /// Checking the customer balance
     /// </summary>
     /// <param name="tenantId"></param>
     /// <param name="customerId"></param>
     /// <param name="options"></param>
+    /// <param name="pageOption"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
@@ -251,14 +252,14 @@ public class TenantsController(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
         [FromQuery] CustomerGetBalanceOptionsDto? options,
+        [FromQuery] PaginationOption pageOption,
         CancellationToken ct = default)
     {
-        var (balance, lastActivities) = await _customerService.GetCustomerBalanceByIdAsync(customerId, tenantId, options, ct);
+        var (balance, lastActivities) = await _customerService.GetCustomerBalanceByIdAsync(customerId, tenantId, options, pageOption, ct);
         return Ok(new
         {
             Balance = balance,
-            TotalTransactions = lastActivities.Count,
-            LastActivities =  lastActivities
+            Activities = lastActivities
         });
     }
 }

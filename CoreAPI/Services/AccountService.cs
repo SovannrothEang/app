@@ -48,7 +48,7 @@ public class AccountService(IAccountRepository accountRepository, IMapper mapper
         CancellationToken cancellationToken = default)
     {
         var account = await _accountRepository.GetByTenantAndCustomerAsync(
-            tenantId, customerId, childIncluded, cancellationToken);
+            tenantId, customerId, childIncluded,  cancellationToken);
         return _mapper.Map<AccountDto>(account);
     }
 }

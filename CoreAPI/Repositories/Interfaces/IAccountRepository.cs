@@ -1,4 +1,6 @@
 using System.Linq.Expressions;
+using CoreAPI.DTOs;
+using CoreAPI.DTOs.Customers;
 using CoreAPI.Models;
 
 namespace CoreAPI.Repositories.Interfaces;
@@ -13,6 +15,14 @@ public interface IAccountRepository
     Task<Account?> GetByTenantAndCustomerAsync(
         string tenantId,
         string customerId,
+        bool childIncluded = false,
+        CancellationToken cancellationToken = default);
+
+    Task<(Account? account, IEnumerable<Transaction> transactions, int totalTransaction)> GetByTenantAndCustomerPaginationAsync(
+        string tenantId,
+        string customerId,
+        CustomerGetBalanceOptionsDto? option,
+        PaginationOption pageOption,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);
 

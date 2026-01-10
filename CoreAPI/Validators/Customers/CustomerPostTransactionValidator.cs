@@ -20,7 +20,7 @@ public class CustomerPostTransactionValidator : AbstractValidator<CustomerPostTr
             .MustAsync(async (id, cancellation) =>
             {
                 if (id is null) return true;
-                return await repo.ExistsWithinTenantScopeAsync(id, cancellation);
+                return await repo.ExistsInTenantAsync(id, cancellation);
             })
             .WithMessage("The specified reference does not exist.");
     }

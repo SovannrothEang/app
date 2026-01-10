@@ -58,7 +58,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasForeignKey(e => new { e.TenantId, e.CustomerId })
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(e => e.PerformByUser)
+        builder.HasOne(e => e.Performer)
             .WithMany()
             .HasForeignKey(e => e.PerformBy);
     }

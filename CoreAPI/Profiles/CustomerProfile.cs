@@ -35,6 +35,7 @@ public class CustomerProfile : Profile
         //             src.Email,
         //             src.PhoneNumber));
         CreateMap<CustomerUpdateDto, Customer>()
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember, destMember) => srcMember != null));
+            .ForAllMembers(opts
+                => opts.Condition((src, dest, srcMember, destMember) => srcMember != null));
     }
 }

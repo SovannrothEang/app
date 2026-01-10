@@ -1,11 +1,14 @@
 ﻿using System.Linq.Expressions;
+using CoreAPI.DTOs;
 using CoreAPI.Models;
 
 namespace CoreAPI.Repositories.Interfaces;
 
 public interface ITransactionRepository
 {
-    Task<IEnumerable<Transaction>> GetAllAsync(
+    Task<(IEnumerable<Transaction> result, int totalCount)> GetAllAsync(
+        PaginationOption option,
+        bool childIncluded = false,
         Expression<Func<Transaction, bool>>? filtering = null,
         CancellationToken cancellationToken = default);
     Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(

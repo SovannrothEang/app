@@ -3,4 +3,4 @@
 public record CustomerUpdateDto(
     string? Name,
     string? Email,
-    string? PhoneNumer);
+    string? PhoneNumber);

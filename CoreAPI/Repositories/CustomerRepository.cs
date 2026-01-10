@@ -36,8 +36,8 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
             .ToListAsync(cancellationToken);
     }
 
-    // Customer is belong to the Host tenant, but to get the scope tenant, we have to go through the accounts
-    public async Task<IEnumerable<Customer>> GetAllCustomersPerTenantAsync(
+    // Customer is belonged to the Host tenant, but to get the scope tenant, we have to go through the accounts
+    public async Task<IEnumerable<Customer>> GetAllForTenantAsync(
         bool childIncluded = false,
         Expression<Func<Customer, bool>>? filtering = null,
         CancellationToken cancellationToken = default)
@@ -61,7 +61,7 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
         return await queryable.ToListAsync(cancellationToken);
     }
 
-    public async Task<Customer?> GetByIdAsync(string id, bool childIncluded = false,
+    public async Task<Customer?> GetByIdForCustomerAsync(string id, bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Customers
@@ -78,7 +78,7 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
         return await queryable.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
-    public async Task<Customer?> GetByIdInTenantScopeAsync(
+    public async Task<Customer?> GetByIdForTenantAsync(
         string id,
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
@@ -101,11 +101,18 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
         return await queryable.FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<bool> ExistsWithinTenantScopeAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Customers
-            .AsQueryable()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
             .AnyAsync(e => e.Id == id, cancellationToken);
     }
 
+    public async Task<bool> ExistsInTenantAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Accounts
+            .AsQueryable()
+            .AnyAsync(e => e.CustomerId == id, cancellationToken);
+    }
 }

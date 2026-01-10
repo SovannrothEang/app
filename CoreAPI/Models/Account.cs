@@ -15,7 +15,7 @@ public sealed class Account : BaseEntity, ITenantEntity
     private readonly List<Transaction> _transactions = [];
     public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
 
-    public User? PerformByUser { get; set; }
+    public User? Performer { get; set; }
     [JsonIgnore]
     public Customer? Customer { get; set; }
 

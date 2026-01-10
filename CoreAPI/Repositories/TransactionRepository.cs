@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using CoreAPI.Data;
+using CoreAPI.DTOs;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -13,21 +14,39 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
     /// <summary>
     /// This is for the SuperAdminGetting the Overall transactions
     /// </summary>
+    /// <param name="option"></param>
+    /// <param name="childIncluded"></param>
     /// <param name="filtering"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<IEnumerable<Transaction>> GetAllAsync(Expression<Func<Transaction, bool>>? filtering = null, CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<Transaction> result, int totalCount)> GetAllAsync(
+        PaginationOption option,
+        bool childIncluded = false,
+        Expression<Func<Transaction, bool>>? filtering = null,
+        CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Transactions
+            .AsNoTracking()
             .AsQueryable()
             .IgnoreQueryFilters();
+
+        if (childIncluded)
+        {
+            queryable = queryable.Include(e => e.TransactionType);
+            queryable = queryable.Include(e => e.Customer);
+            queryable = queryable.Include(e => e.Performer);
+        }
             
         if (filtering != null)
             queryable = queryable.Where(filtering);
                 
-        return await queryable
-            .AsNoTracking()
+        var totalCount = await queryable.CountAsync(cancellationToken);
+        var trans = await queryable
+            .OrderByDescending(e => e.CreatedAt)
+            .Skip((option.Page - 1) * option.PageSize)
+            .Take(option.PageSize)
             .ToListAsync(cancellationToken);
+        return (trans, totalCount);
     }
 
     public async Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(
