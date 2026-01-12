@@ -1,5 +1,4 @@
-﻿using CoreAPI.Models.Enums;
-using CoreAPI.Models.Shared;
+﻿using CoreAPI.Models.Shared;
 using System.ComponentModel.DataAnnotations;
 using CoreAPI.Exceptions;
 using Newtonsoft.Json;
@@ -9,25 +8,30 @@ namespace CoreAPI.Models;
 public sealed class Account : BaseEntity, ITenantEntity
 {
     public string TenantId { get; set; } = null!;
-    public string CustomerId { get; private set; } = null!;
+    public string CustomerId { get; set; } = null!;
+    public string AccountTypeId { get; set; } = null!;
     public decimal Balance { get; private set; }
     
     private readonly List<Transaction> _transactions = [];
+    public AccountType? AccountType { get; set; }
     public IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
 
     public User? Performer { get; set; }
+    // TODO: take a look at this
     [JsonIgnore]
     public Customer? Customer { get; set; }
+    public Tenant? Tenant { get; set; }
 
     [Timestamp]
     public byte[] RowVersion { get; set; } = [];
 
     public Account() { }
 
-    public Account(string tenantId, string customerId)
+    public Account(string tenantId, string customerId, string accountTypeId)
     {
         TenantId = tenantId;
         CustomerId = customerId;
+        AccountTypeId = accountTypeId;
     }
    
     public (decimal balance, Transaction transaction) ProcessTransaction(
@@ -63,6 +67,7 @@ public sealed class Account : BaseEntity, ITenantEntity
         var transaction = Transaction.Create(
             TenantId,
             CustomerId,
+            AccountTypeId,
             amount,
             type,
             reason,

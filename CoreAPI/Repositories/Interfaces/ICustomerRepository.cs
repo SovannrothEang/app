@@ -17,6 +17,7 @@ public interface ICustomerRepository : IRepository<Customer>
     Task<Customer?> GetByIdForCustomerAsync(
         string id,
         bool childIncluded = false,
+        bool trackChanges = false,
         CancellationToken cancellationToken = default);
 
     Task<Customer?> GetByIdForTenantAsync(

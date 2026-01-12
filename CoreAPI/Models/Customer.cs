@@ -24,11 +24,11 @@ public sealed class Customer : BaseEntity, ITenantEntity
         AddPerformBy(performBy);
     }
 
-    public Account CreateAccount(string tenantId)
+    public Account CreateAccount(string tenantId, string accountTypeId)
     {
         if (_accounts.Any(e => Equals(e.TenantId, tenantId)))
             throw new ArgumentException($"The tenant {tenantId} is already created.");
-        var account = new Account(tenantId, this.Id);
+        var account = new Account(tenantId, this.Id,  accountTypeId);
         _accounts.Add(account);
         return account;
     }

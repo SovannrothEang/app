@@ -65,7 +65,5 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .HasForeignKey(e => e.PerformBy);
         
         builder.OwnsOne(e => e.Setting);
-        
-
     }
 }

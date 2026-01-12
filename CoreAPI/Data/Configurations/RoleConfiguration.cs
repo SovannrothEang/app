@@ -43,6 +43,9 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             builder.HasIndex(e => new { e.TenantId, e.Name })
                 .IsUnique()
                 .HasFilter($"[{nameof(Role.Name)}] <> '' AND [{nameof(Role.IsDeleted)}] = 0");
+            builder.HasIndex(e => new { e.TenantId, e.NormalizedName})
+                .IsUnique()
+                .HasFilter($"[{nameof(Role.NormalizedName)}] <> '' AND [{nameof(Role.IsDeleted)}] = 0");
             builder.HasIndex(e => e.TenantId)
                 .HasFilter($"[{nameof(Role.IsDeleted)}] = 0");
             builder.HasOne(e => e.Tenant)

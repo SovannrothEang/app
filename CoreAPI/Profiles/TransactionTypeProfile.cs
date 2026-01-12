@@ -9,14 +9,7 @@ public class TransactionTypeProfile : Profile
     public TransactionTypeProfile()
     {
         CreateMap<TransactionType, TransactionTypeDto>();
-        CreateMap<TransactionTypeCreateDto, TransactionType>()
-            .ConstructUsing(src => new TransactionType(
-                Guid.NewGuid().ToString(),
-                src.Slug,
-                src.Name,
-                src.Description,
-                src.Multiplier,
-                src.AllowNegative));
+        CreateMap<TransactionTypeCreateDto, TransactionType>();
         // Nul forgiven cuz we'll check the authentication and authorization
     }
 }

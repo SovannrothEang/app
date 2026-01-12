@@ -21,13 +21,13 @@ public sealed class TransactionType : BaseEntity, ITenantEntity
     
     public TransactionType() {}
 
-    public TransactionType(string id,string slug, string name,string? description, int multiplier, bool allowNegative)
+    public TransactionType(string id,string slug, string name, string? description, int multiplier, bool allowNegative, string tenantId)
     {
         Id = id;
         Slug = slug.ToLower();
         Name = name;
         Description = description;
-        Url = "/api/tenants/{tenantId}/customers/{customerId}/" + slug.ToLower();
+        Url = "/api/tenants/{tenantId}/customers/{customerId}/accountTypes/{accountTypeId}" + slug.ToLower();
         Multiplier = multiplier switch
         {
             -1 => -1,
@@ -35,5 +35,6 @@ public sealed class TransactionType : BaseEntity, ITenantEntity
             _ => throw new ArgumentOutOfRangeException(nameof(multiplier), multiplier, "Value can only be 1 or -1.")
         };
         AllowNegative = allowNegative;
+        TenantId = tenantId;
     }
 }

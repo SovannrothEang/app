@@ -1,6 +1,6 @@
 ﻿namespace CoreAPI.DTOs.Customers;
 
-public record CustomerPostTransaction(
+public record PostTransactionDto(
     decimal Amount,
     string? Reason,
     string? ReferenceId,

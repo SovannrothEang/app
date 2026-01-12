@@ -1,4 +1,5 @@
-﻿using CoreAPI.Models;
+﻿using CoreAPI.DTOs.Transactions;
+using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -13,6 +14,7 @@ public static class IdentitySeeder
         var userMgr = serviceProvider.GetRequiredService<UserManager<User>>();
         var config = serviceProvider.GetRequiredService<IConfiguration>();
         var tenantRepository = serviceProvider.GetRequiredService<ITenantRepository>();
+        var transactionType = serviceProvider.GetRequiredService<ITransactionTypeService>();
         var tenantContext = serviceProvider.GetRequiredService<ICurrentUserProvider>();
 
         // Failed cuz we did not manage the unique while the db is enforcing the multi-tenancy!!
@@ -20,7 +22,15 @@ public static class IdentitySeeder
             ?? throw new Exception("Tenancy:Host not found");
         if (!await tenantRepository.IsExistByIdAsync(tenantHost))
         {
-            await tenantRepository.CreateAsync(new Tenant(tenantHost, tenantHost));
+            await tenantRepository.CreateAsync(new Tenant(tenantHost, tenantHost, tenantHost));
+            IEnumerable<TransactionTypeCreateDto> types =
+            [
+                new("earn", "Earn", "Points earned from activities", 1, false),
+                new("redeem", "Redeem", "Points redeems for rewards", 1, false),
+                new("adjust", "Adjust", "Manual points adjustment", 1, false),
+            ];
+            await transactionType.CreateBatchAsync(types);
+
             await tenantRepository.SaveChangeAsync();
         }
         tenantContext.SetTenantId(tenantHost);
@@ -50,7 +60,11 @@ public static class IdentitySeeder
             var tenantExist = await tenantRepository.IsExistByIdAsync(tenantHost);
             if (!tenantExist)
                 throw new Exception("Tenant not found");
-            var superAdmin = new User(roles[0].Id, superAdminEmail, superAdminUser, tenantHost);
+            var superAdmin = new User(roles[0].Id, superAdminEmail, superAdminUser, tenantHost)
+            {
+                FirstName = superAdminUser,
+                LastName = superAdminUser,
+            };
             var created = await userMgr.CreateAsync(superAdmin, superAdminPass);
             if (created.Succeeded)
                 await userMgr.AddToRoleAsync(superAdmin, roles[0].Name);

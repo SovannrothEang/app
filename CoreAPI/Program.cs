@@ -1,4 +1,5 @@
 using CoreAPI;
+using CoreAPI.Data;
 using CoreAPI.Exceptions;
 using CoreAPI.Middlewares;
 using CoreAPI.Profiles;

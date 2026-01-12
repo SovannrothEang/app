@@ -7,6 +7,7 @@ public record Transaction : ITenantEntity
     public string Id { get; private set; } = Guid.NewGuid().ToString();
     public string TenantId { get; set; } = null!;
     public string CustomerId { get; private set; } = null!;
+    public string AccountTypeId { get; private set; } = null!;
     public decimal Amount { get; private set; }
     public string TransactionTypeId { get; set; } = null!;
     public string? Reason { get; private set; }
@@ -30,6 +31,7 @@ private Transaction(
     string id,
     string tenantId,
     string customerId,
+    string accountTypeId,
     decimal amount,
     string type,
     string? reason,
@@ -40,6 +42,7 @@ private Transaction(
         Id = id;
         TenantId = tenantId;
         CustomerId = customerId;
+        AccountTypeId = accountTypeId;
         Amount = amount;
         TransactionTypeId = type;
         Reason = reason;
@@ -53,11 +56,12 @@ private Transaction(
     public static Transaction Create(
         string tenantId,
         string customerId,
+        string accountTypeId,
         decimal amount,
         string type,
         string? reason,
         string? referenceId = null,
         string? performBy = null,
         DateTimeOffset? occurredAt = null)
-        => new Transaction(Guid.NewGuid().ToString(), tenantId, customerId, amount, type, reason, referenceId, performBy, occurredAt);
+        => new Transaction(Guid.NewGuid().ToString(), tenantId, customerId, accountTypeId, amount, type, reason, referenceId, performBy, occurredAt);
 }

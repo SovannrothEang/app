@@ -2,24 +2,26 @@
 using CoreAPI.Data;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
-using Microsoft.AspNetCore.Identity;
+using CoreAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class UserRepository(AppDbContext dbContext) : IUserRepository
+public class UserRepository(AppDbContext dbContext, ICurrentUserProvider currentUserProvider) : IUserRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
+    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
 
-    public async Task AddToRoleAsync(string userId, string roleId)
+    // Assign User within the current tenant
+    public async Task AddToRoleAsync(string userId, string roleId, string tenantId)
     {
         var userRole = new UserRole
         {
             UserId = userId,
             RoleId = roleId,
-            TenantId = string.Empty // Will be strictly populated by AppDbContext.SaveChangesAsync
+            TenantId = tenantId
         };
-        
+
         await _dbContext.UserRoles.AddAsync(userRole);
     }
 
@@ -42,11 +44,11 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         var queryable = _dbContext.Users
             .AsQueryable()
-            .IgnoreQueryFilters(); 
-            
+            .IgnoreQueryFilters();
+
         if (filtering != null)
             queryable = queryable.Where(filtering);
-            
+
         return await queryable
             .AsNoTracking()
             .ToListAsync(cancellationToken);

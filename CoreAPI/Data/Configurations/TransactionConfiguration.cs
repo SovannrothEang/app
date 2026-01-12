@@ -32,18 +32,22 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(e => e.PerformBy)
             .HasColumnType("VARCHAR(100)");
 
-        builder.Property<string>("TenantId")
+        builder.Property(e => e.TenantId)
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
 
-        builder.Property<string>("CustomerId")
+        builder.Property(e => e.CustomerId)
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
         
-        builder.HasIndex(pt => pt.Id).IsUnique();
+        builder.Property(e => e.AccountTypeId)
+            .HasColumnType("VARCHAR(100)")
+            .IsRequired();
+        
+        builder.HasIndex(e => e.Id).IsUnique();
         builder.HasIndex(e => e.PerformBy);
-        builder.HasIndex(pt => pt.TransactionTypeId);
-        builder.HasIndex(pt => new { pt.TenantId, pt.CustomerId });
+        builder.HasIndex(e => e.TransactionTypeId);
+        builder.HasIndex(e => new { e.TenantId, e.CustomerId, e.AccountTypeId });
         
         builder.HasOne(e => e.Customer)
             .WithMany()
@@ -52,6 +56,6 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 
         builder.HasOne(e => e.Performer)
             .WithMany()
-            .HasForeignKey(pt => pt.PerformBy);
+            .HasForeignKey(e => e.PerformBy);
     }
 }

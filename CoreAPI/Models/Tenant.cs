@@ -16,6 +16,8 @@ public sealed class Tenant : BaseEntity
     public IReadOnlyCollection<User> Users => _users;
     private readonly List<Role> _roles = [];
     public IReadOnlyCollection<Role> Roles => _roles;
+    private readonly List<Account> _accounts = [];
+    public IReadOnlyCollection<Account> Accounts => _accounts;
     public User? PerformByUser { get; set; }
 
     public Tenant()
@@ -23,10 +25,11 @@ public sealed class Tenant : BaseEntity
         Id = Guid.NewGuid().ToString();
     }
     
-    public Tenant(string id, string name, AccountSetting? setting = null, string? performBy = null)
+    public Tenant(string id, string name, string slug, AccountSetting? setting = null, string? performBy = null)
     {
         Id = id;
         Name = name;
+        Slug =  slug;
         Setting = setting;
         AddPerformBy(performBy);
     }

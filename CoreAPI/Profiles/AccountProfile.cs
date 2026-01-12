@@ -18,6 +18,8 @@ public class AccountProfile : Profile
         //     src.Transactions.ToList(),
         //     src.PerformBy,
         //     src.PerformByUser));
+        CreateMap<AccountType, AccountTypeDto>();
+        CreateMap<AccountTypeCreateDto, AccountType>();
     }
 
 }

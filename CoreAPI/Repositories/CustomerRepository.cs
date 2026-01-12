@@ -53,7 +53,7 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
             queryable = queryable
                 .Include(e => e.Accounts.Where(a
                     => a.TenantId == _currentUserProvider.TenantId));
-                // .ThenInclude(e => e.Transactions);
+        // .ThenInclude(e => e.Transactions);
 
         if (filtering != null)
             queryable = queryable.Where(filtering);
@@ -62,13 +62,16 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
     }
 
     public async Task<Customer?> GetByIdForCustomerAsync(string id, bool childIncluded = false,
+        bool trackChanges = false,
         CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Customers
-            .AsNoTracking()
             .AsQueryable()
             .IgnoreQueryFilters();
-        
+
+        if (!trackChanges)
+            queryable = queryable.AsNoTracking();
+
         queryable = queryable.Include(e => e.User);
         if (childIncluded)
             queryable = queryable
@@ -87,7 +90,7 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
             .AsNoTracking()
             .AsQueryable()
             .IgnoreQueryFilters()
-            .Where(e  => e.Id == id)
+            .Where(e => e.Id == id)
             .Where(e => e.Accounts.Any(a
                 => a.TenantId == _currentUserProvider.TenantId));
 
@@ -96,7 +99,7 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
             queryable = queryable
                 .Include(e => e.Accounts
                     .Where(a => a.TenantId == _currentUserProvider.TenantId));
-            // .ThenInclude(e => e.Transactions);
+        // .ThenInclude(e => e.Transactions);
 
         return await queryable.FirstOrDefaultAsync(cancellationToken);
     }

@@ -29,6 +29,7 @@ public class AuthService(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IUserRepository _userRepository = unitOfWork.UserRepository;
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
+    private readonly ITransactionTypeRepository _transactionTypeRepository = unitOfWork.TransactionTypeRepository;
     private readonly IMapper _mapper = mapper;
 
     //private readonly IEmailSender<User> _emailSender = emailSender;
@@ -54,7 +55,7 @@ public class AuthService(
 
             var user = _mapper.Map<OnboardingUserDto, User>(dto);
             user.TenantId = _tenantHost;
-            var result = await _userManager.CreateAsync(user);
+            await _userManager.CreateAsync(user);
             //if (!result.Succeeded) return false;
 
             var roleCreated = dto.Role is null
@@ -118,7 +119,7 @@ public class AuthService(
         user.TenantId = _tenantHost; // Global customer
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
-            throw new BadHttpRequestException(string.Join(",\n",
+            throw new BadHttpRequestException(string.Join(", ",
                 result.Errors.Select(e => e.Description)));
 
         if (!await _roleManager.RoleExistsAsync(RoleConstants.Customer))
@@ -143,9 +144,20 @@ public class AuthService(
             tenant.AddPerformBy(_currentUserProvider.UserId);
             await _tenantRepository.CreateAsync(tenant, ct);
 
+            // Transaction type injection to tenant
+            IEnumerable<TransactionType> types =
+            [
+                new(Guid.NewGuid().ToString(), "earn", "Earn", "Points earned from activities", 1, false, tenant.Id),
+                new(Guid.NewGuid().ToString(), "redeem", "Redeem", "Points redeems for rewards", -1, false, tenant.Id),
+                new(Guid.NewGuid().ToString(), "adjust", "Adjust", "Manual points adjustment", 1, false, tenant.Id),
+            ];
+            await _transactionTypeRepository.CreateBatchAsync(types, ct);
+
             // User Creation
             var user = new User(Guid.NewGuid().ToString(), dto.Owner.Email, dto.Owner.UserName, tenant.Id)
             {
+                FirstName = dto.Owner.FirstName,
+                LastName = dto.Owner.LastName,
                 EmailConfirmed = true
             };
             var result = await _userManager.CreateAsync(user);
@@ -156,7 +168,7 @@ public class AuthService(
             var role = await EnsuringRoleExistsAsync(RoleConstants.TenantOwner, tenant.Id);
 
             // Assign role to user
-            await _userRepository.AddToRoleAsync(user.Id, role.Id);
+            await _userRepository.AddToRoleAsync(user.Id, role.Id, tenant.Id);
 
             await _unitOfWork.CompleteAsync(ct);
             await transaction.CommitAsync(ct);
@@ -174,7 +186,7 @@ public class AuthService(
 
     private async Task<Role> EnsuringRoleExistsAsync(string roleName, string tenantId)
     {
-        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Name == roleName && r.TenantId == tenantId);
         if (role != null)
         {
             return role;
@@ -191,9 +203,9 @@ public class AuthService(
     public async Task CompleteInviteAsync(string userId, string token, string newPassword)
     {
         var user = await _userManager.Users
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.Id == userId)
-                ?? throw new Exception("User not found");
+                       .IgnoreQueryFilters()
+                       .FirstOrDefaultAsync(u => u.Id == userId)
+                   ?? throw new Exception("User not found");
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
 
         if (!result.Succeeded)

@@ -5,7 +5,7 @@ using FluentValidation;
 
 namespace CoreAPI.Validators.Customers;
 
-public class CustomerPostTransactionValidator : AbstractValidator<CustomerPostTransaction>
+public class CustomerPostTransactionValidator : AbstractValidator<PostTransactionDto>
 {
     public CustomerPostTransactionValidator(ICustomerRepository repository)
     {

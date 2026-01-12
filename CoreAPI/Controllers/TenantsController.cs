@@ -140,24 +140,6 @@ public class TenantsController(
         [FromQuery] bool? childIncluded = false, // won't include transactions
         CancellationToken ct = default)
     {
-        // Example:
-        // {
-        //   "id": "cust_001",
-        //   "name": "John Doe",
-        //   "balance": 500,
-        //   "_links": [
-        //     {
-        //       "rel": "earn",
-        //       "href": "/api/tenants/{id}/customers/{id}/earn",
-        //       "method": "POST"
-        //     },
-        //     {
-        //       "rel": "redeem",
-        //       "href": "/api/tenants/{id}/customers/{id}/redeem",
-        //       "method": "POST"
-        //     }
-        //   ]
-        // }
         childIncluded ??= false;
         var customer = await _customerService.GetByIdForTenantAsync(customerId, childIncluded.Value, ct);
         var operations = await _transactionTypeService.GetAllOperationsAsync(ct);
@@ -167,7 +149,7 @@ public class TenantsController(
             _links = operations.Select(o => new
             {
                 rel = o.Slug,
-                href = "/api/tenants/{tenantId}/customers/{customerId}" + o.Slug,
+                href = "/api/tenants/{tenantId}/customers/{customerId}/accountTypes/{accountTypeId}/" + o.Slug,
                 method = "POST"
             })
         });
@@ -178,22 +160,31 @@ public class TenantsController(
     /// </summary>
     /// <param name="tenantId"></param>
     /// <param name="customerId"></param>
+    /// <param name="accountTypeId"></param>
     /// <param name="slug"></param>
     /// <param name="dto"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    [HttpPost("{tenantId}/customers/{customerId}/{slug}")]
+    /// TODO: check the another way of dealing with account type
+    [HttpPost("{tenantId}/customers/{customerId}/accountTypes/{accountTypeId}/{slug}")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> CustomerEarnPointsAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
+        [FromRoute] string accountTypeId,
         [FromRoute] string slug,
-        [FromBody] CustomerPostTransaction dto,
+        [FromBody] PostTransactionDto dto,
         CancellationToken ct = default)
     {
         try
         {
-            var (balance, transactionDetail, tenantDto) = await _transactionService.PostTransactionAsync(customerId, tenantId, slug,  dto, ct);
+            var (balance, transactionDetail, tenantDto) = await _transactionService.PostTransactionAsync(
+                customerId,
+                tenantId, 
+                accountTypeId,
+                slug,  
+                dto,
+                ct);
             return Ok(new
             {
                 Balance = balance,
@@ -217,22 +208,8 @@ public class TenantsController(
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetAllTransactionTypeAsync(
         [FromRoute] string tenantId,
-        [FromRoute] string customerId,
         CancellationToken ct = default)
     {
-        // Example:
-        // [
-        //   {
-        //     "slug": "earn",
-        //     "name": "Points Earn",
-        //     "url": "/api/tenants/123/customers/456/earn" 
-        //   },
-        //   {
-        //     "slug": "redeem",
-        //     "name": "Points Redemption",
-        //     "url": "/api/tenants/123/customers/456/redeem"
-        //   }
-        // ]
         var result = await _transactionTypeService.GetAllOperationsAsync(ct);
         return Ok(result);
     }

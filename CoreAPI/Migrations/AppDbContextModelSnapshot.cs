@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace CoreAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -28,6 +28,9 @@ namespace Infrastructure.Migrations
                         .HasColumnType("VARCHAR(100)");
 
                     b.Property<string>("CustomerId")
+                        .HasColumnType("VARCHAR(100)");
+
+                    b.Property<string>("AccountTypeId")
                         .HasColumnType("VARCHAR(100)");
 
                     b.Property<decimal>("Balance")
@@ -61,7 +64,9 @@ namespace Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
 
-                    b.HasKey("TenantId", "CustomerId");
+                    b.HasKey("TenantId", "CustomerId", "AccountTypeId");
+
+                    b.HasIndex("AccountTypeId");
 
                     b.HasIndex("CustomerId");
 
@@ -69,10 +74,65 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.HasIndex("TenantId", "CustomerId")
-                        .IsUnique();
+                    b.HasIndex("TenantId", "CustomerId", "AccountTypeId")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Accounts", (string)null);
+                });
+
+            modelBuilder.Entity("CoreAPI.Models.AccountType", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("VARCHAR(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("DATETIMEOFFSET(3)");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("DATETIMEOFFSET(3)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("BIT")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("BIT")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("VARCHAR(15)");
+
+                    b.Property<string>("PerformBy")
+                        .HasColumnType("VARCHAR(100)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("VARCHAR(100)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("DATETIMEOFFSET(3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.HasIndex("PerformBy");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("IsActive", "IsDeleted");
+
+                    b.HasIndex("Name", "TenantId")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("AccountTypes", (string)null);
                 });
 
             modelBuilder.Entity("CoreAPI.Models.Customer", b =>
@@ -191,6 +251,10 @@ namespace Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[Name] <> '' AND [IsDeleted] = 0");
 
+                    b.HasIndex("TenantId", "NormalizedName")
+                        .IsUnique()
+                        .HasFilter("[NormalizedName] <> '' AND [IsDeleted] = 0");
+
                     b.ToTable("Roles", (string)null);
                 });
 
@@ -252,6 +316,10 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("VARCHAR(100)");
 
+                    b.Property<string>("AccountTypeId")
+                        .IsRequired()
+                        .HasColumnType("VARCHAR(100)");
+
                     b.Property<decimal>("Amount")
                         .HasColumnType("DECIMAL(18,2)");
 
@@ -289,9 +357,11 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("PerformBy");
 
+                    b.HasIndex("ReferenceId");
+
                     b.HasIndex("TransactionTypeId");
 
-                    b.HasIndex("TenantId", "CustomerId");
+                    b.HasIndex("TenantId", "CustomerId", "AccountTypeId");
 
                     b.ToTable("Transactions", (string)null);
                 });
@@ -614,19 +684,52 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("CoreAPI.Models.Account", b =>
                 {
+                    b.HasOne("CoreAPI.Models.AccountType", "AccountType")
+                        .WithMany("Accounts")
+                        .HasForeignKey("AccountTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("CoreAPI.Models.Customer", "Customer")
                         .WithMany("Accounts")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CoreAPI.Models.User", "PerformByUser")
+                    b.HasOne("CoreAPI.Models.User", "Performer")
                         .WithMany()
                         .HasForeignKey("PerformBy");
 
+                    b.HasOne("CoreAPI.Models.Tenant", "Tenant")
+                        .WithMany("Accounts")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AccountType");
+
                     b.Navigation("Customer");
 
-                    b.Navigation("PerformByUser");
+                    b.Navigation("Performer");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("CoreAPI.Models.AccountType", b =>
+                {
+                    b.HasOne("CoreAPI.Models.User", "Performer")
+                        .WithMany()
+                        .HasForeignKey("PerformBy");
+
+                    b.HasOne("CoreAPI.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Performer");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("CoreAPI.Models.Customer", b =>
@@ -705,7 +808,12 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("PerformBy");
 
-                    b.HasOne("CoreAPI.Models.TransactionType", null)
+                    b.HasOne("CoreAPI.Models.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("ReferenceId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("CoreAPI.Models.TransactionType", "TransactionType")
                         .WithMany("Transactions")
                         .HasForeignKey("TransactionTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -713,11 +821,15 @@ namespace Infrastructure.Migrations
 
                     b.HasOne("CoreAPI.Models.Account", null)
                         .WithMany("Transactions")
-                        .HasForeignKey("TenantId", "CustomerId")
+                        .HasForeignKey("TenantId", "CustomerId", "AccountTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Customer");
+
                     b.Navigation("Performer");
+
+                    b.Navigation("TransactionType");
                 });
 
             modelBuilder.Entity("CoreAPI.Models.TransactionType", b =>
@@ -828,6 +940,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("CoreAPI.Models.AccountType", b =>
+                {
+                    b.Navigation("Accounts");
+                });
+
             modelBuilder.Entity("CoreAPI.Models.Customer", b =>
                 {
                     b.Navigation("Accounts");
@@ -840,6 +957,8 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("CoreAPI.Models.Tenant", b =>
                 {
+                    b.Navigation("Accounts");
+
                     b.Navigation("Roles");
 
                     b.Navigation("Users");

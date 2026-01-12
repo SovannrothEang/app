@@ -38,9 +38,6 @@ public class CustomerService(
 
     public async Task<CustomerDto> GetByIdForCustomerAsync(string id, bool childIncluded = false, CancellationToken ct = default)
     {
-        if (_currentUserProvider.CustomerId != id)
-            throw new BadHttpRequestException("Why are u here?");
-        
         var customer = await _customerRepository.GetByIdForCustomerAsync(id, childIncluded, cancellationToken: ct)
                        ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
         return _mapper.Map<CustomerDto>(customer);
@@ -55,6 +52,12 @@ public class CustomerService(
                        ?? throw  new KeyNotFoundException($"Customer with id: {id} not found.");
         return _mapper.Map<CustomerDto>(customer);
     }
+
+    // public async Task GetCustomerDashboardAsync(
+    //     CancellationToken ct = default)
+    // {
+    //     
+    // }
 
     public async Task<(decimal balance, PagedResult<TransactionDto> list)> GetCustomerBalanceByIdAsync(
         string customerId,

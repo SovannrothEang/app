@@ -21,20 +21,22 @@ public interface ITransactionService
     Task<IEnumerable<Transaction>> GetByTenantIdAsync(
         string tenantId,
         CancellationToken ct = default);
-    
+
     Task<IEnumerable<Transaction>> GetByCustomerIdForTenantAsync(
         string customerId,
         CancellationToken cancellationToken = default);
-    
+
     Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
         string customerId,
         string tenantId,
+        bool trackChanges = false,
         CancellationToken cancellationToken = default);
-    
+
     Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)> PostTransactionAsync(
         string customerId,
         string tenantId,
+        string accountTypeId,
         string slug,
-        CustomerPostTransaction dto,
+        PostTransactionDto dto,
         CancellationToken cancellationToken = default);
 }

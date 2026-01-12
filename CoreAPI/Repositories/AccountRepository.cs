@@ -95,18 +95,22 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.Accounts.AsQueryable();
-        
+        var queryable = _dbContext.Accounts
+            .AsNoTracking()
+            .AsQueryable()
+            .IgnoreQueryFilters() // Customer only
+            .Where(e => e.CustomerId == customerId);
+
+        queryable = queryable.Include(e => e.Tenant);
         if (childIncluded)
+        {
             queryable = queryable.Include(e => e.Transactions);
+        }
         
         if (filtering != null)
             queryable = queryable.Where(filtering);
         
-        return await queryable
-            .AsNoTracking()
-            .Where(e => e.CustomerId == customerId)
-            .ToListAsync(cancellationToken);
+        return await queryable.ToListAsync(cancellationToken);
     }
     
     public async Task<IEnumerable<Account>> GetAllWithTenantAsync(

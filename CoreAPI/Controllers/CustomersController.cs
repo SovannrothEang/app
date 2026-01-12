@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
+using CoreAPI.DTOs.Tenants;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,12 @@ namespace CoreAPI.Controllers;
 public class CustomersController(
     IMapper mapper,
     ITransactionService transactionService,
+    IAccountService accountService,
     ICustomerService customerService) : ControllerBase
 {
     private readonly IMapper _mapper = mapper;
     private readonly ITransactionService _transactionService = transactionService;
+    private readonly IAccountService _accountService = accountService;
     private readonly ICustomerService _customerService = customerService;
 
     /// <summary>
@@ -89,34 +92,42 @@ public class CustomersController(
         return Ok(transactions);
     }
     
-    // TODO: Fix Load customer dashboard
-    // [HttpGet("{customerId}/overview")]
-    // public async Task<ActionResult> GetCustomerDashboard(
-    //     [FromRoute] string customerId,
-    //     [FromQuery] string? tenantId = null,
-    //     [FromQuery] string? tenantName = null,
-    //     [FromQuery] decimal? balance = null,
-    //     [FromQuery] DateTime? lastActivity = null,
-    //     CancellationToken ct = default)
-    // {
-    //     var customer = await _customerService.GetByIdAsync(customerId, childIncluded: true, ct);
-    //     if (customer == null) return NotFound();
-    //     
-    //     var list = new List<TenantLevelDto>();
-    //     var ids = accounts.Select(account => account.TenantId);
-    //     foreach (var id in ids)
-    //     {
-    //         var tenant = await _tenantService.GetByIdAsync(id, ct);
-    //         if (tenant == null) continue;
-    //         list.Add(new TenantLevelDto(
-    //             tenant.Id,
-    //             tenant.Name,
-    //             accounts.First(a => a.TenantId == tenant.Id).Balance));
-    //     }
-    //     return Ok(new
-    //     {
-    //         TotolPoint = customer.LoyaltyAccounts.Select(acc => acc.Balance).Sum(),
-    //         AllTenants = list,
-    //     });
-    // }
+    [HttpGet("{customerId}/overview")]
+    [Authorize(Policy = Constants.CustomerAccessPolicy)]
+    public async Task<ActionResult> GetCustomerDashboard(
+        [FromRoute] string customerId,
+        [FromQuery] bool? childIncluded,
+        [FromQuery] string? tenantId = null,
+        [FromQuery] string? tenantName = null,
+        [FromQuery] decimal? balance = null,
+        [FromQuery] DateTime? lastActivity = null,
+        CancellationToken ct = default)
+    {
+        childIncluded ??= false;
+        var customer = await _customerService.GetByIdForCustomerAsync(customerId, childIncluded.Value, ct);
+        var accounts = await _accountService.GetAllWithCustomerAsync(customerId, childIncluded.Value, ct);
+
+        var tenants = accounts
+            .GroupBy(a => a.TenantId)
+            .Select(group => new
+            {
+                TenantId = group.Key,
+                TenantName = group.First().Tenant!.Name,
+                TotalTenantBalance = group.Sum(acc => acc.Balance),
+                Accounts = group.Select(acc => new
+                {
+                    AccountType = acc.AccountType,
+                    CurrentBalance = acc.Balance,
+                })
+            }).ToList();
+        
+        return Ok(new
+        {
+            TotolPoint = accounts.Select(acc => acc.Balance).Sum(),
+            AllTenants = tenants
+        });
+        // CustomerProfile,
+        // Tenant
+        // TenantId, TenantName, Point, Account
+    }
 }

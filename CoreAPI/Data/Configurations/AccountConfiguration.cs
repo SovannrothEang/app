@@ -9,7 +9,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
     public void Configure(EntityTypeBuilder<Account> builder)
     {
         builder.ToTable("Accounts");
-        builder.HasKey(e => new { e.TenantId, e.CustomerId });
+        builder.HasKey(e => new { e.TenantId, e.CustomerId, e.AccountTypeId });
 
         builder.Property(e => e.CustomerId)
             .HasColumnType("VARCHAR(100)")
@@ -19,7 +19,9 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasColumnType("VARCHAR(100)")
             .IsRequired();
         
-        builder.HasKey("TenantId", "CustomerId");
+        builder.Property(e => e.AccountTypeId)
+            .HasColumnType("VARCHAR(100)")
+            .IsRequired();
         
         builder.Property(e => e.Balance)
             .HasColumnType("DECIMAL(18,2)")
@@ -50,13 +52,21 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => e.PerformBy);
-        builder.HasIndex(e => new { e.TenantId, e.CustomerId })
-            .IsUnique();
+        builder.HasIndex(e => new { e.TenantId, e.CustomerId, e.AccountTypeId })
+            .IsUnique()
+            .HasFilter($"[{nameof(Account.IsDeleted)}] = 0");
+        
+        // builder.HasOne(e => ) // TODO: introduce new Account type for account
 
         builder.HasMany(e => e.Transactions)
             .WithOne()
-            .HasForeignKey(e => new { e.TenantId, e.CustomerId })
+            .HasForeignKey(e => new { e.TenantId, e.CustomerId, e.AccountTypeId})
             .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.HasOne(e => e.Tenant)
+            .WithMany(e => e.Accounts)
+            .HasForeignKey(e => e.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(e => e.Performer)
             .WithMany()

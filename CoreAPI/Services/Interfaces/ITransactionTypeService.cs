@@ -17,6 +17,7 @@ public interface ITransactionTypeService
     Task<bool> IsExistAsync(string id, CancellationToken cancellationToken = default);
     Task<bool> IsTypeExistAsync(string name, CancellationToken cancellationToken = default);
     Task<TransactionTypeDto> CreateAsync(TransactionTypeCreateDto dto, CancellationToken cancellationToken = default);
+    Task<int> CreateBatchAsync(IEnumerable<TransactionTypeCreateDto> dtos, CancellationToken cancellationToken = default);
 }
 
 public class TransactionTypeService(AppDbContext context, IMapper mapper) : ITransactionTypeService
@@ -94,5 +95,17 @@ public class TransactionTypeService(AppDbContext context, IMapper mapper) : ITra
         await _context.TransactionTypes.AddAsync(type, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
         return _mapper.Map<TransactionTypeDto>(type);
+    }
+
+    public async Task<int> CreateBatchAsync(IEnumerable<TransactionTypeCreateDto> dtos,
+        CancellationToken cancellationToken = default)
+    {
+        if (!dtos.Any())
+            throw new InvalidOperationException("No type of transaction was found!");
+
+        var types = dtos.Select(t => _mapper.Map<TransactionType>(t));
+        await _context.AddRangeAsync(types, cancellationToken);
+        await  _context.SaveChangesAsync(cancellationToken);
+        return types.Count();
     }
 }

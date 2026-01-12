@@ -17,6 +17,7 @@ public class TenantProfile : Profile
             .ConstructUsing(src => new Tenant(
                 Guid.NewGuid().ToString(),
                 src.Name,
+                src.Name,
                 new AccountSetting(
                     src.PointPerDollar,
                     src.ExpiryDays)

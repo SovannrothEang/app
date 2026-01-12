@@ -19,6 +19,8 @@ public sealed class UnitOfWork(
     public ITenantRepository TenantRepository => serviceProvider.GetRequiredService<ITenantRepository>();
     public IAccountRepository AccountRepository => serviceProvider.GetRequiredService<IAccountRepository>();
     public ITransactionRepository TransactionRepository => serviceProvider.GetRequiredService<ITransactionRepository>();
+    public ITransactionTypeRepository TransactionTypeRepository => serviceProvider.GetRequiredService<ITransactionTypeRepository>();
+    public IAccountTypeRepository AccountTypeRepository => serviceProvider.GetRequiredService<IAccountTypeRepository>();
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
