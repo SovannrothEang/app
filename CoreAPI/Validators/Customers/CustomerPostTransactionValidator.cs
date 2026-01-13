@@ -12,7 +12,7 @@ public class CustomerPostTransactionValidator : AbstractValidator<PostTransactio
         var repo = repository;
         RuleFor(x => x.Amount)
             .NotEmpty().WithMessage("Point is required.")
-            .GreaterThan(0).WithMessage("Point must be greater than 0.");
+            .NotEqual(0).WithMessage("Point must not be zero.");
         RuleFor(x => x.Reason)
             .Length(3, 50).WithMessage("Reason length must be between 3 and 50 characters.");
         RuleFor(x => x.ReferenceId)
