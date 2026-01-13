@@ -69,8 +69,8 @@ public class CustomersController(
     [HttpGet("transactions")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllCustomersTransactionsAsync(
-        [FromQuery] bool? childIncluded,
         [FromQuery] PaginationOption option,
+        [FromQuery] bool? childIncluded = false,
         CancellationToken ct = default)
     {
         childIncluded ??= false;
@@ -86,9 +86,14 @@ public class CustomersController(
     /// <returns>List of transactions</returns>
     [HttpGet("{customerId}/transactions")]
     [Authorize(Policy = Constants.CustomerAccessPolicy)]
-    public async Task<ActionResult> GetCustomerTransactionsByIdAsync(string customerId, CancellationToken ct = default)
+    public async Task<ActionResult> GetCustomerTransactionsByIdAsync(
+        string customerId,
+        [FromQuery] PaginationOption option,
+        [FromQuery] bool? childIncluded = false,
+        CancellationToken ct = default)
     {
-        var transactions = await _transactionService.GetAllByCustomerAsync(customerId, ct);
+        childIncluded ??= false;
+        var transactions = await _transactionService.GetAllByCustomerAsync(customerId, option, childIncluded.Value, ct);
         return Ok(transactions);
     }
     

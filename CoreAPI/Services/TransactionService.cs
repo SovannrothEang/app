@@ -1,11 +1,11 @@
-﻿using AutoMapper;
+﻿using System.Formats.Tar;
+using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.DTOs.Transactions;
 using CoreAPI.Models;
 using CoreAPI.Models.Enums;
-using CoreAPI.Repositories;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using CoreAPI.Validators.Customers;
@@ -36,8 +36,11 @@ public class TransactionService(
         bool childIncluded = false,
         CancellationToken ct = default)
     {
+        option.Page ??= 1;
+        option.PageSize ??= 10;
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all transactions");
+
         var (transactions, totalCount) = await _transactionRepository.GetAllAsync(
             option,
             childIncluded: childIncluded,
@@ -46,50 +49,67 @@ public class TransactionService(
         return new PagedResult<TransactionDto>
         {
             Items = dtos,
-            PageNumber = option.Page,
-            PageSize = option.PageSize,
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
             TotalCount = totalCount
         };
     }
 
-    public async Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(
+    public async Task<IEnumerable<TransactionDto>> GetAllByTenantAndCustomerAsync(
         string tenantId,
         string customerId,
         CancellationToken cancellationToken = default)
     {
-        return await _transactionRepository.GetAllByTenantAndCustomerAsync(
+        var transactions = await _transactionRepository.GetAllByTenantAndCustomerAsync(
             tenantId,
             customerId,
             cancellationToken: cancellationToken);
+        return transactions.Select(tran => _mapper.Map<TransactionDto>(tran));
     }
 
-    public async Task<IEnumerable<Transaction>> GetAllByCustomerAsync(
+    public async Task<PagedResult<TransactionDto>> GetAllByCustomerAsync(
         string customerId,
+        PaginationOption pageOption,
+        bool childIncluded,
         CancellationToken cancellationToken = default)
     {
-        return await _transactionRepository.GetAllByCustomerGlobalAsync(
+        var (result, totalCount) = await _transactionRepository.GetAllByCustomerGlobalAsync(
             customerId,
+            pageOption,
+            childIncluded,
             cancellationToken);
+
+        return new PagedResult<TransactionDto>
+        {
+            Items = result.Select(x => _mapper.Map<TransactionDto>(x)).ToList(),
+            PageNumber = pageOption.Page!.Value,
+            PageSize = pageOption.PageSize!.Value,
+            TotalCount = totalCount
+        };
     }
 
-    public async Task<Transaction?> GetByIdAsync(string customerId,
+    public async Task<TransactionDto?> GetByIdAsync(string customerId,
         CancellationToken cancellationToken = default)
     {
-        return await _transactionRepository.GetByIdAsync(customerId, cancellationToken);
+        var transaction = await _transactionRepository.GetByIdAsync(customerId, cancellationToken);
+        return _mapper.Map<TransactionDto>(transaction);
+
     }
 
-    public async Task<IEnumerable<Transaction>> GetByCustomerIdForTenantAsync(
+    public async Task<IEnumerable<TransactionDto>> GetByCustomerIdForTenantAsync(
         string customerId,
         CancellationToken cancellationToken = default)
     {
-        return await _transactionRepository.GetByCustomerIdAsync(customerId, cancellationToken);
+        var transactions = await _transactionRepository.GetByCustomerIdAsync(customerId, cancellationToken);
+        return transactions.Select(tran => _mapper.Map<TransactionDto>(tran));
     }
 
-    public async Task<IEnumerable<Transaction>> GetByTenantIdAsync(
+    public async Task<IEnumerable<TransactionDto>> GetByTenantIdAsync(
         string tenantId,
         CancellationToken cancellationToken = default)
     {
-        return await _transactionRepository.GetByTenantIdAsync(tenantId, cancellationToken);
+        var transactions = await _transactionRepository.GetByTenantIdAsync(tenantId, cancellationToken);
+        return transactions.Select(tran => _mapper.Map<TransactionDto>(tran));
     }
 
     public async Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
@@ -109,7 +129,7 @@ public class TransactionService(
         return (customer, tenant);
     }
 
-    public async Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)>
+    public async Task<(decimal balance, TransactionDto transactionDetail, TenantDto tenantDto)>
         PostTransactionAsync(
             string customerId,
             string tenantId,
@@ -187,7 +207,7 @@ public class TransactionService(
                         "Transaction was created with id: {TransactionId}, with Reason {Reason}.",
                         transactionDetail.Id, dto.Reason);
                 var tenantDto = _mapper.Map<TenantDto>(tenant);
-                return (balance, transactionDetail, tenantDto);
+                return (balance, _mapper.Map<TransactionDto>(transactionDetail), tenantDto);
             }
             catch (DbUpdateConcurrencyException)
             {

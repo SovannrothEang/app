@@ -4,4 +4,5 @@ public enum TenantStatus
 {
     Inactive,
     Active,
+    Suspended
 }

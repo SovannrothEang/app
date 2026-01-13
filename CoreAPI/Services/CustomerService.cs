@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
@@ -66,6 +67,10 @@ public class CustomerService(
         PaginationOption pageOption,
         CancellationToken cancellationToken = default)
     {
+        // Init value if null
+        pageOption.Page ??= 1;
+        pageOption.PageSize ??= 10;
+
         var (account, transactions, totalCount) = await _accountRepository.GetByTenantAndCustomerPaginationAsync(
             tenantId,
             customerId,
@@ -77,34 +82,13 @@ public class CustomerService(
         if (account is null)
             throw new KeyNotFoundException($"Customer with id: {customerId} not found.");
 
-
-        // TODO: move this, or modified the options in the PaginationOption for sorting base on this
-        // List<Transaction> lastActivities = [];
-        // if (option is not null)
-        // {
-        //     if (option.TransactionType is not null)
-        //     {
-        //         lastActivities = transactions.Where(t 
-        //             => string.Equals(t.TransactionType!.Slug, option.TransactionType, StringComparison.InvariantCultureIgnoreCase)).ToList();
-        //     }
-        //     if (option.StartDate is not null)
-        //         lastActivities = [..account.Transactions.Where(p => p.OccurredAt >= option.StartDate.Value).ToList()];
-        //
-        //     if (option.EndDate is not null)
-        //         lastActivities = lastActivities.Where(act => act.OccurredAt <= option.EndDate.Value).ToList();
-        // }
-
-        // Defect as always showing even query param is not null
-        // if (lastActivities.Count <= 0)
-        //     lastActivities.Add(account.Transactions.Last());
-        
         var dtos = transactions.Select(a => _mapper.Map<TransactionDto>(a)).ToList();
 
         return (account.Balance, new PagedResult<TransactionDto>
         {
             Items = dtos,
-            PageNumber = pageOption.Page,
-            PageSize = pageOption.PageSize,
+            PageNumber = pageOption.Page.Value, // TODO: make sure this is fine
+            PageSize = pageOption.PageSize.Value,
             TotalCount = totalCount
         });
     }

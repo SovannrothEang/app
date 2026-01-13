@@ -9,20 +9,24 @@ namespace CoreAPI.Services.Interfaces;
 public interface ITransactionService
 {
     Task<PagedResult<TransactionDto>> GetAllTransactionsAsync(PaginationOption option, bool childIncluded = false, CancellationToken ct = default);
-    Task<IEnumerable<Transaction>> GetAllByTenantAndCustomerAsync(
+    Task<IEnumerable<TransactionDto>> GetAllByTenantAndCustomerAsync(
         string tenantId,
         string customerId,
         CancellationToken cancellationToken = default);
-    Task<IEnumerable<Transaction>> GetAllByCustomerAsync(string customerId, CancellationToken cancellationToken = default);
-    Task<Transaction?> GetByIdAsync(
+    Task<PagedResult<TransactionDto>> GetAllByCustomerAsync(
+        string customerId,
+        PaginationOption pageOption,
+        bool childIncluded,
+        CancellationToken cancellationToken = default);
+    Task<TransactionDto?> GetByIdAsync(
         string id,
         CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<Transaction>> GetByTenantIdAsync(
+    Task<IEnumerable<TransactionDto>> GetByTenantIdAsync(
         string tenantId,
         CancellationToken ct = default);
 
-    Task<IEnumerable<Transaction>> GetByCustomerIdForTenantAsync(
+    Task<IEnumerable<TransactionDto>> GetByCustomerIdForTenantAsync(
         string customerId,
         CancellationToken cancellationToken = default);
 
@@ -32,7 +36,7 @@ public interface ITransactionService
         bool trackChanges = false,
         CancellationToken cancellationToken = default);
 
-    Task<(decimal balance, Transaction transactionDetail, TenantDto tenantDto)> PostTransactionAsync(
+    Task<(decimal balance, TransactionDto transactionDetail, TenantDto tenantDto)> PostTransactionAsync(
         string customerId,
         string tenantId,
         string accountTypeId,

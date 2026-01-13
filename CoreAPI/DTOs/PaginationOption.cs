@@ -1,23 +1,20 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace CoreAPI.DTOs;
 
 public class PaginationOption
+//     int? Page = 1,
+//     int? PageSize = 10,
+//     string? SortBy = "CreatedAt",
+//     string? SortDirection = "asc",
+//     string? TransactionType = null,
+//     DateOnly? StartDate = null,
+//     DateOnly? EndDate = null
+// )
 {
-    public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 10;
-
-    // TODO: make sorting and filtering work
-    private string _sort = string.Empty;
-    private static readonly string[] SortOption = ["asc", "desc"];
-    // public string SortDirection
-    // {
-    //     get  => _sort;
-    //     set 
-    //     {
-    //         if (!SortOption.Contains(value))
-    //             throw new InvalidOperationException("Only 'asc'  and 'desc' are supported.");
-    //         _sort = value;
-    //     }
-    // }
+    public int? Page { get; set; } = 1;
+    public int? PageSize { get; set; } = 10;
+    public string? SortBy { get; set; } = "CreatedAt";
+    public string? SortDirection { get; set; } = "asc";
+    public string? TransactionType { get; set; } = null; // earn, redeem, adjust, bonus
+    public DateOnly? StartDate { get; set; } = null;
+    public DateOnly? EndDate { get; set; } = null;
 }

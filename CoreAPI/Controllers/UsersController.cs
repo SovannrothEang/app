@@ -13,6 +13,7 @@ public class UsersController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
     // TODO: Fix the tenant scope to fit the authorize
+    // I think we can allow tenant to access this endpoint, since the user is Tenant Entity
 
     /// <summary>
     /// Get all users, in the scope of the tenant (Global filtering)

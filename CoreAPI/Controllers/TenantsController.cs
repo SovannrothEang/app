@@ -165,7 +165,6 @@ public class TenantsController(
     /// <param name="dto"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    /// TODO: check the another way of dealing with account type
     [HttpPost("{tenantId}/customers/{customerId}/accountTypes/{accountTypeId}/{slug}")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> CustomerEarnPointsAsync(
