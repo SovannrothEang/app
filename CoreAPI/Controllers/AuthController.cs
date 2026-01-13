@@ -85,15 +85,8 @@ public class AuthController(
     [AllowAnonymous]
     public async Task<IActionResult> CompleteInvite([FromBody] SetupPasswordRequest req)
     {
-        try 
-        {
-            await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
-            return Ok(new { Message = "Account activated." });
-        }
-        catch(Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message });
-        }
+        await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
+        return Ok(new { Message = "Account activated." });
     }
 
     /// <summary>

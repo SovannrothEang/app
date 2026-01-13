@@ -30,6 +30,7 @@ public class AuthService(
     private readonly IUserRepository _userRepository = unitOfWork.UserRepository;
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
     private readonly ITransactionTypeRepository _transactionTypeRepository = unitOfWork.TransactionTypeRepository;
+    private readonly IAccountTypeRepository _accountTypeRepository = unitOfWork.AccountTypeRepository;
     private readonly IMapper _mapper = mapper;
 
     //private readonly IEmailSender<User> _emailSender = emailSender;
@@ -152,6 +153,9 @@ public class AuthService(
                 new(Guid.NewGuid().ToString(), "adjust", "Adjust", "Manual points adjustment", 1, false, tenant.Id),
             ];
             await _transactionTypeRepository.CreateBatchAsync(types, ct);
+            
+            var accType = new AccountType(Guid.NewGuid().ToString(), "Normal", tenant.Id, _currentUserProvider.UserId);
+            await _accountTypeRepository.CreateAccountTypeAsync(accType, ct);
 
             // User Creation
             var user = new User(Guid.NewGuid().ToString(), dto.Owner.Email, dto.Owner.UserName, tenant.Id)

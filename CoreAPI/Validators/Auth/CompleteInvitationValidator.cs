@@ -23,7 +23,7 @@ public class CompleteInvitationValidator : AbstractValidator<SetupPasswordReques
             .NotEmpty().WithMessage("Confirm password is required.")
             .MinimumLength(8)
             .WithMessage("Confirm password must be at least 8 characters long.")
-            .Must((model, confirmPassword) => confirmPassword == model.NewPassword)
+            .Must((model, confirmPassword) => model.NewPassword.Equals(confirmPassword, StringComparison.Ordinal))
             .WithMessage("Passwords do not match.");
     }
 }
