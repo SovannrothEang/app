@@ -1,6 +1,6 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using CoreAPI.DTOs.Accounts;
-using CoreAPI.Repositories;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 
@@ -14,6 +14,7 @@ public class AccountService(IAccountRepository accountRepository, IMapper mapper
 
     public async Task<IEnumerable<AccountDto>> GetAllWithCustomerAsync(
         string customerId,
+        string? tenantId, // Focusing on tenantId
         bool childIncluded = false,
         CancellationToken ct = default)
     {
@@ -21,6 +22,9 @@ public class AccountService(IAccountRepository accountRepository, IMapper mapper
             _logger.LogInformation("Get all accounts by customer: {customerId}", customerId);
         var account = await _accountRepository.GetAllWithCustomerAsync(
             customerId: customerId,
+            tenantId is null 
+                ? null
+                : x => x.TenantId == tenantId,
             childIncluded: childIncluded,
             cancellationToken: ct);
         

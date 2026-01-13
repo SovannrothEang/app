@@ -13,7 +13,9 @@ public record AccountDto(
     IReadOnlyList<Transaction> Transactions,
     TenantDto? Tenant,
     string? PerformBy,
-    UserProfileDto? Performer)
+    UserProfileDto? Performer,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt)
 {
     public AccountDto() : this(
         string.Empty,
@@ -24,5 +26,7 @@ public record AccountDto(
         [],
         null,
         null,
+        null,
+        new DateTimeOffset(),
         null) { }
 }

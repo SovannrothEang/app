@@ -104,7 +104,10 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
         queryable = queryable.Include(e => e.Tenant);
         if (childIncluded)
         {
-            queryable = queryable.Include(e => e.Transactions);
+            // I want to get only the latest transaction
+            queryable = queryable.Include(e => e.Transactions
+                .OrderByDescending(t => t.CreatedAt)
+                .Take(1));
         }
         
         if (filtering != null)

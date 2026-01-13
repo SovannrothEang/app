@@ -1,5 +1,4 @@
 ﻿using CoreAPI.DTOs.Accounts;
-using CoreAPI.Models;
 
 namespace CoreAPI.Services.Interfaces;
 
@@ -7,6 +6,7 @@ public interface IAccountService
 {
     Task<IEnumerable<AccountDto>> GetAllWithCustomerAsync(
         string customerId,
+        string? tenantId,
         bool childIncluded = false,
         CancellationToken ct = default);
     Task<IEnumerable<AccountDto>> GetAllWithTenantAsync(

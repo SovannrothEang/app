@@ -98,33 +98,57 @@ public class CustomersController(
         [FromRoute] string customerId,
         [FromQuery] bool? childIncluded,
         [FromQuery] string? tenantId = null,
-        [FromQuery] string? tenantName = null,
-        [FromQuery] decimal? balance = null,
-        [FromQuery] DateTime? lastActivity = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDirection = "asc",
         CancellationToken ct = default)
     {
         childIncluded ??= false;
         var customer = await _customerService.GetByIdForCustomerAsync(customerId, childIncluded.Value, ct);
-        var accounts = await _accountService.GetAllWithCustomerAsync(customerId, childIncluded.Value, ct);
+        var accounts = await _accountService.GetAllWithCustomerAsync(customerId, tenantId, childIncluded.Value, ct); // TenantId is for filtering
 
         var tenants = accounts
             .GroupBy(a => a.TenantId)
-            .Select(group => new
+            .Select(group => 
             {
-                TenantId = group.Key,
-                TenantName = group.First().Tenant!.Name,
-                TotalTenantBalance = group.Sum(acc => acc.Balance),
-                Accounts = group.Select(acc => new
+                var tenantId = group.Key;
+                var tenantName = group.First().Tenant!.Name;
+
+                var tenants = new
                 {
-                    AccountType = acc.AccountType,
-                    CurrentBalance = acc.Balance,
-                })
-            }).ToList();
-        
+                    TenantId = tenantId,
+                    TenantName = tenantName,
+                    TotalBalance = group.Sum(acc => acc.Balance),
+                    Accounts = group.Select(acc => new
+                    {
+                        AccountType = acc.AccountType,
+                        CurrentBalance = acc.Balance,
+                        LastActivity = acc.Transactions,
+                        CreatedAt = acc.CreatedAt,
+                        UpdatedAt = acc.UpdatedAt
+                    })
+                };
+                return tenants;
+            }).AsQueryable();
+
+        // This maybe bad, what if there are many accounts??
+        sortDirection ??= "asc";
+        if (!string.IsNullOrEmpty(sortBy))
+        {
+            tenants = (sortBy.ToLower(), sortDirection.ToLower()) switch
+            {
+                ("balance", "asc") => tenants.OrderBy(e => e.TotalBalance),
+                ("balance", "desc") => tenants.OrderByDescending(e => e.TotalBalance),
+                ("tenantname", "asc") => tenants.OrderBy(e => e.TenantName),
+                ("tenantname", "desc") => tenants.OrderByDescending(e => e.TenantName),
+                _ => tenants.OrderBy(x => x.Accounts.Select(e => e.CreatedAt)),
+            };
+        }
+
+        var allTenants = tenants.ToList();
         return Ok(new
         {
-            TotolPoint = accounts.Select(acc => acc.Balance).Sum(),
-            AllTenants = tenants
+            TotolPoint = allTenants.Sum(acc => acc.TotalBalance),
+            AllTenants = allTenants
         });
         // CustomerProfile,
         // Tenant
