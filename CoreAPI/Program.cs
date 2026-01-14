@@ -75,15 +75,14 @@ try
 
     var app = builder.Build();
 
-    // using (var scope = app.Services.CreateScope())
-    // {
-    //     await IdentitySeeder.SeedAsync(scope.ServiceProvider);
-    // }
+    using (var scope = app.Services.CreateScope())
+    {
+        await IdentitySeeder.SeedAsync(scope.ServiceProvider);
+    }
 
     if (app.Environment.IsDevelopment())
     {
         // app.MapOpenApi();
-        //app.MapSwagger("/openapi/{documentName}.json");
         app.MapSwagger("/openapi/{documentName}.json");
         app.MapScalarApiReference(options =>
         {

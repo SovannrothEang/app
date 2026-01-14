@@ -11,18 +11,18 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.ToTable("Transactions");
         builder.HasKey(pt => pt.Id);
         builder.Property(pt => pt.Id)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         builder.Property(pt => pt.Amount)
             .HasColumnType("DECIMAL(18,2)")
             .IsRequired();
         builder.Property(pt => pt.TransactionTypeId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         builder.Property(pt => pt.Reason)
             .HasColumnType("NVARCHAR(100)");
         builder.Property(pt => pt.ReferenceId)
-            .HasColumnType("VARCHAR(100)");
+            .HasColumnType("VARCHAR(36)");
         builder.Property(pt => pt.OccurredAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .IsRequired();
@@ -30,20 +30,18 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasColumnType("DATETIMEOFFSET(3)")
             .IsRequired();
         builder.Property(e => e.PerformBy)
-            .HasColumnType("VARCHAR(100)");
-
+            .HasColumnType("VARCHAR(36)");
         builder.Property(e => e.TenantId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
-
         builder.Property(e => e.CustomerId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
-        
         builder.Property(e => e.AccountTypeId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         
+        // Indexes
         builder.HasIndex(e => e.Id).IsUnique();
         builder.HasIndex(e => e.PerformBy);
         builder.HasIndex(e => e.TransactionTypeId);

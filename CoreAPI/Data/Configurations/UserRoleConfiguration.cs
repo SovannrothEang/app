@@ -11,13 +11,13 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         builder.ToTable("UserRoles");
         builder.HasKey(e => new { e.UserId, e.RoleId });
         builder.Property(e => e.UserId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         builder.Property(e => e.RoleId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         builder.Property(e => e.TenantId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
 
         builder.HasOne(e => e.User)

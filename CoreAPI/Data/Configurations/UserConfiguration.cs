@@ -11,7 +11,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("Users");
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         builder.Property(e => e.UserName)
             .HasColumnType("VARCHAR(50)")
@@ -40,7 +40,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.PasswordHash)
             .HasColumnType("VARCHAR(MAX)");
         builder.Property(e => e.TenantId)
-            .HasColumnType("VARCHAR(100)");
+            .HasColumnType("VARCHAR(36)");
         builder.Property(e => e.IsActive)
             .HasColumnType("BIT")
             .HasDefaultValue(true);
@@ -57,7 +57,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
         builder.Property(e => e.PerformBy)
-            .HasColumnType("VARCHAR(100)");
+            .HasColumnType("VARCHAR(36)");
             
         // Fixed Index Filter later
         builder.HasIndex(e => new { e.TenantId, e.Id })

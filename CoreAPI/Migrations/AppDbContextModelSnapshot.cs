@@ -25,13 +25,13 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.Account", b =>
                 {
                     b.Property<string>("TenantId")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("CustomerId")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("AccountTypeId")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<decimal>("Balance")
                         .HasColumnType("DECIMAL(18,2)");
@@ -53,7 +53,7 @@ namespace CoreAPI.Migrations
                         .HasDefaultValue(false);
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -84,7 +84,7 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.AccountType", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
@@ -107,11 +107,11 @@ namespace CoreAPI.Migrations
                         .HasColumnType("VARCHAR(15)");
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
@@ -138,7 +138,7 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.Customer", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
@@ -157,18 +157,18 @@ namespace CoreAPI.Migrations
                         .HasDefaultValue(false);
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.HasKey("Id");
 
@@ -190,7 +190,7 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.Role", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -222,11 +222,11 @@ namespace CoreAPI.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
@@ -261,7 +261,7 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.Tenant", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
@@ -284,7 +284,7 @@ namespace CoreAPI.Migrations
                         .HasColumnType("VARCHAR(50)");
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -314,11 +314,11 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.Transaction", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("AccountTypeId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("DECIMAL(18,2)");
@@ -328,27 +328,27 @@ namespace CoreAPI.Migrations
 
                     b.Property<string>("CustomerId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("Reason")
                         .HasColumnType("NVARCHAR(100)");
 
                     b.Property<string>("ReferenceId")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("TransactionTypeId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.HasKey("Id");
 
@@ -369,7 +369,7 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.TransactionType", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<bool>("AllowNegative")
                         .ValueGeneratedOnAdd()
@@ -403,7 +403,7 @@ namespace CoreAPI.Migrations
                         .HasColumnType("VARCHAR(15)");
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -411,7 +411,7 @@ namespace CoreAPI.Migrations
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("DATETIMEOFFSET(3)");
@@ -436,13 +436,13 @@ namespace CoreAPI.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("TransactionTypes");
+                    b.ToTable("TransactionTypes", (string)null);
                 });
 
             modelBuilder.Entity("CoreAPI.Models.User", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
@@ -509,7 +509,7 @@ namespace CoreAPI.Migrations
                         .HasColumnType("VARCHAR(MAX)");
 
                     b.Property<string>("PerformBy")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
@@ -525,7 +525,7 @@ namespace CoreAPI.Migrations
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
@@ -570,14 +570,14 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("CoreAPI.Models.UserRole", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("RoleId")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.HasKey("UserId", "RoleId");
 
@@ -607,7 +607,7 @@ namespace CoreAPI.Migrations
 
                     b.Property<string>("RoleId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.HasKey("Id");
 
@@ -632,7 +632,7 @@ namespace CoreAPI.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.HasKey("Id");
 
@@ -654,7 +654,7 @@ namespace CoreAPI.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.HasKey("LoginProvider", "ProviderKey");
 
@@ -666,7 +666,7 @@ namespace CoreAPI.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("VARCHAR(100)");
+                        .HasColumnType("VARCHAR(36)");
 
                     b.Property<string>("LoginProvider")
                         .HasColumnType("nvarchar(450)");
@@ -781,7 +781,7 @@ namespace CoreAPI.Migrations
                     b.OwnsOne("CoreAPI.Models.AccountSetting", "Setting", b1 =>
                         {
                             b1.Property<string>("TenantId")
-                                .HasColumnType("VARCHAR(100)");
+                                .HasColumnType("VARCHAR(36)");
 
                             b1.Property<int>("ExpiryDays")
                                 .HasColumnType("int");

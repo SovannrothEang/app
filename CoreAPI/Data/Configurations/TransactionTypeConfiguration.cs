@@ -8,62 +8,51 @@ public class TransactionTypeConfiguration : IEntityTypeConfiguration<Transaction
 {
     public void Configure(EntityTypeBuilder<TransactionType> builder)
     {
+        builder.ToTable("TransactionTypes");
+        builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
-
         builder.Property(e => e.Slug)
             .HasColumnType("VARCHAR(15)")
             .IsRequired();
-
         builder.Property(e => e.Name)
             .HasColumnType("VARCHAR(15)")
             .IsRequired();
-
         builder.Property(e => e.Description)
             .HasColumnType("VARCHAR(MAX)")
             .IsRequired(false);
-
         builder.Property(e => e.Url)
             .HasColumnType("VARCHAR(200)")
             .IsRequired();
-
         builder.Property(e => e.TenantId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
-
         builder.Property(e => e.Multiplier)
             .HasColumnType("INT")
             .IsRequired();
-
         builder.Property(e => e.AllowNegative)
             .HasColumnType("BIT")
             .HasDefaultValue(false);
-
         builder.Property(e => e.IsActive)
             .HasColumnType("BIT")
             .HasDefaultValue(true);
-
         builder.Property(e => e.IsDeleted)
             .HasColumnType("BIT")
             .HasDefaultValue(false);
-
         builder.Property(e => e.CreatedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .IsRequired();
-
         builder.Property(e => e.UpdatedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
-
         builder.Property(e => e.DeletedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
             .HasDefaultValue(null);
-
         builder.Property(e => e.PerformBy)
-            .HasColumnType("VARCHAR(100)");
+            .HasColumnType("VARCHAR(36)");
 
-        // Index
+        // Indexes
         builder.HasIndex(e => e.Id)
             .IsUnique()
             .HasFilter($"[{nameof(TransactionType.IsDeleted)}] = 0");

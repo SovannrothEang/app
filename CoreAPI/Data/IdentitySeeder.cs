@@ -13,8 +13,8 @@ public static class IdentitySeeder
         var roleMgr = serviceProvider.GetRequiredService<RoleManager<Role>>();
         var userMgr = serviceProvider.GetRequiredService<UserManager<User>>();
         var config = serviceProvider.GetRequiredService<IConfiguration>();
-        var tenantRepository = serviceProvider.GetRequiredService<ITenantRepository>();
-        var transactionType = serviceProvider.GetRequiredService<ITransactionTypeService>();
+        var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
+        var tenantRepository = unitOfWork.TenantRepository;
         var tenantContext = serviceProvider.GetRequiredService<ICurrentUserProvider>();
 
         // Failed cuz we did not manage the unique while the db is enforcing the multi-tenancy!!
@@ -23,15 +23,17 @@ public static class IdentitySeeder
         if (!await tenantRepository.IsExistByIdAsync(tenantHost))
         {
             await tenantRepository.CreateAsync(new Tenant(tenantHost, tenantHost, tenantHost));
-            IEnumerable<TransactionTypeCreateDto> types =
-            [
-                new("earn", "Earn", "Points earned from activities", 1, false),
-                new("redeem", "Redeem", "Points redeems for rewards", 1, false),
-                new("adjust", "Adjust", "Manual points adjustment", 1, false),
-            ];
-            await transactionType.CreateBatchAsync(types);
+            
+            // I think tenant host never gonna need that
+            // IEnumerable<TransactionTypeCreateDto> types =
+            // [
+            //     new("earn", "Earn", "Points earned from activities", 1, false),
+            //     new("redeem", "Redeem", "Points redeems for rewards", 1, false),
+            //     new("adjust", "Adjust", "Manual points adjustment", 1, false),
+            // ];
+            // await transactionType.CreateBatchAsync(types);
 
-            await tenantRepository.SaveChangeAsync();
+            await unitOfWork.CompleteAsync();
         }
         tenantContext.SetTenantId(tenantHost);
         

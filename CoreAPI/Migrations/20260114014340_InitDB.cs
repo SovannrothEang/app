@@ -15,9 +15,9 @@ namespace CoreAPI.Migrations
                 name: "Accounts",
                 columns: table => new
                 {
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    CustomerId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    AccountTypeId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    CustomerId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    AccountTypeId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     Balance = table.Column<decimal>(type: "DECIMAL(18,2)", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false),
                     IsActive = table.Column<bool>(type: "BIT", nullable: false, defaultValue: true),
@@ -25,7 +25,7 @@ namespace CoreAPI.Migrations
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true)
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -36,15 +36,15 @@ namespace CoreAPI.Migrations
                 name: "AccountTypes",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    Id = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     Name = table.Column<string>(type: "VARCHAR(15)", nullable: false),
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     IsActive = table.Column<bool>(type: "BIT", nullable: false, defaultValue: true),
                     IsDeleted = table.Column<bool>(type: "BIT", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true)
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -55,15 +55,15 @@ namespace CoreAPI.Migrations
                 name: "Customers",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    UserId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    Id = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    UserId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     IsActive = table.Column<bool>(type: "BIT", nullable: false, defaultValue: true),
                     IsDeleted = table.Column<bool>(type: "BIT", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true)
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -76,7 +76,7 @@ namespace CoreAPI.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    RoleId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    RoleId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -89,14 +89,14 @@ namespace CoreAPI.Migrations
                 name: "Roles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    Id = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     IsActive = table.Column<bool>(type: "BIT", nullable: false, defaultValue: true),
                     IsDeleted = table.Column<bool>(type: "BIT", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true),
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true),
                     Name = table.Column<string>(type: "VARCHAR(50)", maxLength: 256, nullable: false),
                     NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -111,7 +111,7 @@ namespace CoreAPI.Migrations
                 name: "Tenants",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    Id = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     Name = table.Column<string>(type: "VARCHAR(50)", nullable: false),
                     Status = table.Column<byte>(type: "TINYINT", nullable: false),
                     Setting_PointPerDollar = table.Column<int>(type: "int", nullable: true),
@@ -122,7 +122,7 @@ namespace CoreAPI.Migrations
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true)
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -133,18 +133,18 @@ namespace CoreAPI.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    Id = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     FirstName = table.Column<string>(type: "VARCHAR(50)", nullable: false),
                     LastName = table.Column<string>(type: "VARCHAR(50)", nullable: false),
                     AuthProvider = table.Column<string>(type: "VARCHAR(10)", nullable: false, defaultValue: "Local"),
                     ProviderKey = table.Column<string>(type: "VARCHAR(100)", nullable: true),
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     IsActive = table.Column<bool>(type: "BIT", nullable: false, defaultValue: true),
                     IsDeleted = table.Column<bool>(type: "BIT", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true),
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true),
                     UserName = table.Column<string>(type: "VARCHAR(50)", maxLength: 256, nullable: false),
                     NormalizedUserName = table.Column<string>(type: "VARCHAR(50)", maxLength: 256, nullable: false),
                     Email = table.Column<string>(type: "VARCHAR(100)", maxLength: 256, nullable: false),
@@ -180,12 +180,12 @@ namespace CoreAPI.Migrations
                 name: "TransactionTypes",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    Id = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     Slug = table.Column<string>(type: "VARCHAR(15)", nullable: false),
                     Name = table.Column<string>(type: "VARCHAR(15)", nullable: false),
                     Description = table.Column<string>(type: "VARCHAR(MAX)", nullable: true),
                     Url = table.Column<string>(type: "VARCHAR(200)", nullable: false),
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     Multiplier = table.Column<int>(type: "INT", nullable: false),
                     AllowNegative = table.Column<bool>(type: "BIT", nullable: false, defaultValue: false),
                     IsActive = table.Column<bool>(type: "BIT", nullable: false, defaultValue: true),
@@ -193,7 +193,7 @@ namespace CoreAPI.Migrations
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true)
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -210,14 +210,14 @@ namespace CoreAPI.Migrations
                         principalTable: "Users",
                         principalColumn: "Id");
                 });
-            
+
             migrationBuilder.CreateTable(
                 name: "UserClaims",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    UserId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -239,7 +239,7 @@ namespace CoreAPI.Migrations
                     LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ProviderKey = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ProviderDisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserId = table.Column<string>(type: "VARCHAR(100)", nullable: false)
+                    UserId = table.Column<string>(type: "VARCHAR(36)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -256,9 +256,9 @@ namespace CoreAPI.Migrations
                 name: "UserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    RoleId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false)
+                    UserId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    RoleId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -293,7 +293,7 @@ namespace CoreAPI.Migrations
                 name: "UserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    UserId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Value = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -313,17 +313,17 @@ namespace CoreAPI.Migrations
                 name: "Transactions",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    TenantId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    CustomerId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    AccountTypeId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    Id = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    TenantId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    CustomerId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
+                    AccountTypeId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     Amount = table.Column<decimal>(type: "DECIMAL(18,2)", nullable: false),
-                    TransactionTypeId = table.Column<string>(type: "VARCHAR(100)", nullable: false),
+                    TransactionTypeId = table.Column<string>(type: "VARCHAR(36)", nullable: false),
                     Reason = table.Column<string>(type: "NVARCHAR(100)", nullable: true),
-                    ReferenceId = table.Column<string>(type: "VARCHAR(100)", nullable: true),
+                    ReferenceId = table.Column<string>(type: "VARCHAR(36)", nullable: true),
                     OccurredAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: false),
-                    PerformBy = table.Column<string>(type: "VARCHAR(100)", nullable: true)
+                    PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -461,6 +461,13 @@ namespace CoreAPI.Migrations
                 columns: new[] { "TenantId", "Name" },
                 unique: true,
                 filter: "[Name] <> '' AND [IsDeleted] = 0");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Roles_TenantId_NormalizedName",
+                table: "Roles",
+                columns: new[] { "TenantId", "NormalizedName" },
+                unique: true,
+                filter: "[NormalizedName] <> '' AND [IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "RoleNameIndex",

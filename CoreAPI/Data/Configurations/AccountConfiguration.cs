@@ -12,15 +12,15 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.HasKey(e => new { e.TenantId, e.CustomerId, e.AccountTypeId });
 
         builder.Property(e => e.CustomerId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
 
         builder.Property(e => e.TenantId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         
         builder.Property(e => e.AccountTypeId)
-            .HasColumnType("VARCHAR(100)")
+            .HasColumnType("VARCHAR(36)")
             .IsRequired();
         
         builder.Property(e => e.Balance)
@@ -48,7 +48,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasDefaultValue(null);
 
         builder.Property(e => e.PerformBy)
-            .HasColumnType("VARCHAR(100)");
+            .HasColumnType("VARCHAR(36)");
 
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => e.PerformBy);
