@@ -227,11 +227,10 @@ public class TenantsController(
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
-        [FromQuery] CustomerGetBalanceOptionsDto? options,
         [FromQuery] PaginationOption pageOption,
         CancellationToken ct = default)
     {
-        var (balance, lastActivities) = await _customerService.GetCustomerBalanceByIdAsync(customerId, tenantId, options, pageOption, ct);
+        var (balance, lastActivities) = await _customerService.GetCustomerBalanceByIdAsync(customerId, tenantId, pageOption, ct);
         return Ok(new
         {
             Balance = balance,

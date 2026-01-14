@@ -98,7 +98,7 @@ namespace CoreAPI.Migrations
                     DeletedAt = table.Column<DateTimeOffset>(type: "DATETIMEOFFSET(3)", nullable: true),
                     PerformBy = table.Column<string>(type: "VARCHAR(36)", nullable: true),
                     Name = table.Column<string>(type: "VARCHAR(50)", maxLength: 256, nullable: false),
-                    NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "VARCHAR(50)", maxLength: 256, nullable: false),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
@@ -392,13 +392,6 @@ namespace CoreAPI.Migrations
                 columns: new[] { "IsActive", "IsDeleted" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AccountTypes_Name_TenantId",
-                table: "AccountTypes",
-                columns: new[] { "Name", "TenantId" },
-                unique: true,
-                filter: "[IsDeleted] = 0");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_AccountTypes_PerformBy",
                 table: "AccountTypes",
                 column: "PerformBy");
@@ -407,6 +400,13 @@ namespace CoreAPI.Migrations
                 name: "IX_AccountTypes_TenantId",
                 table: "AccountTypes",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AccountTypes_TenantId_Name",
+                table: "AccountTypes",
+                columns: new[] { "TenantId", "Name" },
+                unique: true,
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Customers_Id",
@@ -436,6 +436,12 @@ namespace CoreAPI.Migrations
                 name: "IX_RoleClaims_RoleId",
                 table: "RoleClaims",
                 column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Roles_NormalizedName",
+                table: "Roles",
+                column: "NormalizedName",
+                filter: "[NormalizedName] <> '' AND [IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Roles_PerformBy",
@@ -468,13 +474,6 @@ namespace CoreAPI.Migrations
                 columns: new[] { "TenantId", "NormalizedName" },
                 unique: true,
                 filter: "[NormalizedName] <> '' AND [IsDeleted] = 0");
-
-            migrationBuilder.CreateIndex(
-                name: "RoleNameIndex",
-                table: "Roles",
-                column: "NormalizedName",
-                unique: true,
-                filter: "[NormalizedName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tenants_Id",
@@ -577,9 +576,17 @@ namespace CoreAPI.Migrations
                 columns: new[] { "UserId", "TenantId" });
 
             migrationBuilder.CreateIndex(
-                name: "EmailIndex",
+                name: "IX_Users_NormalizedEmail",
                 table: "Users",
-                column: "NormalizedEmail");
+                column: "NormalizedEmail",
+                filter: "[IsDeleted] = 0");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_NormalizedUserName",
+                table: "Users",
+                column: "NormalizedUserName",
+                unique: true,
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_PerformBy",
@@ -590,7 +597,7 @@ namespace CoreAPI.Migrations
                 name: "IX_Users_TenantId",
                 table: "Users",
                 column: "TenantId",
-                filter: "[TenantId] IS NOT NULL AND [IsDeleted] = 0");
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_TenantId_Email",
@@ -607,17 +614,11 @@ namespace CoreAPI.Migrations
                 filter: "[TenantId] IS NOT NULL AND [IsDeleted] = 0");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_TenantId_UserName",
+                name: "IX_Users_UserName",
                 table: "Users",
-                columns: new[] { "TenantId", "UserName" },
+                column: "UserName",
                 unique: true,
-                filter: "[UserName] <> '' AND [IsDeleted] = 0");
-
-            migrationBuilder.CreateIndex(
-                name: "UserNameIndex",
-                table: "Users",
-                column: "NormalizedUserName",
-                unique: true);
+                filter: "[IsDeleted] = 0");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Accounts_AccountTypes_AccountTypeId",

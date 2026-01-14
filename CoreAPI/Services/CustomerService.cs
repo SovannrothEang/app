@@ -54,16 +54,9 @@ public class CustomerService(
         return _mapper.Map<CustomerDto>(customer);
     }
 
-    // public async Task GetCustomerDashboardAsync(
-    //     CancellationToken ct = default)
-    // {
-    //     
-    // }
-
     public async Task<(decimal balance, PagedResult<TransactionDto> list)> GetCustomerBalanceByIdAsync(
         string customerId,
         string tenantId,
-        CustomerGetBalanceOptionsDto? option,
         PaginationOption pageOption,
         CancellationToken cancellationToken = default)
     {
@@ -74,7 +67,6 @@ public class CustomerService(
         var (account, transactions, totalCount) = await _accountRepository.GetByTenantAndCustomerPaginationAsync(
             tenantId,
             customerId,
-            option,
             pageOption,
             childIncluded: true,
             cancellationToken);

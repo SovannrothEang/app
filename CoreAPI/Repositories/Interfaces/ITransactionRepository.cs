@@ -29,4 +29,9 @@ public interface ITransactionRepository
 
     Task<IEnumerable<Transaction>> GetByTenantIdAsync(string tenantId,
         CancellationToken cancellationToken = default);
+
+    Task<(IEnumerable<Transaction> result, int totalCount)> GetPaginatedAsync(
+        IQueryable<Transaction> queryable,
+        PaginationOption pageOption,
+        CancellationToken cancellationToken = default);
 }

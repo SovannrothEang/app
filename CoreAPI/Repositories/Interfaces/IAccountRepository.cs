@@ -21,7 +21,6 @@ public interface IAccountRepository
     Task<(Account? account, IEnumerable<Transaction> transactions, int totalTransaction)> GetByTenantAndCustomerPaginationAsync(
         string tenantId,
         string customerId,
-        CustomerGetBalanceOptionsDto? option,
         PaginationOption pageOption,
         bool childIncluded = false,
         CancellationToken cancellationToken = default);

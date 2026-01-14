@@ -82,6 +82,8 @@ public class CustomersController(
     /// Get all transactions of a customer by id
     /// </summary>
     /// <param name="customerId"></param>
+    /// <param name="option"></param>
+    /// <param name="childIncluded"></param>
     /// <param name="ct"></param>
     /// <returns>List of transactions</returns>
     [HttpGet("{customerId}/transactions")]

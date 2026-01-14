@@ -20,7 +20,6 @@ public interface ICustomerService
     Task<(decimal balance, PagedResult<TransactionDto> list)> GetCustomerBalanceByIdAsync(
         string customerId,
         string tenantId,
-        CustomerGetBalanceOptionsDto? option,
         PaginationOption pageOption,
         CancellationToken cancellationToken = default);
     

@@ -39,8 +39,8 @@ public static class IdentitySeeder
         
         (string Id, string Name)[] roles =
         [
-            ("SUPERADMIN6BF-3063-484E-8D3B-3600F209B391","SuperAdmin"),
-            ("ADMIN7598-C50F-439D-AAF4-AE5EC63D1B93","Admin")
+            ("SUPERADMIN6BF-3063-484E-8D3B-36F2091","SuperAdmin"),
+            ("ADMIN758-C50F-439D-AAF4-AE5EC63D1B93","Admin")
         ];
 
         foreach (var (id, name) in roles)

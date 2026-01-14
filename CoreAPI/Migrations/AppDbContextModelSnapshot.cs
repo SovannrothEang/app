@@ -128,7 +128,7 @@ namespace CoreAPI.Migrations
 
                     b.HasIndex("IsActive", "IsDeleted");
 
-                    b.HasIndex("Name", "TenantId")
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
@@ -218,8 +218,9 @@ namespace CoreAPI.Migrations
                         .HasColumnType("VARCHAR(50)");
 
                     b.Property<string>("NormalizedName")
+                        .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("VARCHAR(50)");
 
                     b.Property<string>("PerformBy")
                         .HasColumnType("VARCHAR(36)");
@@ -234,9 +235,8 @@ namespace CoreAPI.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("RoleNameIndex")
-                        .HasFilter("[NormalizedName] IS NOT NULL");
+                        .HasDatabaseName("IX_Roles_NormalizedName")
+                        .HasFilter("[NormalizedName] <> '' AND [IsDeleted] = 0");
 
                     b.HasIndex("PerformBy");
 
@@ -541,16 +541,23 @@ namespace CoreAPI.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
+                        .HasDatabaseName("IX_Users_NormalizedEmail")
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
-                        .HasDatabaseName("UserNameIndex");
+                        .HasDatabaseName("IX_Users_NormalizedUserName")
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("PerformBy");
 
                     b.HasIndex("TenantId")
-                        .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.HasIndex("UserName")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Users_UserName")
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("TenantId", "Email")
                         .IsUnique()
@@ -559,10 +566,6 @@ namespace CoreAPI.Migrations
                     b.HasIndex("TenantId", "Id")
                         .IsUnique()
                         .HasFilter("[TenantId] IS NOT NULL AND [IsDeleted] = 0");
-
-                    b.HasIndex("TenantId", "UserName")
-                        .IsUnique()
-                        .HasFilter("[UserName] <> '' AND [IsDeleted] = 0");
 
                     b.ToTable("Users", (string)null);
                 });

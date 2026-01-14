@@ -60,14 +60,23 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnType("VARCHAR(36)");
             
         // Fixed Index Filter later
+        builder.HasIndex(e => e.TenantId)
+            .HasFilter($"[{nameof(User.IsDeleted)}] = 0");
+        builder.HasIndex(e => e.UserName)
+            .HasDatabaseName("IX_Users_UserName")
+            .IsUnique()
+            .HasFilter($"[{nameof(User.IsDeleted)}] = 0");
+        builder.HasIndex(e => e.NormalizedUserName)
+            .HasDatabaseName("IX_Users_NormalizedUserName")
+            .IsUnique()
+            .HasFilter($"[{nameof(User.IsDeleted)}] = 0");
+        builder.HasIndex(e => e.NormalizedEmail)
+            .HasDatabaseName("IX_Users_NormalizedEmail")
+            .IsUnique(false)
+            .HasFilter($"[{nameof(User.IsDeleted)}] = 0");
         builder.HasIndex(e => new { e.TenantId, e.Id })
             .IsUnique()
             .HasFilter($"[{nameof(User.TenantId)}] IS NOT NULL AND [{nameof(User.IsDeleted)}] = 0");
-        builder.HasIndex(e => e.TenantId)
-            .HasFilter($"[{nameof(User.TenantId)}] IS NOT NULL AND [{nameof(User.IsDeleted)}] = 0");
-        builder.HasIndex(e => new { e.TenantId, e.UserName })
-            .IsUnique() 
-            .HasFilter($"[{nameof(User.UserName)}] <> '' AND [{nameof(User.IsDeleted)}] = 0");
         builder.HasIndex(e => new { e.TenantId, e.Email })
             .IsUnique() 
             .HasFilter($"[{nameof(User.Email)}] <> '' AND [{nameof(User.IsDeleted)}] = 0");

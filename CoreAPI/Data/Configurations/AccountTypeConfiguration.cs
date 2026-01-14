@@ -42,10 +42,10 @@ public class AccountTypeConfiguration : IEntityTypeConfiguration<AccountType>
             .IsUnique()
             .HasFilter($"[{nameof(AccountType.IsDeleted)}] = 0");
         builder.HasIndex(e => e.PerformBy);
-        builder.HasIndex(e => new { e.Name, e.TenantId })
+        builder.HasIndex(e => e.TenantId);
+        builder.HasIndex(e => new { e.TenantId, e.Name })
             .IsUnique()
             .HasFilter($"[{nameof(AccountType.IsDeleted)}] = 0");
-        builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => new { e.IsActive, e.IsDeleted });
 
         // Relationships
@@ -54,11 +54,9 @@ public class AccountTypeConfiguration : IEntityTypeConfiguration<AccountType>
             .HasForeignKey(e => e.AccountTypeId )
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
-
         builder.HasOne(e => e.Performer)
             .WithMany()
             .HasForeignKey(pt => pt.PerformBy);
-
         builder.HasOne(e => e.Tenant)
             .WithMany()
             .HasForeignKey(pt => pt.TenantId)

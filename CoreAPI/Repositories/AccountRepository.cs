@@ -9,9 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class AccountRepository(AppDbContext dbContext) : IAccountRepository
+public class AccountRepository(AppDbContext dbContext, ITransactionRepository transactionRepository)
+    : IAccountRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
+    private readonly ITransactionRepository _transactionRepository = transactionRepository;
 
     public async Task<IEnumerable<Account>> GetAllAsync(
         Expression<Func<Account, bool>>? filtering = null,
@@ -55,12 +57,13 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
     public async Task<(Account? account, IEnumerable<Transaction> transactions, int totalTransaction)> GetByTenantAndCustomerPaginationAsync(
         string tenantId,
         string customerId,
-        CustomerGetBalanceOptionsDto? option,
         PaginationOption pageOption,
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.Accounts.AsQueryable();
+        var queryable = _dbContext.Accounts
+            .AsQueryable();
+        // I don't IgnoreQueryGlobal cuz I want to make sure that Tenant is gonna be getting what their
         var queryTransaction = _dbContext.Transactions
             .AsNoTracking()
             .AsQueryable();
@@ -77,45 +80,12 @@ public class AccountRepository(AppDbContext dbContext) : IAccountRepository
         var account = await queryable
             .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CustomerId == customerId, cancellationToken);
         
-        if (!string.IsNullOrEmpty(pageOption.TransactionType))
-        {
-            queryTransaction = queryTransaction.Where(x => x.TransactionType!.Slug == pageOption.TransactionType);
-        }
-        if (pageOption.StartDate.HasValue)
-        {
-            var startDate = new DateTimeOffset(pageOption.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-            queryTransaction = queryTransaction.Where(x => x.CreatedAt >= startDate);
-        }
-        if (pageOption.EndDate.HasValue)
-        {
-            var endDate = new DateTimeOffset(pageOption.EndDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-            queryTransaction = queryTransaction.Where(x => x.CreatedAt <= endDate);
-        }
-        
-        var totalTransaction = await queryTransaction.CountAsync(cancellationToken);
-
-        var sortBy = pageOption.SortBy!.ToLower();
-        var sortDirection = pageOption.SortDirection!.ToLower();
-        queryTransaction = (sortBy, sortDirection) switch
-        {
-            ("balance", "asc") => queryTransaction.OrderBy(x => x.Amount),
-            ("balance", "desc") => queryTransaction.OrderByDescending(x => x.Amount),
-            ("type", "asc") => queryTransaction.OrderBy(x => x.TransactionType),
-            ("type", "desc") => queryTransaction.OrderByDescending(x => x.TransactionType),
-            ("occurredat", "asc") => queryTransaction.OrderBy(x => x.OccurredAt),
-            ("occurredat", "desc") => queryTransaction.OrderByDescending(x => x.OccurredAt),
-            _ => queryTransaction.OrderBy(x => x.CreatedAt)
-        };
-
-        // Null-forgiven since we init the value even if the user don't assign it anything
-        var transaction = await queryTransaction
-            .Skip((pageOption.Page!.Value - 1) * pageOption.PageSize!.Value)
-            .Take(pageOption.PageSize!.Value)
-            .ToListAsync(cancellationToken);
+        var (result, totalCount) = await _transactionRepository
+            .GetPaginatedAsync(queryTransaction, pageOption, cancellationToken);
 
         if (account is null)
             return (null, [], 0);
-        return (account, transaction, totalTransaction);
+        return (account, result, totalCount);
     }
 
     public async Task<IEnumerable<Account>> GetAllWithCustomerAsync(
