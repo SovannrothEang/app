@@ -1,6 +1,5 @@
 ﻿using CoreAPI.DTOs.Customers;
 using CoreAPI.Repositories.Interfaces;
-using CoreAPI.Services.Interfaces;
 using FluentValidation;
 
 namespace CoreAPI.Validators.Customers;

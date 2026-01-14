@@ -310,15 +310,21 @@ public class TransactionServiceTest
         var dto = new PostTransactionDto(100m, "Retry Test", null, null);
 
         var tenant = new Tenant(tenantId, "Tenant", "slug");
-        var customer = new Customer(customerId, "user1", "creator");
-        customer.CreateAccount(tenantId, accountTypeId);
 
         var transType = new TransactionTypeDto("tt1", slug, "Earn", null, 1, false);
 
         _tenantRepoMock.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tenant);
+
+        // Return a fresh customer instance on each call to simulate database refresh during retry
         _customerRepoMock.Setup(r => r.GetByIdForCustomerAsync(customerId, true, true, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(customer);
+            .ReturnsAsync(() =>
+            {
+                var customer = new Customer(customerId, "user1", "creator");
+                customer.CreateAccount(tenantId, accountTypeId);
+                return customer;
+            });
+
         _transactionTypeServiceMock.Setup(s => s.GetBySlugAsync(slug, It.IsAny<CancellationToken>()))
             .ReturnsAsync(transType);
 
