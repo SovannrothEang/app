@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using CoreAPI.DTOs;
-using CoreAPI.DTOs.Customers;
 using CoreAPI.Models;
 
 namespace CoreAPI.Repositories.Interfaces;
@@ -51,6 +50,7 @@ public interface IAccountRepository
     /// <param name="customerId"></param>
     /// <param name="option">
     /// Pagination options, e.g. Page, PageSize, SortBy, SortDirection, etc
+    /// Sort by: balance, name, type, lastactivity (which account has the last activity first)
     /// </param>
     /// <param name="filtering">
     /// Filtering by using Expression of LINQ (object: Account)

@@ -41,7 +41,7 @@ public class CustomerService(
 
     public async Task<CustomerDto> GetByIdForCustomerAsync(
         string customerId,
-        PaginationOption option,
+        PaginationOption? option,
         bool childIncluded = false,
         CancellationToken ct = default)
     {

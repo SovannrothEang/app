@@ -48,14 +48,12 @@ public class AppDbContext(
             {
                 case EntityState.Added:
                 case EntityState.Modified:
-                    // 1. Auto-fill TenantId if missing
                     if (string.IsNullOrEmpty(entry.Entity.TenantId) &&
                         _currentUserProvider.TenantId is not null)
                     {
                         entry.Entity.TenantId = _currentUserProvider.TenantId;
                     }
 
-                    // 2. Security Enforcement
                     // If the current user is SuperAdmin (Host User), they can bypass this check.
                     if (_currentUserProvider.TenantId == _hostTenantId)
                     {
@@ -63,7 +61,8 @@ public class AppDbContext(
                     }
                     
                     // Otherwise, strictly enforce that the entity's TenantId matches the User's TenantId.
-                    if (entry.Entity.TenantId != _currentUserProvider.TenantId)
+                    if (entry.Entity.TenantId != _currentUserProvider.TenantId &&
+                        _currentUserProvider.TenantId is not null)
                     {
                         throw new UnauthorizedAccessException(
                             $"Cross-tenant write denied. User from tenant '{_currentUserProvider.TenantId}' " +

@@ -27,7 +27,7 @@ public interface ICustomerService
     /// <returns></returns>
     Task<CustomerDto> GetByIdForCustomerAsync(
         string customerId,
-        PaginationOption option,
+        PaginationOption? option,
         bool childIncluded = false,
         CancellationToken ct = default);
     Task<CustomerDto> GetByIdForTenantAsync(string id, bool childIncluded = false, CancellationToken ct = default);

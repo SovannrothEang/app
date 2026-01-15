@@ -71,13 +71,19 @@ public class AccountRepository(
             .AsQueryable()
             .IgnoreQueryFilters() // Customer only
             .Where(e => e.CustomerId == customerId);
-        var totalCount =  await queryable.CountAsync(cancellationToken);
-        queryable = queryable.Include(e => e.AccountType);
-        if (childIncluded)
+        var totalCount = await queryable.CountAsync(cancellationToken);
+        //if (childIncluded)
             queryable = queryable
+                .Include(e => e.AccountType)
                 .Include(e => e.Customer)
                 .Include(e => e.Tenant)
                 .Include(e => e.Performer);
+        // If there are no transaction included, we'll just throw the last activity into it
+        queryable = childIncluded
+            ? queryable.Include(e => e.Transactions)
+            : queryable.Include(e => e.Transactions
+                .OrderByDescending(x => x.CreatedAt)
+                .Take(1));
         if (filtering != null) queryable = queryable.Where(filtering);
         var result = await GetPaginatedAsync(queryable, option, cancellationToken);
         return (result, totalCount);
@@ -104,13 +110,23 @@ public class AccountRepository(
         var sortDirection = pageOption.SortDirection!.ToLower();
         queryable = (sortBy, sortDirection) switch
         {
-            ("balance", "asc") => queryable.OrderBy(x => x.Balance),
-            ("balance", "desc") => queryable.OrderByDescending(x => x.Balance),
+            ("balance", "asc") => queryable
+                .OrderBy(x => x.Balance)
+                .ThenBy(x => x.CreatedAt),
+            ("balance", "desc") => queryable
+                .OrderByDescending(x => x.Balance)
+                .ThenBy(x => x.CreatedAt),
             ("type", "asc") => queryable
                 .OrderBy(x => x.AccountType!.Name)
                 .ThenBy(x => x.CreatedAt),
             ("type", "desc") => queryable
                 .OrderByDescending(x => x.AccountType!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("name", "asc") => queryable
+                .OrderBy(x => x.Tenant!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("name", "desc") => queryable
+                .OrderByDescending(x => x.Tenant!.Name)
                 .ThenBy(x => x.CreatedAt),
             ("lastactivity", "asc") => queryable
                 .OrderBy(x => x.Transactions.Last().CreatedAt)
@@ -122,7 +138,6 @@ public class AccountRepository(
                 .OrderBy(x => x.CreatedAt)
                 .ThenBy(x => x.AccountType!.Name)
         };
-
         return await queryable
             .Skip((pageOption.Page!.Value - 1) * pageOption.PageSize!.Value)
             .Take(pageOption.PageSize!.Value)

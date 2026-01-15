@@ -210,6 +210,7 @@ public class AuthService(
                        .IgnoreQueryFilters()
                        .FirstOrDefaultAsync(u => u.Id == userId)
                    ?? throw new Exception("User not found");
+        user.Modified();
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
 
         if (!result.Succeeded)

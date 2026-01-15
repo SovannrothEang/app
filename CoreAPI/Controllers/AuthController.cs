@@ -1,6 +1,8 @@
 ﻿using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.Services.Interfaces;
+using CoreAPI.Validators.Customers;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -67,6 +69,11 @@ public class AuthController(
         [FromBody] CustomerCreateDto dto,
         CancellationToken cancellationToken = default)
     {
+        var validator = new CustomerCreateDtoValidator();
+        var result = validator.Validate(dto);
+        if (!result.IsValid)
+            return BadRequest(result.Errors);
+
         var customer = await _customerService.CreateAsync(dto, cancellationToken);
         return Ok(new
         {

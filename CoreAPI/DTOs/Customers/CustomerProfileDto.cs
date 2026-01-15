@@ -14,12 +14,12 @@ public record TenantProfileDto(
     string TenantId,
     string TenantName,
     decimal TotalBalance,
-    IReadOnlyList<CustomerAccountProfileDto> Accounts);
+    IReadOnlyList<AccountCustomerProfileDto> Accounts);
     
-public record CustomerAccountProfileDto(
+public record AccountCustomerProfileDto(
     string Type,
     decimal Balance,
-    IReadOnlyList<TransactionDto> Customers,
-    // PagedResult<TransactionDto> Transactions,
+    // IReadOnlyList<TransactionDto> Customers,
+    PagedResult<TransactionDto> Transactions,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt);

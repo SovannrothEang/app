@@ -4,8 +4,7 @@ using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Exceptions;
 using CoreAPI.Services.Interfaces;
-using CoreAPI.Validators.Customers;
-using FluentValidation;
+using CoreAPI.Validators.Tenant;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -76,6 +75,11 @@ public class TenantsController(
         [FromBody] TenantCreateDto dto,
         CancellationToken ct = default)
     {
+        var validator = new TenantCreateDtoValidator();
+        var result = validator.Validate(dto);
+        if (!result.IsValid)
+            return BadRequest(result.Errors);
+
         var (userId, token) = await _userService.CreateTenantAndUserAsync(dto, ct);
         return Ok(new
         {
@@ -215,6 +219,7 @@ public class TenantsController(
 
     /// <summary>
     /// Checking the customer balance
+    /// TODO: there are account type, so should be better if return with accounnts
     /// </summary>
     /// <param name="tenantId"></param>
     /// <param name="customerId"></param>
@@ -235,8 +240,8 @@ public class TenantsController(
         var (balance, result) = await _customerService.GetCustomerBalanceByIdAsync(customerId, tenantId, option, childIncluded.Value, ct);
         return Ok(new
         {
-            Balance = balance,
-            Activities = result
+            TotalBalance = balance,
+            result
         });
     }
 }

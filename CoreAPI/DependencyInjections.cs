@@ -23,8 +23,8 @@ public static class DependencyInjections
         {
             builder.Services.AddDbContext<AppDbContext>(
                 options => options
-                    .UseSqlServer(builder.Configuration.GetConnectionString("DockerConnection"))
-                    // .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                    // .UseSqlServer(builder.Configuration.GetConnectionString("DockerConnection"))
+                    .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
                     // .EnableSensitiveDataLogging() // Development 
             );
         }

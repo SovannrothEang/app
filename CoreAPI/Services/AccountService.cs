@@ -19,70 +19,50 @@ public class AccountService(
     private readonly ITransactionService _transactionService = transactionService;
     private readonly ILogger<AccountService> _logger = logger;
 
-    public async Task<IEnumerable<AccountDto>> GetAllByCustomerIdForGlobalAsync(
-        string customerId,
-        string? tenantId, // Focusing on tenantId
-        PaginationOption option,
-        bool childIncluded = false,
-        CancellationToken ct = default)
+    public async Task<(decimal totalBalance, IEnumerable<TenantProfileDto> profiles)>
+        GetAllByCustomerIdForGlobalAsync(
+            string customerId,
+            string? tenantId, // Focusing on tenantId
+            PaginationOption option,
+            bool childIncluded = false,
+            CancellationToken ct = default)
     {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all accounts by customer: {customerId}", customerId);
-        // No transaction was included in this logic
         var (accounts, totalCount) = await _accountRepository.GetAllByCustomerIdForGlobalAsync(
             customerId: customerId,
             option,
-            tenantId is null 
+            tenantId is null
                 ? null
                 : x => x.TenantId == tenantId,
             childIncluded: childIncluded,
             cancellationToken: ct);
-        
-        var transaction = await _transactionService.GetAllByCustomerIdForGlobalAsync(
-            customerId, option, childIncluded, ct);
-
-        // This maybe bad, what if there are many accounts??
-        // sortDirection ??= "asc";
-        // if (!string.IsNullOrEmpty(sortBy))
-        // {
-        //     tenants = (sortBy.ToLower(), sortDirection.ToLower()) switch
-        //     {
-        //         ("balance", "asc") => tenants.OrderBy(e => e.TotalBalance),
-        //         ("balance", "desc") => tenants.OrderByDescending(e => e.TotalBalance),
-        //         ("name", "asc") => tenants.OrderBy(e => e.TenantName),
-        //         ("name", "desc") => tenants.OrderByDescending(e => e.TenantName),
-        //         _ => tenants.OrderBy(x => x.Accounts.Select(e => e.CreatedAt)),
-        //     };
-        // }
-        
-        var accountProfile = accounts
+        var tenantProfile = accounts
             .GroupBy(a => a.TenantId)
-            // .Select(group => new
-            // {
-            //     TenantId = group.Key,
-            //     TenantName = group.First().Tenant!.Name,
-            //     TotalBalance = group.Sum(acc => acc.Balance),
-            //     Accounts = group.Select(acc => new
-            //     {
-            //         AccountType = acc.AccountType,
-            //         CurrentBalance = acc.Balance,
-            //         LastActivity = acc.Transactions,
-            //         CreatedAt = acc.CreatedAt,
-            //         UpdatedAt = acc.UpdatedAt
-            //     })
-            // }).AsQueryable();
-            .Select(group => new CustomerAccountProfileDto(
-                group.First().AccountType!.Name,
-                group.First().Balance,
-                group.First().Transactions.Select(t => _mapper.Map<TransactionDto>(t)).ToList(), // new error approach, how can we seprate transaction to each belonged account
-                group.First().CreatedAt,
-                group.First().UpdatedAt));
+            .Select(group =>
+            {
+                var accountProfiles = group.Select(account => new AccountCustomerProfileDto(
+                    account.AccountType!.Name,
+                    account.Balance,
+                    new PagedResult<TransactionDto>
+                    {
+                        Items = account.Transactions.Select(t => _mapper.Map<TransactionDto>(t)).ToList(),
+                        PageNumber = option.Page!.Value,
+                        PageSize = option.PageSize!.Value,
+                        TotalCount = totalCount
+                    },
+                    account.CreatedAt,
+                    account.UpdatedAt)
+                ).ToList();
 
-        var allTenants = accountProfile.ToList();
-        return new
-        {
-            TotolPoint = allTenants.Sum(acc => acc.TotalBalance),
-            AllTenants = accountProfile
-        });
+                return new TenantProfileDto(
+                    group.Key,
+                    group.First().Tenant!.Name,
+                    group.Sum(acc => acc.Balance),
+                    accountProfiles
+                );
+            }).ToList();
+
+        return (tenantProfile.Sum(p => p.TotalBalance), tenantProfile);
     }
 }

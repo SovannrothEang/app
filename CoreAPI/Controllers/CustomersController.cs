@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
-using CoreAPI.DTOs.Tenants;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +41,7 @@ public class CustomersController(
         CancellationToken cancellationToken = default)
     {
         childIncluded ??= false;
-        var customer = await _customerService.GetByIdForCustomerAsync(id, childIncluded.Value, cancellationToken);
+        var customer = await _customerService.GetByIdForCustomerAsync(id, null, childIncluded.Value, cancellationToken);
         return Ok(_mapper.Map<CustomerDto>(customer));
     }
 
@@ -90,8 +89,12 @@ public class CustomersController(
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var result = await _accountService.GetAllByCustomerIdForGlobalAsync(
+        var (totalBalance, result) = await _accountService.GetAllByCustomerIdForGlobalAsync(
             customerId, tenantId, option, childIncluded.Value, ct); // TenantId is for filtering
-        return Ok(result);
+        return Ok(new
+        {
+            TotalBalance = totalBalance,
+            TenantProfiles = result
+        });
     }
 }
