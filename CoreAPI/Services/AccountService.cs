@@ -2,6 +2,7 @@ using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Accounts;
 using CoreAPI.DTOs.Customers;
+using CoreAPI.DTOs.Transactions;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 
@@ -53,8 +54,8 @@ public class AccountService(
         //         _ => tenants.OrderBy(x => x.Accounts.Select(e => e.CreatedAt)),
         //     };
         // }
-
-        var tenants = accounts
+        
+        var accountProfile = accounts
             .GroupBy(a => a.TenantId)
             // .Select(group => new
             // {
@@ -70,19 +71,18 @@ public class AccountService(
             //         UpdatedAt = acc.UpdatedAt
             //     })
             // }).AsQueryable();
-            .Select(group => new TenantProfileDto
-            {
-                TenantId = group.Key,
-                TenantName = group.First().Tenant.Name,
-                TotalBalance = group.Sum(a => a.Balance),
-                Accounts = group.First()
-            });
+            .Select(group => new CustomerAccountProfileDto(
+                group.First().AccountType!.Name,
+                group.First().Balance,
+                group.First().Transactions.Select(t => _mapper.Map<TransactionDto>(t)).ToList(), // new error approach, how can we seprate transaction to each belonged account
+                group.First().CreatedAt,
+                group.First().UpdatedAt));
 
-        var allTenants = tenants.ToList();
+        var allTenants = accountProfile.ToList();
         return new
         {
             TotolPoint = allTenants.Sum(acc => acc.TotalBalance),
-            AllTenants = tenants
+            AllTenants = accountProfile
         });
     }
 }

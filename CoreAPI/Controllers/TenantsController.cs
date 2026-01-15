@@ -128,7 +128,7 @@ public class TenantsController(
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var customers = await _customerService.GetCustomersForTenantAsync(childIncluded.Value, ct);
+        var customers = await _customerService.GetAllForTenantAsync(childIncluded.Value, ct);
         return Ok(customers);
     }
     

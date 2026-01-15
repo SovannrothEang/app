@@ -16,9 +16,10 @@ public record TenantProfileDto(
     decimal TotalBalance,
     IReadOnlyList<CustomerAccountProfileDto> Accounts);
     
-public abstract record CustomerAccountProfileDto(
+public record CustomerAccountProfileDto(
     string Type,
     decimal Balance,
     IReadOnlyList<TransactionDto> Customers,
+    // PagedResult<TransactionDto> Transactions,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt);

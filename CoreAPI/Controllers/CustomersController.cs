@@ -29,7 +29,7 @@ public class CustomersController(
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var customers = await _customerService.GetAllAsync(childIncluded.Value, ct);
+        var customers = await _customerService.GetAllForGobalAsync(childIncluded.Value, ct);
         return Ok(customers);
     }
     

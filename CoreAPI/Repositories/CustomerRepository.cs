@@ -61,7 +61,9 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
         return await queryable.ToListAsync(cancellationToken);
     }
 
-    public async Task<Customer?> GetByIdForCustomerAsync(string id, bool childIncluded = false,
+    public async Task<Customer?> GetByIdForCustomerAsync(
+        string id,
+        bool childIncluded = false,
         bool trackChanges = false,
         CancellationToken cancellationToken = default)
     {
@@ -76,7 +78,9 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
         if (childIncluded)
             queryable = queryable
                 .Include(e => e.Accounts)
-                .ThenInclude(e => e.Transactions);
+                // .Include("Accounts.Transactions")
+                .Include("Accounts.AccountType")
+                .Include(e => e.Performer);
 
         return await queryable.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
