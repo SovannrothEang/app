@@ -1,6 +1,5 @@
 ﻿using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
-using CoreAPI.Models.Enums;
 
 namespace CoreAPI.DTOs.Accounts;
 

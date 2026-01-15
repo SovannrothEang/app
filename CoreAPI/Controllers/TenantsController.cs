@@ -218,8 +218,8 @@ public class TenantsController(
     /// </summary>
     /// <param name="tenantId"></param>
     /// <param name="customerId"></param>
-    /// <param name="options"></param>
-    /// <param name="pageOption"></param>
+    /// <param name="option"></param>
+    /// <param name="childIncluded"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
@@ -227,14 +227,16 @@ public class TenantsController(
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
-        [FromQuery] PaginationOption pageOption,
+        [FromQuery] PaginationOption option,
+        [FromQuery] bool? childIncluded,
         CancellationToken ct = default)
     {
-        var (balance, lastActivities) = await _customerService.GetCustomerBalanceByIdAsync(customerId, tenantId, pageOption, ct);
+        childIncluded ??= false;
+        var (balance, result) = await _customerService.GetCustomerBalanceByIdAsync(customerId, tenantId, option, childIncluded.Value, ct);
         return Ok(new
         {
             Balance = balance,
-            Activities = lastActivities
+            Activities = result
         });
     }
 }

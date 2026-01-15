@@ -17,10 +17,11 @@ public interface ICustomerService
     Task UpdateAsync(string id, CustomerUpdateDto dto, CancellationToken ct = default);
     Task DeleteAsync(string id, CancellationToken ct = default);
     
-    Task<(decimal balance, PagedResult<TransactionDto> list)> GetCustomerBalanceByIdAsync(
+    Task<(decimal balance, PagedResult<TransactionDto> result)> GetCustomerBalanceByIdAsync(
         string customerId,
         string tenantId,
         PaginationOption pageOption,
+        bool childIncluded = false,
         CancellationToken cancellationToken = default);
     
 }

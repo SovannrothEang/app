@@ -19,6 +19,7 @@ public class CustomerService(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
     private readonly IAccountRepository _accountRepository = unitOfWork.AccountRepository;
+    private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IUserService _userService = userService;
     private readonly IMapper _mapper = mapper;
@@ -54,32 +55,33 @@ public class CustomerService(
         return _mapper.Map<CustomerDto>(customer);
     }
 
-    public async Task<(decimal balance, PagedResult<TransactionDto> list)> GetCustomerBalanceByIdAsync(
-        string customerId,
-        string tenantId,
-        PaginationOption pageOption,
-        CancellationToken cancellationToken = default)
+    public async Task<(decimal balance, PagedResult<TransactionDto> result)>
+        GetCustomerBalanceByIdAsync(
+            string customerId,
+            string tenantId,
+            PaginationOption pageOption,
+            bool childIncluded = false,
+            CancellationToken cancellationToken = default)
     {
         // Init value if null
         pageOption.Page ??= 1;
         pageOption.PageSize ??= 10;
 
-        var (account, transactions, totalCount) = await _accountRepository.GetByTenantAndCustomerPaginationAsync(
-            tenantId,
-            customerId,
-            pageOption,
-            childIncluded: true,
-            cancellationToken);
+        // I dont need total accounts right now
+        var (accounts, _) = await _accountRepository.GetAllByCustomerIdForGlobalAsync(
+            customerId, pageOption, null, childIncluded, cancellationToken);
+        var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdForGlobalAsync(
+            customerId, pageOption, childIncluded, cancellationToken);
         
-        if (account is null)
+        if (accounts is null || !accounts.Any())
             throw new KeyNotFoundException($"Customer with id: {customerId} not found.");
 
-        var dtos = transactions.Select(a => _mapper.Map<TransactionDto>(a)).ToList();
+        var dtos = result.Select(acc => _mapper.Map<TransactionDto>(acc)).ToList();
 
-        return (account.Balance, new PagedResult<TransactionDto>
+        return (accounts.Sum(acc => acc.Balance), new PagedResult<TransactionDto>
         {
             Items = dtos,
-            PageNumber = pageOption.Page.Value, // TODO: make sure this is fine
+            PageNumber = pageOption.Page.Value,
             PageSize = pageOption.PageSize.Value,
             TotalCount = totalCount
         });

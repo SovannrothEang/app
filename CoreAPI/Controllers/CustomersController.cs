@@ -22,12 +22,6 @@ public class CustomersController(
     private readonly IAccountService _accountService = accountService;
     private readonly ICustomerService _customerService = customerService;
 
-    /// <summary>
-    /// Get all customers by a SuperAdmin, or root access
-    /// </summary>
-    /// <param name="childIncluded"></param>
-    /// <param name="ct"></param>
-    /// <returns>List of customer dto</returns>
     [HttpGet]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllCustomersAsync(
@@ -39,19 +33,12 @@ public class CustomersController(
         return Ok(customers);
     }
     
-    /// <summary>
-    /// Get customer by id (for global usage, can be SuperAdmin retrieving, or customer themselves)
-    /// </summary>
-    /// <param name="id"></param>
-    /// <param name="childIncluded"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns>Customer Dto</returns>
     [HttpGet("{id}")]
     [ActionName(nameof(GetCustomerByIdAsync))]
     [Authorize(Policy = Constants.CustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerByIdAsync(
         [FromRoute] string id,
-        [FromQuery] bool? childIncluded = false,
+        [FromQuery] bool? childIncluded,
         CancellationToken cancellationToken = default)
     {
         childIncluded ??= false;
@@ -60,32 +47,23 @@ public class CustomersController(
     }
 
     /// <summary>
-    /// Get all transactions of all customers,
+    /// Expecting a pagination result of transactions, all customer transaction, which retrieve by SuperAdmin, or related role (future implement)
     /// </summary>
-    /// <param name="childIncluded"></param>
-    /// <param name="option"></param>
-    /// <param name="ct"></param>
-    /// <returns>List of transactions</returns>
     [HttpGet("transactions")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllCustomersTransactionsAsync(
         [FromQuery] PaginationOption option,
-        [FromQuery] bool? childIncluded = false,
+        [FromQuery] bool? childIncluded,
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var transactions = await _transactionService.GetAllTransactionsAsync(option, childIncluded.Value, ct);
+        var transactions = await _transactionService.GetAllAsync(option, childIncluded.Value, ct);
         return Ok(transactions);
     }
 
     /// <summary>
-    /// Get all transactions of a customer by id
+    /// Expecting a pagination result of transaction, which retrieve by Customer owner or SuperAdmin
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <param name="option"></param>
-    /// <param name="childIncluded"></param>
-    /// <param name="ct"></param>
-    /// <returns>List of transactions</returns>
     [HttpGet("{customerId}/transactions")]
     [Authorize(Policy = Constants.CustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerTransactionsByIdAsync(
@@ -95,70 +73,25 @@ public class CustomersController(
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var transactions = await _transactionService.GetAllByCustomerAsync(customerId, option, childIncluded.Value, ct);
+        var transactions = await _transactionService.GetAllByCustomerIdForGlobalAsync(customerId, option, childIncluded.Value, ct);
         return Ok(transactions);
     }
     
+    /// <summary>
+    /// Customer dashboard, including tenant profile, a list of account details, and transactions (default: last activity)
+    /// </summary>
     [HttpGet("{customerId}/overview")]
     [Authorize(Policy = Constants.CustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerDashboard(
         [FromRoute] string customerId,
         [FromQuery] bool? childIncluded,
+        [FromQuery] PaginationOption option,
         [FromQuery] string? tenantId = null,
-        [FromQuery] string? sortBy = null,
-        [FromQuery] string? sortDirection = "asc",
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var customer = await _customerService.GetByIdForCustomerAsync(customerId, childIncluded.Value, ct);
-        var accounts = await _accountService.GetAllWithCustomerAsync(customerId, tenantId, childIncluded.Value, ct); // TenantId is for filtering
-
-        var tenants = accounts
-            .GroupBy(a => a.TenantId)
-            .Select(group => 
-            {
-                var tenantId = group.Key;
-                var tenantName = group.First().Tenant!.Name;
-
-                var tenants = new
-                {
-                    TenantId = tenantId,
-                    TenantName = tenantName,
-                    TotalBalance = group.Sum(acc => acc.Balance),
-                    Accounts = group.Select(acc => new
-                    {
-                        AccountType = acc.AccountType,
-                        CurrentBalance = acc.Balance,
-                        LastActivity = acc.Transactions,
-                        CreatedAt = acc.CreatedAt,
-                        UpdatedAt = acc.UpdatedAt
-                    })
-                };
-                return tenants;
-            }).AsQueryable();
-
-        // This maybe bad, what if there are many accounts??
-        sortDirection ??= "asc";
-        if (!string.IsNullOrEmpty(sortBy))
-        {
-            tenants = (sortBy.ToLower(), sortDirection.ToLower()) switch
-            {
-                ("balance", "asc") => tenants.OrderBy(e => e.TotalBalance),
-                ("balance", "desc") => tenants.OrderByDescending(e => e.TotalBalance),
-                ("tenantname", "asc") => tenants.OrderBy(e => e.TenantName),
-                ("tenantname", "desc") => tenants.OrderByDescending(e => e.TenantName),
-                _ => tenants.OrderBy(x => x.Accounts.Select(e => e.CreatedAt)),
-            };
-        }
-
-        var allTenants = tenants.ToList();
-        return Ok(new
-        {
-            TotolPoint = allTenants.Sum(acc => acc.TotalBalance),
-            AllTenants = allTenants
-        });
-        // CustomerProfile,
-        // Tenant
-        // TenantId, TenantName, Point, Account
+        var result = await _accountService.GetAllByCustomerIdForGlobalAsync(
+            customerId, tenantId, option, childIncluded.Value, ct); // TenantId is for filtering
+        return Ok(result);
     }
 }

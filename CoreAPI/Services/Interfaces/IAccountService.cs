@@ -1,21 +1,32 @@
-﻿using CoreAPI.DTOs.Accounts;
+﻿using CoreAPI.DTOs;
+using CoreAPI.DTOs.Accounts;
 
 namespace CoreAPI.Services.Interfaces;
 
 public interface IAccountService
 {
-    Task<IEnumerable<AccountDto>> GetAllWithCustomerAsync(
+    /// <summary>
+    /// Get all accounts by using Customer ID, Ignore Global Query
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="tenantId">
+    /// Filtering purpose
+    /// </param>
+    /// <param name="option">
+    /// Pagination options, e.g. Page, PageSize, SortBy, SortDirection, etc
+    /// </param>
+    /// <param name="childIncluded"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    Task<IEnumerable<AccountDto>> GetAllByCustomerIdForGlobalAsync(
         string customerId,
         string? tenantId,
+        PaginationOption option,
         bool childIncluded = false,
         CancellationToken ct = default);
-    Task<IEnumerable<AccountDto>> GetAllWithTenantAsync(
-        string tenantId,
-        bool childIncluded = false,
-        CancellationToken ct = default);
-    Task<AccountDto?> GetByTenantAndCustomerAsync(
-        string tenantId,
-        string customerId,
-        bool childIncluded = false,
-        CancellationToken cancellationToken = default);
+    // Task<AccountDto?> GetByTenantAndCustomerAsync(
+    //     string tenantId,
+    //     string customerId,
+    //     bool childIncluded = false,
+    //     CancellationToken cancellationToken = default);
 }

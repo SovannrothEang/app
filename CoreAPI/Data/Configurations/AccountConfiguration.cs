@@ -59,7 +59,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         // builder.HasOne(e => ) // TODO: introduce new Account type for account
 
         builder.HasMany(e => e.Transactions)
-            .WithOne()
+            .WithOne(e => e.Account)
             .HasForeignKey(e => new { e.TenantId, e.CustomerId, e.AccountTypeId})
             .OnDelete(DeleteBehavior.Cascade);
         

@@ -1,95 +1,67 @@
 ﻿using System.Linq.Expressions;
-using Azure;
 using CoreAPI.Data;
 using CoreAPI.DTOs;
-using CoreAPI.DTOs.Customers;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class AccountRepository(AppDbContext dbContext, ITransactionRepository transactionRepository)
+public class AccountRepository(
+    AppDbContext dbContext,
+    ITransactionRepository transactionRepository,
+    ILogger<AccountRepository> logger)
     : IAccountRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly ITransactionRepository _transactionRepository = transactionRepository;
+    private readonly ILogger<AccountRepository> _logger = logger;
 
-    public async Task<IEnumerable<Account>> GetAllAsync(
+    // Get all, but it attached to TenantID (Global query) 
+    public async Task<(IEnumerable<Account> result, int totalCount)> GetAllAsync(
+        PaginationOption option,
         Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.Accounts.AsQueryable();
-
-        if (childIncluded)
-            queryable = queryable.Include(e => e.Transactions);
-
-        if (filtering != null)
-            queryable = queryable.Where(filtering);
-
-        return await queryable
+        var queryable = _dbContext.Accounts
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<Account?> GetByTenantAndCustomerAsync(
-        string tenantId,
-        string customerId,
-        bool childIncluded = false,
-        CancellationToken cancellationToken = default)
-    {
-        var queryable = _dbContext.Accounts.AsQueryable();
-
+            .AsQueryable();
+        var totalCount = await queryable.CountAsync(cancellationToken);
+        queryable = queryable.Include(e => e.AccountType);
         if (childIncluded)
-        {
-            queryable = queryable.Include(e => e.Transactions);
-            queryable = queryable.Include("Transactions.TransactionType");
-            queryable = queryable.Include("Transactions.Customer");
-            queryable = queryable.Include("Transactions.Performer");
-            // queryable = queryable.Include(e => e.Performer);
-        }
-
-        return await queryable
-            .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CustomerId == customerId, cancellationToken);
+            queryable = queryable
+                .Include(e => e.Tenant)
+                .Include(e => e.Customer)
+                .Include(e => e.Performer);
+        if (filtering != null) queryable = queryable.Where(filtering);
+        var result = await GetPaginatedAsync(queryable, option, cancellationToken);
+        return (result, totalCount);
     }
-
-    public async Task<(Account? account, IEnumerable<Transaction> transactions, int totalTransaction)> GetByTenantAndCustomerPaginationAsync(
-        string tenantId,
+    
+    public async Task<IEnumerable<Account>> GetAllByCustomerIdAsync(
         string customerId,
-        PaginationOption pageOption,
+        Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Accounts
-            .AsQueryable();
-        // I don't IgnoreQueryGlobal cuz I want to make sure that Tenant is gonna be getting what their
-        var queryTransaction = _dbContext.Transactions
             .AsNoTracking()
-            .AsQueryable();
-
-        queryTransaction = queryTransaction.Include(e => e.TransactionType);
+            .AsQueryable()
+            .Where(e => e.CustomerId == customerId);
+        queryable = queryable.Include(e => e.AccountType);
         if (childIncluded)
-        {
-            queryTransaction = queryTransaction
+            queryable = queryable
+                .Include(e => e.Tenant)
                 .Include(e => e.Customer)
-                .Include(e => e.Performer)
-                .Where(e => e.TenantId == tenantId && e.CustomerId == customerId);
-        }
-
-        var account = await queryable
-            .FirstOrDefaultAsync(e => e.TenantId == tenantId && e.CustomerId == customerId, cancellationToken);
-        
-        var (result, totalCount) = await _transactionRepository
-            .GetPaginatedAsync(queryTransaction, pageOption, cancellationToken);
-
-        if (account is null)
-            return (null, [], 0);
-        return (account, result, totalCount);
+                .Include(e => e.Performer);
+        if (filtering != null) queryable = queryable.Where(filtering);
+        return await queryable.ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Account>> GetAllWithCustomerAsync(
+    public async Task<(IEnumerable<Account> result, int totalCount)> GetAllByCustomerIdForGlobalAsync(
         string customerId,
+        PaginationOption option,
         Expression<Func<Account, bool>>? filtering = null,
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
@@ -99,39 +71,62 @@ public class AccountRepository(AppDbContext dbContext, ITransactionRepository tr
             .AsQueryable()
             .IgnoreQueryFilters() // Customer only
             .Where(e => e.CustomerId == customerId);
-
-        queryable = queryable.Include(e => e.Tenant);
+        var totalCount =  await queryable.CountAsync(cancellationToken);
+        queryable = queryable.Include(e => e.AccountType);
         if (childIncluded)
-        {
-            // I want to get only the latest transaction
-            queryable = queryable.Include(e => e.Transactions
-                .OrderByDescending(t => t.CreatedAt)
-                .Take(1));
-        }
-
-        if (filtering != null)
-            queryable = queryable.Where(filtering);
-
-        return await queryable.ToListAsync(cancellationToken);
+            queryable = queryable
+                .Include(e => e.Customer)
+                .Include(e => e.Tenant)
+                .Include(e => e.Performer);
+        if (filtering != null) queryable = queryable.Where(filtering);
+        var result = await GetPaginatedAsync(queryable, option, cancellationToken);
+        return (result, totalCount);
     }
 
-    public async Task<IEnumerable<Account>> GetAllWithTenantAsync(
-        string tenantId,
-        Expression<Func<Account, bool>>? filtering = null,
-        bool childIncluded = false,
+    #region Helper Methods
+    private static async Task<IEnumerable<Account>> GetPaginatedAsync(
+        IQueryable<Account> queryable,
+        PaginationOption pageOption,
         CancellationToken cancellationToken = default)
     {
-        var queryable = _dbContext.Accounts.AsQueryable();
-
-        if (childIncluded)
-            queryable = queryable.Include(e => e.Transactions);
-
-        if (filtering != null)
-            queryable = queryable.Where(filtering);
+        if (pageOption.StartDate.HasValue)
+        {
+            var startDate = new DateTimeOffset(pageOption.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            queryable = queryable.Where(x => x.CreatedAt >= startDate);
+        }
+        if (pageOption.EndDate.HasValue)
+        {
+            var endDate = new DateTimeOffset(pageOption.EndDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            queryable = queryable.Where(x => x.CreatedAt <= endDate);
+        }
+        
+        var sortBy = pageOption.SortBy!.ToLower();
+        var sortDirection = pageOption.SortDirection!.ToLower();
+        queryable = (sortBy, sortDirection) switch
+        {
+            ("balance", "asc") => queryable.OrderBy(x => x.Balance),
+            ("balance", "desc") => queryable.OrderByDescending(x => x.Balance),
+            ("type", "asc") => queryable
+                .OrderBy(x => x.AccountType!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("type", "desc") => queryable
+                .OrderByDescending(x => x.AccountType!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("lastactivity", "asc") => queryable
+                .OrderBy(x => x.Transactions.Last().CreatedAt)
+                .ThenBy(x => x.AccountType!.Name),
+            ("lastactivity", "desc") => queryable
+                .OrderByDescending(x => x.Transactions.Last().CreatedAt)
+                .ThenBy(x => x.AccountType!.Name),
+            _ => queryable
+                .OrderBy(x => x.CreatedAt)
+                .ThenBy(x => x.AccountType!.Name)
+        };
 
         return await queryable
-            .AsNoTracking()
-            .Where(e => e.TenantId == tenantId)
+            .Skip((pageOption.Page!.Value - 1) * pageOption.PageSize!.Value)
+            .Take(pageOption.PageSize!.Value)
             .ToListAsync(cancellationToken);
     }
+    #endregion
 }

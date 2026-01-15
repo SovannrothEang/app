@@ -47,7 +47,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasIndex(e => e.TransactionTypeId);
         builder.HasIndex(e => new { e.TenantId, e.CustomerId, e.AccountTypeId });
         
-        builder.HasOne(e => e.Customer)
+        builder.HasOne(e => e.Referencer)
             .WithMany()
             .HasForeignKey(e => e.ReferenceId)
             .OnDelete(DeleteBehavior.NoAction);

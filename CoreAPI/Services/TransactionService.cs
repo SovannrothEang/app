@@ -21,6 +21,7 @@ public class TransactionService(
     ITransactionTypeService transactionTypeService)
     : ITransactionService
 {
+    #region Private fields
     private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
     private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
@@ -30,8 +31,9 @@ public class TransactionService(
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly ILogger<TransactionService> _logger = logger;
     private readonly IMapper _mapper = mapper;
+    #endregion
 
-    public async Task<PagedResult<TransactionDto>> GetAllTransactionsAsync(
+    public async Task<PagedResult<TransactionDto>> GetAllAsync(
         PaginationOption option,
         bool childIncluded = false,
         CancellationToken ct = default)
@@ -41,7 +43,7 @@ public class TransactionService(
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all transactions");
 
-        var (transactions, totalCount) = await _transactionRepository.GetAllAsync(
+        var (transactions, totalCount) = await _transactionRepository.GetAllForGlobalAsync(
             option,
             childIncluded: childIncluded,
             cancellationToken: ct);
@@ -55,25 +57,13 @@ public class TransactionService(
         };
     }
 
-    public async Task<IEnumerable<TransactionDto>> GetAllByTenantAndCustomerAsync(
-        string tenantId,
-        string customerId,
-        CancellationToken cancellationToken = default)
-    {
-        var transactions = await _transactionRepository.GetAllByTenantAndCustomerAsync(
-            tenantId,
-            customerId,
-            cancellationToken: cancellationToken);
-        return transactions.Select(tran => _mapper.Map<TransactionDto>(tran));
-    }
-
-    public async Task<PagedResult<TransactionDto>> GetAllByCustomerAsync(
+    public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForGlobalAsync(
         string customerId,
         PaginationOption pageOption,
         bool childIncluded,
         CancellationToken cancellationToken = default)
     {
-        var (result, totalCount) = await _transactionRepository.GetAllByCustomerGlobalAsync(
+        var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdForGlobalAsync(
             customerId,
             pageOption,
             childIncluded,
@@ -81,35 +71,11 @@ public class TransactionService(
 
         return new PagedResult<TransactionDto>
         {
-            Items = result.Select(x => _mapper.Map<TransactionDto>(x)).ToList(),
+            Items = [.. result.Select(x => _mapper.Map<TransactionDto>(x))],
             PageNumber = pageOption.Page!.Value,
             PageSize = pageOption.PageSize!.Value,
             TotalCount = totalCount
         };
-    }
-
-    public async Task<TransactionDto?> GetByIdAsync(string customerId,
-        CancellationToken cancellationToken = default)
-    {
-        var transaction = await _transactionRepository.GetByIdAsync(customerId, cancellationToken);
-        return _mapper.Map<TransactionDto>(transaction);
-
-    }
-
-    public async Task<IEnumerable<TransactionDto>> GetByCustomerIdForTenantAsync(
-        string customerId,
-        CancellationToken cancellationToken = default)
-    {
-        var transactions = await _transactionRepository.GetByCustomerIdAsync(customerId, cancellationToken);
-        return transactions.Select(tran => _mapper.Map<TransactionDto>(tran));
-    }
-
-    public async Task<IEnumerable<TransactionDto>> GetByTenantIdAsync(
-        string tenantId,
-        CancellationToken cancellationToken = default)
-    {
-        var transactions = await _transactionRepository.GetByTenantIdAsync(tenantId, cancellationToken);
-        return transactions.Select(tran => _mapper.Map<TransactionDto>(tran));
     }
 
     public async Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(

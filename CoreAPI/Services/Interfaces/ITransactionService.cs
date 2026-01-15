@@ -8,26 +8,22 @@ namespace CoreAPI.Services.Interfaces;
 
 public interface ITransactionService
 {
-    Task<PagedResult<TransactionDto>> GetAllTransactionsAsync(PaginationOption option, bool childIncluded = false, CancellationToken ct = default);
-    Task<IEnumerable<TransactionDto>> GetAllByTenantAndCustomerAsync(
-        string tenantId,
-        string customerId,
-        CancellationToken cancellationToken = default);
-    Task<PagedResult<TransactionDto>> GetAllByCustomerAsync(
+    /// <summary>
+    /// Get all transactions 
+    /// </summary>
+    /// <param name="option"></param>
+    /// <param name="childIncluded"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    Task<PagedResult<TransactionDto>> GetAllAsync(
+        PaginationOption option,
+        bool childIncluded = false,
+        CancellationToken ct = default);
+    
+    Task<PagedResult<TransactionDto>> GetAllByCustomerIdForGlobalAsync(
         string customerId,
         PaginationOption pageOption,
         bool childIncluded,
-        CancellationToken cancellationToken = default);
-    Task<TransactionDto?> GetByIdAsync(
-        string id,
-        CancellationToken cancellationToken = default);
-
-    Task<IEnumerable<TransactionDto>> GetByTenantIdAsync(
-        string tenantId,
-        CancellationToken ct = default);
-
-    Task<IEnumerable<TransactionDto>> GetByCustomerIdForTenantAsync(
-        string customerId,
         CancellationToken cancellationToken = default);
 
     Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
