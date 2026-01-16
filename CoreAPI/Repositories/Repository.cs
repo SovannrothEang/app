@@ -1,7 +1,5 @@
 ﻿using CoreAPI.Data;
-using CoreAPI.Models;
 using CoreAPI.Models.Shared;
-using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 

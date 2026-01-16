@@ -1,6 +1,4 @@
-﻿using CoreAPI.DTOs.Auth;
-
-namespace CoreAPI.DTOs.Tenants;
+﻿namespace CoreAPI.DTOs.Tenants;
 public record TenantCreateDto(TenantCreate Tenant, TenantOwnerCreate Owner);
 
 public record TenantCreate(string Name, int PointPerDollar, int ExpiryDays);

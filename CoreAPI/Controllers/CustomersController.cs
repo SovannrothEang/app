@@ -83,14 +83,10 @@ public class CustomersController(
     [Authorize(Policy = Constants.CustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerDashboard(
         [FromRoute] string customerId,
-        [FromQuery] bool? childIncluded,
         [FromQuery] PaginationOption option,
-        [FromQuery] string? tenantId = null,
         CancellationToken ct = default)
     {
-        childIncluded ??= false;
-        var (totalBalance, result) = await _accountService.GetAllByCustomerIdForGlobalAsync(
-            customerId, tenantId, option, childIncluded.Value, ct); // TenantId is for filtering
+        var (totalBalance, result) = await _accountService.GetAllByCustomerIdForGlobalAsync(customerId, option, ct); // TenantId is for filtering
         return Ok(new
         {
             TotalBalance = totalBalance,

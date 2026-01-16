@@ -1,6 +1,7 @@
 ﻿using CoreAPI.DTOs;
 using CoreAPI.DTOs.Accounts;
 using CoreAPI.DTOs.Customers;
+using CoreAPI.DTOs.Tenants;
 
 namespace CoreAPI.Services.Interfaces;
 
@@ -22,9 +23,8 @@ public interface IAccountService
     Task<(decimal totalBalance, IEnumerable<TenantProfileDto> profiles)>
         GetAllByCustomerIdForGlobalAsync(
             string customerId,
-            string? tenantId,
             PaginationOption option,
-            bool childIncluded = false,
+            //bool childIncluded = false,
             CancellationToken ct = default);
     // Task<AccountDto?> GetByTenantAndCustomerAsync(
     //     string tenantId,

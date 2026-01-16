@@ -72,16 +72,14 @@ public class AccountRepository(
             .IgnoreQueryFilters() // Customer only
             .Where(e => e.CustomerId == customerId);
         var totalCount = await queryable.CountAsync(cancellationToken);
-        //if (childIncluded)
+        if (childIncluded)
             queryable = queryable
                 .Include(e => e.AccountType)
                 .Include(e => e.Customer)
                 .Include(e => e.Tenant)
                 .Include(e => e.Performer);
-        // If there are no transaction included, we'll just throw the last activity into it
-        queryable = childIncluded
-            ? queryable.Include(e => e.Transactions)
-            : queryable.Include(e => e.Transactions
+        // Take last activity
+        queryable = queryable.Include(e => e.Transactions
                 .OrderByDescending(x => x.CreatedAt)
                 .Take(1));
         if (filtering != null) queryable = queryable.Where(filtering);

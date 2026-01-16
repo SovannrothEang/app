@@ -73,8 +73,9 @@ public class CustomerService(
         pageOption.PageSize ??= 10;
 
         // I dont need total accounts right now
+        // TODO: make a method for getting all balance
         var (accounts, _) = await _accountRepository.GetAllByCustomerIdForGlobalAsync(
-            customerId, pageOption, null, childIncluded, cancellationToken);
+            customerId, pageOption, null, false, cancellationToken);
         var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdForGlobalAsync(
             customerId, pageOption, childIncluded, cancellationToken);
 

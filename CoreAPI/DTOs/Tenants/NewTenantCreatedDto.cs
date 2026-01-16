@@ -2,4 +2,4 @@
 
 public record NewTenantCreatedDto(
     TenantDto Tenant,
-    string token);
+    string Token);
