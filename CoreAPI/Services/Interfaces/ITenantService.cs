@@ -9,6 +9,7 @@ public interface ITenantService
     Task<IEnumerable<TenantDto>> GetAllAsync(Expression<Func<Tenant, bool>>? filtering = null, CancellationToken cancellationToken = default);
     Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default);
     
+    Task<TenantOnboardResponseDto> CreateAsync(TenantOnBoardingDto dto, CancellationToken ct = default);
     Task UpdateAsync(string id, TenantUpdateDto dto, CancellationToken ct = default);
     Task DeleteAsync(string id, CancellationToken ct = default);
 

@@ -1,32 +1,26 @@
 ﻿using CoreAPI.Data;
-using CoreAPI.Models.Shared;
+using CoreAPI.Repositories.Interfaces;
 
 namespace CoreAPI.Repositories;
 
-public abstract class Repository<TEntity>(AppDbContext dbContext)
-    where TEntity : BaseEntity
+public class Repository<TEntity>(AppDbContext dbContext) : IRepository<TEntity> where TEntity : class
 {
     private readonly AppDbContext _dbContext = dbContext;
 
+    public async Task<TEntity?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Set<TEntity>().FindAsync([id], cancellationToken);
+    }
     public async Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         await _dbContext.Set<TEntity>().AddAsync(entity, cancellationToken);
     }
-
-    public Task Update(TEntity entity)
+    public void Update(TEntity entity)
     {
         _dbContext.Set<TEntity>().Update(entity);
-        return Task.CompletedTask;
     }
-    
-    public Task Remove(TEntity entity)
+    public void Remove(TEntity entity)
     {
         _dbContext.Set<TEntity>().Remove(entity);
-        return Task.CompletedTask;
-    }
-
-    public Task<int> SaveChangeAsync(CancellationToken cancellationToken = default)
-    {
-        return _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

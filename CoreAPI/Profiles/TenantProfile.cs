@@ -13,7 +13,7 @@ public class TenantProfile : Profile
         //         opt.MapFrom(src => TenantName.Create(src.Name)))
         //     .ForMember(dest => dest.Setting.PointExpirePeriod, opt =>
         //         opt.MapFrom(src => src.Setting.PointExpirePeriod))
-        CreateMap<TenantCreate, Tenant>()
+        CreateMap<TenantCreateDto, Tenant>()
             .ConstructUsing(src => new Tenant(
                 Guid.NewGuid().ToString(),
                 src.Name,

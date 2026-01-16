@@ -3,7 +3,7 @@ using CoreAPI.Models;
 
 namespace CoreAPI.Repositories.Interfaces;
 
-public interface ITenantRepository : IRepository<Tenant>
+public interface ITenantRepository 
 {
     Task<IEnumerable<Tenant>> GetAllAsync(
         // bool childIncluded = false,

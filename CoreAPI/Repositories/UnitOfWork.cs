@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Concurrent;
+using System.Data;
 using CoreAPI.Data;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -11,7 +12,7 @@ public sealed class UnitOfWork(
 {
     private readonly AppDbContext _context = context;
 
-    // private readonly ConcurrentDictionary<Type, object> _repositories = [];
+    private readonly ConcurrentDictionary<Type, object> _repositories = [];
     private bool _disposed;
     
     public IUserRepository UserRepository => serviceProvider.GetRequiredService<IUserRepository>();
@@ -38,12 +39,11 @@ public sealed class UnitOfWork(
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-    // public IGenericRepository<T> GetRepository<T>() where T : class
-    // {
-    //     var type = typeof(T);
-    //     return (IGenericRepository<T>)_repositories.GetOrAdd(type, _ =>
-    //         new GenericRepository<T>(_context, _mapper));
-    // }
+    public IRepository<T> GetRepository<T>() where T : class
+    {
+        var type = typeof(T);
+        return (IRepository<T>)_repositories.GetOrAdd(type, _ => new Repository<T>(_context));
+    }
 
     private void Dispose(bool disposing)
     {

@@ -3,6 +3,10 @@ using CoreAPI.Models.Enums;
 
 namespace CoreAPI.DTOs.Tenants;
 
+public record TenantOnboardResponseDto(
+    TenantDto Tenant,
+    string Token);
+
 public record TenantDto(
     string Id,
     string Name,

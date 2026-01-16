@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace CoreAPI.Validators.Tenant;
 
-public class TenantCreateDtoValidator : AbstractValidator<TenantCreateDto>
+public class TenantCreateDtoValidator : AbstractValidator<TenantOnBoardingDto>
 {
     public TenantCreateDtoValidator()
     {

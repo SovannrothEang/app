@@ -3,7 +3,7 @@ using CoreAPI.Models;
 
 namespace CoreAPI.Repositories.Interfaces;
 
-public interface IUserRepository : IRepository<User>
+public interface IUserRepository
 {
     Task<IEnumerable<User>> GetAllAsync(Expression<Func<User, bool>>? filtering = null,
         CancellationToken cancellationToken = default);
