@@ -72,7 +72,7 @@ public class TenantsController(
     [HttpPost]
     [Authorize(Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> CreateTenantAsync(
-        [FromBody] TenantCreateDto dto,
+        [FromBody] TenantOnBoardingDto dto,
         CancellationToken ct = default)
     {
         var validator = new TenantCreateDtoValidator();
@@ -80,10 +80,10 @@ public class TenantsController(
         if (!result.IsValid)
             return BadRequest(result.Errors);
 
-        var (userId, token) = await _userService.CreateTenantAndUserAsync(dto, ct);
+        var (tenant, token) = await _tenantService.CreateAsync(dto, ct);
         return Ok(new
         {
-            UserId = userId,
+            Tenant = tenant,
             Token = token
         });
     }

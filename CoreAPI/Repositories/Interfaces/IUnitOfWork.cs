@@ -13,5 +13,6 @@ public interface IUnitOfWork : IDisposable
     IAccountTypeRepository AccountTypeRepository { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    IRepository<T> GetRepository<T>() where T : class;
     Task<int> CompleteAsync(CancellationToken cancellationToken = default);
 }

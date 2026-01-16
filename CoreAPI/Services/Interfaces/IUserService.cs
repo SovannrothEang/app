@@ -1,6 +1,7 @@
 ﻿using CoreAPI.DTOs;
 using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Tenants;
+using CoreAPI.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace CoreAPI.Services.Interfaces;
@@ -16,7 +17,7 @@ public interface IUserService
     //Task SendPasswordResetEmailAsync(string email);
     Task CompleteInviteAsync(string userId, string token, string newPassword);
     Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword);
-    Task<(string userId, string token)> CreateTenantAndUserAsync(TenantCreateDto dto, CancellationToken ct = default);
+    Task<(string userId, string token)> CreateTenantUserAsync(TenantDto tenant, TenantOwnerCreateDto dto, CancellationToken ct = default);
 
     Task<IEnumerable<UserProfileDto>> GetAllUserAsync(CancellationToken ct = default);
     Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default);

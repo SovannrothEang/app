@@ -1,9 +1,9 @@
 ﻿namespace CoreAPI.Repositories.Interfaces;
 
-public interface IRepository<in TEntity> where TEntity : class
+public interface IRepository<TEntity> where TEntity : class
 {
-    Task<int> SaveChangeAsync(CancellationToken cancellationToken= default);
+    Task<TEntity?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
     Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default);
-    Task Update(TEntity entity);
-    Task Remove(TEntity entity);
+    void Update(TEntity entity);
+    void Remove(TEntity entity);
 }

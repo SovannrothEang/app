@@ -21,22 +21,23 @@ public class AuthService(
     ICurrentUserProvider currentUserProvider,
     ILogger<AuthService> logger) : IUserService
 {
+    # region Private Fields
     private readonly UserManager<User> _userManager = userManager;
     private readonly RoleManager<Role> _roleManager = roleManager;
     private readonly SignInManager<User> _signInManager = signInManager;
-    private readonly string _tenantHost = configuration["Tenancy:Host"]
-                                          ?? throw new Exception("Tenant host not found");
+    private readonly string _tenantHost = configuration["Tenancy:Host"] ?? throw new Exception("Tenant host not found");
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IRepository<User> _repository = unitOfWork.GetRepository<User>();
     private readonly IUserRepository _userRepository = unitOfWork.UserRepository;
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
     private readonly ITransactionTypeRepository _transactionTypeRepository = unitOfWork.TransactionTypeRepository;
     private readonly IAccountTypeRepository _accountTypeRepository = unitOfWork.AccountTypeRepository;
     private readonly IMapper _mapper = mapper;
-
     //private readonly IEmailSender<User> _emailSender = emailSender;
     private readonly ITokenService _tokenService = tokenService;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly ILogger<AuthService> _logger = logger;
+    #endregion
 
     public async Task<(string userId, string token)> OnboardingUserAsync(OnboardingUserDto dto, CancellationToken ct = default)
     {
@@ -104,8 +105,7 @@ public class AuthService(
         );
     }
 
-    public async Task<UserProfileDto> CreateUserAsync(RegisterDto dto,
-        CancellationToken ct = default)
+    public async Task<UserProfileDto> CreateUserAsync(RegisterDto dto, CancellationToken ct = default)
     {
         _currentUserProvider.SetTenantId(_tenantHost);
         var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
@@ -135,66 +135,31 @@ public class AuthService(
         return _mapper.Map<UserProfileDto>(user);
     }
 
-    public async Task<(string userId, string token)> CreateTenantAndUserAsync(TenantCreateDto dto, CancellationToken ct = default)
+    public async Task<(string userId, string token)> CreateTenantUserAsync(
+        TenantDto tenant,
+        TenantOwnerCreateDto dto,
+        CancellationToken ct = default)
     {
-        await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
-        try
+        var user = new User(Guid.NewGuid().ToString(), dto.Email, dto.UserName, tenant.Id)
         {
-            var exist = await _userManager.Users
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(e => e.Email == dto.Owner.Email, cancellationToken: ct);
-            if (exist != null && exist.EmailConfirmed is false)
-            {
-                var newToken = await _userManager.GeneratePasswordResetTokenAsync(exist);
-                return (exist.Id, newToken);
-            }
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+        };
+        var result = await _userManager.CreateAsync(user);
+        if (!result.Succeeded)
+            throw new Exception(result.Errors.First().Description);
 
-            // Tenant Creation
-            var tenant = _mapper.Map<Tenant>(dto.Tenant);
-            tenant.AddPerformBy(_currentUserProvider.UserId);
-            await _tenantRepository.CreateAsync(tenant, ct);
+        // Make sure role exist
+        var role = await EnsuringRoleExistsAsync(RoleConstants.TenantOwner, tenant.Id);
 
-            // Transaction type injection to tenant
-            IEnumerable<TransactionType> types =
-            [
-                new(Guid.NewGuid().ToString(), "earn", "Earn", "Points earned from activities", 1, false, tenant.Id),
-                new(Guid.NewGuid().ToString(), "redeem", "Redeem", "Points redeems for rewards", -1, false, tenant.Id),
-                new(Guid.NewGuid().ToString(), "adjust", "Adjust", "Manual points adjustment", 1, false, tenant.Id),
-            ];
-            await _transactionTypeRepository.CreateBatchAsync(types, ct);
-            
-            var accType = new AccountType(Guid.NewGuid().ToString(), "Normal", tenant.Id, _currentUserProvider.UserId);
-            await _accountTypeRepository.CreateAccountTypeAsync(accType, ct);
+        // Assign role to user
+        await _userRepository.AddToRoleAsync(user.Id, role.Id, tenant.Id);
 
-            // User Creation
-            var user = new User(Guid.NewGuid().ToString(), dto.Owner.Email, dto.Owner.UserName, tenant.Id)
-            {
-                FirstName = dto.Owner.FirstName,
-                LastName = dto.Owner.LastName,
-                EmailConfirmed = true
-            };
-            var result = await _userManager.CreateAsync(user);
-            if (!result.Succeeded)
-                throw new Exception(result.Errors.First().Description);
+        await _unitOfWork.CompleteAsync(ct);
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            // Make sure role exist
-            var role = await EnsuringRoleExistsAsync(RoleConstants.TenantOwner, tenant.Id);
-
-            // Assign role to user
-            await _userRepository.AddToRoleAsync(user.Id, role.Id, tenant.Id);
-
-            await _unitOfWork.CompleteAsync(ct);
-            await transaction.CommitAsync(ct);
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-            // TODO: use EmailService, and send the invited-link to the tenant's email instead
-            return (user.Id, token); // Development
-        }
-        catch
-        {
-            await transaction.RollbackAsync(ct);
-            throw;
-        }
+        // TODO: use EmailService, and send the invited-link to the tenant's email instead
+        return (user.Id, token); // Development
     }
 
     private async Task<Role> EnsuringRoleExistsAsync(string roleName, string tenantId)
@@ -220,6 +185,8 @@ public class AuthService(
                        .FirstOrDefaultAsync(u => u.Id == userId)
                    ?? throw new Exception("User not found");
         user.Modified();
+        user.EmailConfirmed = true;
+        await _unitOfWork.CompleteAsync();
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
 
         if (!result.Succeeded)
