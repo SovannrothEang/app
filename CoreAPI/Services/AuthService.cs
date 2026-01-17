@@ -140,6 +140,15 @@ public class AuthService(
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            var exist = await _userManager.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(e => e.Email == dto.Owner.Email, cancellationToken: ct);
+            if (exist != null && exist.EmailConfirmed is false)
+            {
+                var newToken = await _userManager.GeneratePasswordResetTokenAsync(exist);
+                return (exist.Id, newToken);
+            }
+
             // Tenant Creation
             var tenant = _mapper.Map<Tenant>(dto.Tenant);
             tenant.AddPerformBy(_currentUserProvider.UserId);

@@ -9,18 +9,32 @@ public class AccountTypeRepository(AppDbContext context) : IAccountTypeRepositor
 {
     private readonly AppDbContext _context = context;
 
-    public async Task<IEnumerable<AccountType>> GetAccountTypesAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<AccountType>> GetAllAsync(bool childIncluded, CancellationToken cancellationToken)
     {
-        return await _context.AccountTypes
+        var queryable = _context.AccountTypes
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .AsQueryable();
+        
+        if (childIncluded)
+            queryable = queryable
+                .Include(e => e.Accounts)
+                .Include(e => e.Performer);
+        
+        return await queryable.ToListAsync(cancellationToken);
     }
 
-    public async Task<AccountType?> GetAccountTypeAsync(string id, CancellationToken cancellationToken)
+    public async Task<AccountType?> GetByIdAsync(string id, bool childIncluded, CancellationToken cancellationToken)
     {
-        return await _context.AccountTypes
+        var queryable = _context.AccountTypes
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            .AsQueryable();
+
+        if (childIncluded)
+            queryable = queryable
+                .Include(e => e.Accounts)
+                .Include(e => e.Performer);
+        
+        return await queryable.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
     public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)

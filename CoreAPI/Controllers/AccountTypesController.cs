@@ -22,9 +22,12 @@ namespace CoreAPI.Controllers
         private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
 
         [HttpGet]
-        public async Task<IActionResult> GetAccountTypes(CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetAccountTypes(
+            [FromQuery] bool? childIncluded,
+            CancellationToken cancellationToken = default)
         {
-            var types =  await _accountTypeRepository.GetAccountTypesAsync(cancellationToken);
+            childIncluded ??= false;
+            var types =  await _accountTypeRepository.GetAllAsync(childIncluded.Value, cancellationToken);
             return Ok(types);
         }
 
