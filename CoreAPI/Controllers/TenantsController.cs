@@ -18,55 +18,44 @@ public class TenantsController(
     IAuthorizationService authorizationService,
     ICustomerService customerService,
     ITransactionService transactionService,
-    IMapper mapper,
-    ILogger<TenantsController> logger,
     ITenantService tenantService,
     ITransactionTypeService transactionTypeService) : ControllerBase
 {
+    #region Private Fields
     private readonly IAuthorizationService _authorizationService = authorizationService;
     private readonly ICustomerService _customerService = customerService;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly ITransactionTypeService _transactionTypeService = transactionTypeService;
     private readonly ITenantService _tenantService = tenantService;
-    private readonly IMapper _mapper = mapper;
-    private readonly ILogger<TenantsController> _logger = logger;
+    #endregion
 
     /// <summary>
-    /// Get all available tenants
+    /// Get all available tenants in pagination result
     /// </summary>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpGet]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
-    public async Task<ActionResult> GetAllTenantsAsync(CancellationToken ct = default)
+    public async Task<ActionResult> GetAllTenantsAsync(
+        [FromQuery] PaginationOption option,
+        CancellationToken ct = default)
     {
-        var tenants = await _tenantService.GetAllAsync(cancellationToken: ct);
+        var tenants = await _tenantService.GetPagedResultsAsync(option, cancellationToken: ct);
         return Ok(tenants);
     }
     
     /// <summary>
     /// Get tenant profile by id
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpGet("{id}")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetTenantByIdAsync(string id, CancellationToken ct = default)
     {
-        using (_logger.BeginScope("Tenants retrieval operation for id: {tenantId}", id))
-        {
-            var tenant = await _tenantService.GetByIdAsync(id, ct);
-            return Ok(_mapper.Map<TenantDto>(tenant));
-        }
+        var tenant = await _tenantService.GetByIdAsync(id, ct);
+        return Ok(tenant);
     }
 
     /// <summary>
-    /// Onboarding a tenant
+    /// Onboarding a new tenant by Admin only
     /// </summary>
-    /// <param name="dto"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpPost]
     [Authorize(Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> CreateTenantAsync(
@@ -90,9 +79,6 @@ public class TenantsController(
     /// <summary>
     /// Deactivate a tenant
     /// </summary>
-    /// <param name="tenantId"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpPut("{tenantId}/deactivate")]
     [Authorize(Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> DeactivateTenantAsync(
@@ -106,9 +92,6 @@ public class TenantsController(
     /// <summary>
     /// Activate a tenant
     /// </summary>
-    /// <param name="tenantId"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpPut("{tenantId}/activate")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> ActivateTenantAsync(
@@ -123,24 +106,34 @@ public class TenantsController(
         return NoContent();
     }
     
+    // TODO: for customers in this tenant endpoints, need to be pagination, for filtering, ordering, and paged result
+    
+    /// <summary>
+    /// Get all customers who have accounts with tenant
+    /// </summary>
     [HttpGet("{tenantId}/customers")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetAllCustomerInTenantScopeAsync(
         [FromRoute] string tenantId,
-        [FromQuery] bool? childIncluded = false, // won't include transactions
+        [FromQuery] bool? childIncluded, // won't include transactions
+        [FromQuery] PaginationOption option,
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var customers = await _customerService.GetAllForTenantAsync(childIncluded.Value, ct);
+        var customers = await _customerService.GetPaginatedResultsForTenantAsync(option, childIncluded.Value, ct);
         return Ok(customers);
     }
     
+    /// <summary>
+    /// Get specific customer that has accounts with the tenant, and the _links for operations can be done to a customer's account
+    /// TODO: actually need more detail for customer profile
+    /// </summary>
     [HttpGet("{tenantId}/customers/{customerId}")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetCustomerByIdInTenantScopeAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
-        [FromQuery] bool? childIncluded = false, // won't include transactions
+        [FromQuery] bool? childIncluded, // won't include transactions
         CancellationToken ct = default)
     {
         childIncluded ??= false;
@@ -159,15 +152,8 @@ public class TenantsController(
     }
 
     /// <summary>
-    /// Earn point route
+    /// Using for operations on account, like earn point, redeem or even adjust by the tenant owner
     /// </summary>
-    /// <param name="tenantId"></param>
-    /// <param name="customerId"></param>
-    /// <param name="accountTypeId"></param>
-    /// <param name="slug"></param>
-    /// <param name="dto"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpPost("{tenantId}/customers/{customerId}/accountTypes/{accountTypeId}/{slug}")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> CustomerEarnPointsAsync(
@@ -220,12 +206,6 @@ public class TenantsController(
     /// Checking the customer balance
     /// TODO: there are account type, so should be better if return with accounnts
     /// </summary>
-    /// <param name="tenantId"></param>
-    /// <param name="customerId"></param>
-    /// <param name="option"></param>
-    /// <param name="childIncluded"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
     [Authorize(Constants.TenantCustomerAccessPolicy)]
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(

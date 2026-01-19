@@ -6,14 +6,13 @@ namespace CoreAPI.Repositories.Interfaces;
 public interface IRepository<TEntity> where TEntity : class
 {
     /// <summary>
-    /// List all entities
+    /// Get a List of entity type of TEntity
     /// </summary>
     /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
-    /// <param name="includes">The includes to be applied to the query.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
+    /// <param name="includes">The includes to be applied to the query.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The list of entities.</returns>
     Task<IEnumerable<TEntity>> ListAsync(
         bool trackChanges = false,
         bool ignoreQueryFilters = false,
@@ -21,6 +20,16 @@ public interface IRepository<TEntity> where TEntity : class
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get a List of entity type of TEntity, then project it to TResult 
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
+    /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
+    /// <param name="filter">The filter to be applied to the query.</param>
+    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     Task<IEnumerable<TResult>> ListAsync<TResult>(
         bool trackChanges = false,
         bool ignoreQueryFilters = false,
@@ -28,22 +37,59 @@ public interface IRepository<TEntity> where TEntity : class
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get an entity type of TEntity with predicate expression
+    /// </summary>
+    /// <param name="predicate">An expression to find the entity</param>
+    /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
+    /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
+    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     Task<TEntity?> FirstOrDefaultAsync(
         Expression<Func<TEntity, bool>> predicate,
         bool trackChanges = false,
         bool ignoreQueryFilters = false,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get an entity type of TEntity, then project to TResult
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="predicate">An expression to find the entity</param>
+    /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
+    /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
+    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     Task<TResult?> FirstOrDefaultAsync<TResult>(
         Expression<Func<TEntity, bool>> predicate,
         bool trackChanges = false,
         bool ignoreQueryFilters = false,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get a boolean value that indicate whether the entity type of TEntity is exist or not
+    /// </summary>
+    /// <param name="predicate">An expression to find the entity</param>
+    /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     Task<bool> ExistsAsync(
         Expression<Func<TEntity, bool>> predicate,
         bool ignoreQueryFilters = false,
         CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get paged result of the entity type of TEntity
+    /// </summary>
+    /// <param name="page">The number of page</param>
+    /// <param name="pageSize">The number of page size</param>
+    /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
+    /// <param name="filter">The filter to be applied to the query.</param>
+    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="orderBy">The order to be applied to the query</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     Task<(IEnumerable<TEntity> items, int totalCount)> GetPagedAsync(
         int page,
         int pageSize,
@@ -52,6 +98,21 @@ public interface IRepository<TEntity> where TEntity : class
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
+    /// <summary>
+    /// Get paged result of the entity type of TEntity
+    /// </summary>
+    /// <param name="page">The number of page</param>
+    /// <param name="pageSize">The number of page size</param>
+    /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
+    /// <param name="filter">The filter to be applied to the query.</param>
+    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="orderBy">The order to be applied to the query</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     Task<PagedResult<TResult>> GetPagedAsync<TResult>(
         int page,
         int pageSize,
@@ -60,8 +121,8 @@ public interface IRepository<TEntity> where TEntity : class
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default);
+
     Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default);
     void Update(TEntity entity);
     void Remove(TEntity entity);
-    IQueryable<TEntity> Query();
 }
