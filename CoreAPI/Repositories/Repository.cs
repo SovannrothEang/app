@@ -21,7 +21,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = Query();
+        var queryable = Query;
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, filter, includes, orderBy);
         return await queryable.ToListAsync(cancellationToken);
     }
@@ -33,7 +33,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = Query();
+        var queryable = Query;
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, filter, includes, orderBy);
         return await queryable
             .ProjectTo<TResult>(_mapper.ConfigurationProvider)
@@ -46,7 +46,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = Query();
+        var queryable = Query;
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, null, includes, null);
         return await queryable.FirstOrDefaultAsync(predicate, cancellationToken);
     }
@@ -57,7 +57,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = Query();
+        var queryable = Query;
         queryable = queryable.Where(predicate);
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, null, includes, null);
         return await queryable
@@ -69,7 +69,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         bool ignoreQueryFilters = false,
         CancellationToken cancellationToken = default)
     {
-        var queryable = Query();
+        var queryable = Query;
         if (ignoreQueryFilters)
             queryable = queryable.IgnoreQueryFilters();
         return await queryable.AnyAsync(predicate, cancellationToken);
@@ -83,7 +83,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = Query().AsNoTracking();
+        var queryable = Query.AsNoTracking();
         if (ignoreQueryFilters)
             queryable = queryable.IgnoreQueryFilters();
         if (filter is not null)
@@ -108,7 +108,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         Expression<Func<TEntity, object>>? orderBy = null,
         CancellationToken cancellationToken = default)
     {
-        var queryable = Query().AsNoTracking();
+        var queryable = Query.AsNoTracking();
         if (ignoreQueryFilters)
             queryable = queryable.IgnoreQueryFilters();
         if (filter is not null)
@@ -125,7 +125,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             .ToListAsync(cancellationToken);
         return new PagedResult<TResult>
         {
-            Items = items,
+            Items = items ?? [],
             PageNumber = page,
             PageSize = pageSize,
             TotalCount = totalCount
@@ -143,10 +143,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
     {
         _dbContext.Set<TEntity>().Remove(entity);
     }
-    public IQueryable<TEntity> Query()
-    {
-        return _dbContext.Set<TEntity>();
-    }
+    private IQueryable<TEntity> Query => _dbContext.Set<TEntity>();
     private static IQueryable<TEntity> ApplyQueryFilters(
         IQueryable<TEntity> queryable,
         bool trackChanges = false,

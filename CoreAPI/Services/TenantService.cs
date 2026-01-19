@@ -2,6 +2,7 @@
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
+using CoreAPI.Models.Enums;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 
@@ -14,6 +15,7 @@ public class TenantService(
     IMapper mapper,
     ILogger<TenantService> logger) : ITenantService
 {
+    #region Private Fields
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IUserService _userService = userService;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
@@ -23,18 +25,23 @@ public class TenantService(
     private readonly ITransactionTypeRepository _transactionTypeRepository = unitOfWork.TransactionTypeRepository;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<TenantService> _logger = logger;
+    #endregion
 
     public async Task<IEnumerable<TenantDto>> GetAllAsync(CancellationToken ct = default)
     {
         var tenants = await _repository.ListAsync<TenantDto>(
             ignoreQueryFilters: true,
+            filter: e => e.Status == TenantStatus.Active,
             cancellationToken: ct);
         return tenants;
     }
-    public async Task<PagedResult<TenantDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default)
+    public async Task<PagedResult<TenantDto>> GetPagedResultsAsync(PaginationOption option, CancellationToken ct = default)
     {
+        option.Page ??= 1;
+        option.PageSize ??= 10;
+
         // TODO: add orderby logic
-        var (tenants, totalCount) = await _repository.GetPagedAsync(
+        var result = await _repository.GetPagedAsync<TenantDto>(
             option.Page!.Value,
             option.PageSize!.Value,
             ignoreQueryFilters: true,
@@ -50,13 +57,7 @@ public class TenantService(
                 },
             cancellationToken: ct
         );
-        return new PagedResult<TenantDto>
-        {
-            Items = [.. tenants.Select(_mapper.Map<TenantDto>)],
-            PageNumber = option.Page.Value,
-            PageSize = option.PageSize.Value,
-            TotalCount = totalCount,
-        };
+        return result;
     }
 
     public async Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default)
