@@ -3,7 +3,7 @@ using CoreAPI.Models;
 
 namespace CoreAPI.Repositories.Interfaces;
 
-public interface ICustomerRepository : IRepository<Customer>
+public interface ICustomerRepository 
 {
     Task<IEnumerable<Customer>> GetAllAsync(
         bool childIncluded = false,

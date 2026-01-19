@@ -1,5 +1,6 @@
 using CoreAPI.DTOs.Auth;
 using FluentValidation;
+using FluentValidation.Validators;
 
 namespace CoreAPI.Validators.Auth;
 
@@ -9,7 +10,8 @@ public class CompleteInvitationValidator : AbstractValidator<SetupPasswordReques
     {
         RuleFor(e => e.Email)
             .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Invalid email address.");
+            .Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").WithMessage("Invalid email format.")
+            .MaximumLength(100).WithMessage("Email cannot exceed 100 characters");
         
         RuleFor(e => e.UserId)
             .NotEmpty().WithMessage("User ID is required.")
@@ -23,7 +25,6 @@ public class CompleteInvitationValidator : AbstractValidator<SetupPasswordReques
             .NotEmpty().WithMessage("Confirm password is required.")
             .MinimumLength(8)
             .WithMessage("Confirm password must be at least 8 characters long.")
-            .Must((model, confirmPassword) => model.NewPassword.Equals(confirmPassword, StringComparison.Ordinal))
-            .WithMessage("Passwords do not match.");
+            .Equal(x => x.NewPassword).WithMessage("Confirm password must match the new password!");
     }
 }

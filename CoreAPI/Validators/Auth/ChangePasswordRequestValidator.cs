@@ -25,19 +25,19 @@ public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRe
     RuleFor(e => e.NewPassword)
             .NotEmpty().WithMessage("New password is required.")
             .NotNull().WithMessage("New password is required.");
-        
+
         RuleFor(e => e.ConfirmPassword)
             .NotEmpty().WithMessage("Confirm password is required.")
             .NotNull().WithMessage("Confirm password is required.")
-            .Must((model, confirmPassword) => confirmPassword  == model.CurrentPassword);
+            .Equal(x => x.NewPassword).WithMessage("Confirm password must match the new password!");
     }
 
     private async Task<bool> CheckCurrentPassword(string currentPassword, CancellationToken ct = default)
     {
-        var userId =  _currentUserProvider.UserId;
-        if (userId is null) throw new UnauthorizedAccessException();
+        var userId = _currentUserProvider.UserId ?? throw new UnauthorizedAccessException();
         var user = await _userManager.FindByIdAsync(userId);
-        if (user is null) throw new KeyNotFoundException($"No user was found with id: {userId}.");
-        return await _userManager.CheckPasswordAsync(user, currentPassword);
+        return user is null
+            ? throw new KeyNotFoundException($"No user was found with id: {userId}.")
+            : await _userManager.CheckPasswordAsync(user, currentPassword);
     }
 }

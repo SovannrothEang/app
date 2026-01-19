@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Identity;
 
 namespace CoreAPI.Models;
 
-public sealed class Role : IdentityRole<string>, ITenantEntity
+public sealed class Role : IdentityRole<string>, ITenantEntity, IDeletedEntity
 {
     public string TenantId { get; set; } = null!;
 
     public bool IsActive { get; private set; } = true;
-    public bool IsDeleted { get; private set; }
+    public bool IsDeleted { get; set; }
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }

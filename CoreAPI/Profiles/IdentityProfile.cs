@@ -20,7 +20,7 @@ public class IdentityProfile : Profile
                 src.Id,
                 src.UserName,
                 src.Email,
-                new List<string>()
+                src.UserRoles!.Where(x => x.Role != null && x.Role.Name != null).Select(x => x.Role!.Name!).ToList()
             ))
             .ReverseMap();
         // Role

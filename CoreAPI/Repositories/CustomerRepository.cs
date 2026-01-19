@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider currentUserProvider) : Repository<Customer>(dbContext), ICustomerRepository
+public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider currentUserProvider) : ICustomerRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
@@ -18,21 +18,21 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
         CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Customers
+            .AsNoTracking()
             .AsQueryable()
             .IgnoreQueryFilters();
 
         queryable = queryable.Include(e => e.User);
+
+        if (filtering != null)
+            queryable = queryable.Where(filtering);
 
         if (childIncluded)
             queryable = queryable
                 .Include(e => e.Accounts)
                 .ThenInclude(e => e.Transactions);
 
-        if (filtering != null)
-            queryable = queryable.Where(filtering);
-
         return await queryable
-            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -48,15 +48,15 @@ public class CustomerRepository(AppDbContext dbContext, ICurrentUserProvider cur
             .IgnoreQueryFilters()
             .Where(e => e.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId));
 
+        if (filtering != null)
+            queryable = queryable.Where(filtering);
+
         queryable = queryable.Include(e => e.User);
         if (childIncluded)
             queryable = queryable
                 .Include(e => e.Accounts.Where(a
                     => a.TenantId == _currentUserProvider.TenantId));
         // .ThenInclude(e => e.Transactions);
-
-        if (filtering != null)
-            queryable = queryable.Where(filtering);
 
         return await queryable.ToListAsync(cancellationToken);
     }

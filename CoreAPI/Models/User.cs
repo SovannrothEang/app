@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace CoreAPI.Models;
 
-public sealed class User : IdentityUser<string>, ITenantEntity
+public sealed class User : IdentityUser<string>, ITenantEntity, IDeletedEntity
 {
     public string FirstName { get; set; } = null!;
     public string LastName { get; set; } = null!;
@@ -13,10 +13,10 @@ public sealed class User : IdentityUser<string>, ITenantEntity
     
     public string TenantId { get; set; } = null!;
     public bool IsActive { get; private set; } = true;
-    public bool IsDeleted { get; private set; } = false;
+    public bool IsDeleted { get; set; } = false;
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; private set; } = null;
-    public DateTimeOffset? DeletedAt { get; private set; } = null;
+    public DateTimeOffset? DeletedAt { get; set; } = null;
     public string? PerformBy { get; set; }
     
     public User? Performer { get; set; }

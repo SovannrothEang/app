@@ -9,7 +9,7 @@ public class CustomerCreateDtoValidator : AbstractValidator<CustomerCreateDto>
     {
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Email is required.")
+            .Matches(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").WithMessage("Invalid email format.")
             .MaximumLength(100).WithMessage("Maximum length of Email is 100");
         RuleFor(x => x.UserName)
             .NotEmpty().WithMessage("UserName is required.")

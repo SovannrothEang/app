@@ -15,11 +15,21 @@ public interface IUserService
     Task<UserProfileDto> GetCurrentUserProfileAsync(string userId);
     Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordRequest request);
     //Task SendPasswordResetEmailAsync(string email);
-    Task CompleteInviteAsync(string userId, string token, string newPassword);
+    Task<UserProfileDto> CompleteInviteAsync(string userId, string token, string newPassword);
     Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword);
-    Task<(string userId, string token)> CreateTenantUserAsync(TenantDto tenant, TenantOwnerCreateDto dto, CancellationToken ct = default);
+    /// <summary>
+    /// Create an owner of the new created tenant
+    /// </summary>
+    /// <returns>
+    /// Token for complete the invitation (Prod: using EmailService to generate the link)
+    /// </returns>
+    Task<(string, string)> CreateTenantUserAsync(
+        TenantDto tenant,
+        TenantOwnerCreateDto dto,
+        CancellationToken ct = default);
 
     Task<IEnumerable<UserProfileDto>> GetAllUserAsync(CancellationToken ct = default);
+    Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default);
     Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default);
 
     // Email verification

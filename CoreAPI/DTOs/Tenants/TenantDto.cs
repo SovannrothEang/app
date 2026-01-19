@@ -5,6 +5,7 @@ namespace CoreAPI.DTOs.Tenants;
 
 public record TenantOnboardResponseDto(
     TenantDto Tenant,
+    string UserId,
     string Token);
 
 public record TenantDto(
