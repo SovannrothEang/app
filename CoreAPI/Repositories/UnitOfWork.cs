@@ -1,5 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using System.Data;
+using AutoMapper;
 using CoreAPI.Data;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -42,7 +42,7 @@ public sealed class UnitOfWork(
     public IRepository<T> GetRepository<T>() where T : class
     {
         var type = typeof(T);
-        return (IRepository<T>)_repositories.GetOrAdd(type, _ => new Repository<T>(_context));
+        return (IRepository<T>)_repositories.GetOrAdd(type, _ => new Repository<T>(_context, serviceProvider.GetRequiredService<IMapper>()));
     }
 
     private void Dispose(bool disposing)

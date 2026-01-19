@@ -24,8 +24,6 @@ public class AuthController(
     /// <summary>
     /// Register an account for admin by superadmin
     /// </summary>
-    /// <param name="dto"></param>
-    /// <returns></returns>
     [HttpPost("onboarding/admin")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     [EndpointDescription("This endpoint will act the registration endpoint for admin, action is done by SuperAdmin only")]
@@ -42,8 +40,6 @@ public class AuthController(
     /// <summary>
     /// Global login endpoint for all users, no matter what role
     /// </summary>
-    /// <param name="dto"></param>
-    /// <returns></returns>
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult> Login(
@@ -59,9 +55,6 @@ public class AuthController(
     /// <summary>
     /// This will act as the register route for a customer
     /// </summary>
-    /// <param name="dto"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
     [HttpPost("register")]
     [EndpointDescription("This endpoint act a public endpoint for customer to register")]
     [AllowAnonymous] 
@@ -84,22 +77,20 @@ public class AuthController(
     }
     
     /// <summary>
-    /// Complete invitation for tenant (generated token)
+    /// Complete invitation for tenant
     /// </summary>
-    /// <param name="req"></param>
-    /// <returns></returns>
     [HttpPost("complete-invite")]
     [AllowAnonymous]
     public async Task<IActionResult> CompleteInvite([FromBody] SetupPasswordRequest req)
     {
-        await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
-        return Ok(new { Message = "Account activated." });
+        var user = await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
+        return Ok(user);
     }
 
     /// <summary>
-    /// Get a profile for authenticated user, TODO: plan for the profile, whether using static structure or using switch to map: user, tenant, or superadmin
+    /// Get a profile for authenticated user,
+    /// TODO: plan for the profile, whether using static structure or using switch to map: user, tenant, or superadmin
     /// </summary>
-    /// <returns></returns>
     [HttpGet("me")]
     [Authorize(Policy = Constants.RequireAuthenticatedUser)]
     public ActionResult GetMe()
@@ -113,8 +104,6 @@ public class AuthController(
     /// <summary>
     /// Change the current authenticated user's password
     /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
     [HttpPost("change-password")]
     [Authorize(Policy = Constants.RequireAuthenticatedUser)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)

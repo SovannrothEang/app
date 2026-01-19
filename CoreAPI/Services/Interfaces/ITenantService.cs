@@ -1,12 +1,12 @@
-﻿using System.Linq.Expressions;
+﻿using CoreAPI.DTOs;
 using CoreAPI.DTOs.Tenants;
-using CoreAPI.Models;
 
 namespace CoreAPI.Services.Interfaces;
 
 public interface ITenantService
 {
-    Task<IEnumerable<TenantDto>> GetAllAsync(Expression<Func<Tenant, bool>>? filtering = null, CancellationToken cancellationToken = default);
+    Task<IEnumerable<TenantDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResult<TenantDto>> GetPagedResultAsync(PaginationOption option, CancellationToken cancellationToken = default);
     Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default);
     
     Task<TenantOnboardResponseDto> CreateAsync(TenantOnBoardingDto dto, CancellationToken ct = default);

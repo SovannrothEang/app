@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class TenantRepository(AppDbContext dbContext) : Repository<Tenant>(dbContext), ITenantRepository
+public class TenantRepository(AppDbContext dbContext) : ITenantRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
 
@@ -30,8 +30,7 @@ public class TenantRepository(AppDbContext dbContext) : Repository<Tenant>(dbCon
         var queryable = _dbContext.Tenants
             .AsQueryable();
         
-        return await queryable
-            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        return await queryable.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
     public async Task<bool> IsExistByNameAsync(string name, CancellationToken cancellationToken = default)
@@ -42,7 +41,6 @@ public class TenantRepository(AppDbContext dbContext) : Repository<Tenant>(dbCon
     
     public async Task<bool> IsExistByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Tenants
-            .AnyAsync(e => e.Id == id, cancellationToken);
+        return await _dbContext.Tenants.AnyAsync(e => e.Id == id, cancellationToken);
     }
 }

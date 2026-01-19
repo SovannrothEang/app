@@ -1,19 +1,19 @@
 ﻿namespace CoreAPI.Models.Shared;
 
-public abstract class BaseEntity 
+public abstract class BaseEntity : IDeletedEntity
 {
     public bool IsActive { get; private set; } = true;
-    public bool IsDeleted { get; private set; } = false;
+    public bool IsDeleted { get; set; } = false;
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; private set; } = null;
-    public DateTimeOffset? DeletedAt { get; private set; } = null;
+    public DateTimeOffset? DeletedAt { get; set; } = null;
     public string? PerformBy { get; private set; }
 
     protected void Modified()
     {
         this.UpdatedAt = DateTimeOffset.UtcNow;
     }
-    protected void Deleted()
+    public void Deleted()
     {
         this.IsDeleted = true;
         this.DeletedAt = DateTimeOffset.UtcNow;

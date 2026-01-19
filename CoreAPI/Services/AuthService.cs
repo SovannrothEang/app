@@ -29,9 +29,6 @@ public class AuthService(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IRepository<User> _repository = unitOfWork.GetRepository<User>();
     private readonly IUserRepository _userRepository = unitOfWork.UserRepository;
-    private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
-    private readonly ITransactionTypeRepository _transactionTypeRepository = unitOfWork.TransactionTypeRepository;
-    private readonly IAccountTypeRepository _accountTypeRepository = unitOfWork.AccountTypeRepository;
     private readonly IMapper _mapper = mapper;
     //private readonly IEmailSender<User> _emailSender = emailSender;
     private readonly ITokenService _tokenService = tokenService;
@@ -135,7 +132,7 @@ public class AuthService(
         return _mapper.Map<UserProfileDto>(user);
     }
 
-    public async Task<(string userId, string token)> CreateTenantUserAsync(
+    public async Task<(string, string)> CreateTenantUserAsync(
         TenantDto tenant,
         TenantOwnerCreateDto dto,
         CancellationToken ct = default)
@@ -178,29 +175,40 @@ public class AuthService(
                 string.Join(", ", result.Errors.Select(e => e.Description)));
     }
 
-    public async Task CompleteInviteAsync(string userId, string token, string newPassword)
+    public async Task<UserProfileDto> CompleteInviteAsync(string userId, string token, string newPassword)
     {
-        var user = await _userManager.Users
-                       .IgnoreQueryFilters()
-                       .FirstOrDefaultAsync(u => u.Id == userId)
-                   ?? throw new Exception("User not found");
+        var user = await _repository.FirstOrDefaultAsync(
+            predicate: e => e.Id == userId,
+            trackChanges: true,
+            ignoreQueryFilters: true)
+            ?? throw new Exception("User not found");
         user.Modified();
         user.EmailConfirmed = true;
         await _unitOfWork.CompleteAsync();
-        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
 
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
         if (!result.Succeeded)
             throw new BadHttpRequestException("Invalid token or password complexity failed.");
+
+        var roles = await _userManager.GetRolesAsync(user);
+        return new UserProfileDto(
+            user.Id,
+            user.UserName,
+            user.Email,
+            roles);
     }
 
     #region Auth
     public async Task<UserProfileDto> GetCurrentUserProfileAsync(string userId)
     {
-        var user = await _userManager.FindByIdAsync(userId)
-                   ?? throw new UnauthorizedAccessException("User not found.");
+        var user = await _repository.FirstOrDefaultAsync<UserProfileDto>(
+            predicate: e => e.Id == userId,
+            includes: q => q
+                .Include(x => x.UserRoles!)
+                .ThenInclude(x => x.Role))
+            ?? throw new UnauthorizedAccessException();
 
-        var roles = await _userManager.GetRolesAsync(user);
-        return new UserProfileDto(user.Id, user.UserName!, user.Email!, roles);
+        return user;
     }
 
     public async Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordRequest request)
@@ -223,16 +231,35 @@ public class AuthService(
 
     public async Task<IEnumerable<UserProfileDto>> GetAllUserAsync(CancellationToken ct = default)
     {
-        var users = await _userRepository.GetAllAsync(cancellationToken: ct);
-        var result = new List<UserProfileDto>();
+        var users = await _repository.ListAsync<UserProfileDto>(
+            ignoreQueryFilters: true,
+            includes: q => q
+                .Include(e => e.UserRoles!)
+                .ThenInclude(ur => ur.Role),
+            cancellationToken: ct);
+        return users;
+    }
 
-        foreach (var user in users)
-        {
-            var roles = await _userRepository.GetAllRolesAsync(user.Id, ct);
-            var dto = _mapper.Map<UserProfileDto>(user);
-            result.Add(dto with { Roles = roles.ToList() });
-        }
-        return result;
+    public async Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default)
+    {
+        var users = await _repository.GetPagedAsync<UserProfileDto>(
+            page: option.Page!.Value,
+            pageSize: option.PageSize!.Value,
+            ignoreQueryFilters: true,
+            filter: option.FilterBy is null
+                ? null
+                : option.FilterBy.ToLower() switch
+            {
+                "username" => e => e.UserName == option.FilterValue,
+                "email" => e => e.Email == option.FilterValue,
+                "role" => e => e.UserRoles!.Any(x => x.Role!.Name == option.FilterValue),
+                _ => null
+            },
+            includes: q => q
+                .Include(e => e.UserRoles!)
+                .ThenInclude(ur => ur.Role),
+            cancellationToken: ct);
+        return users;
     }
 
     public async Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default)

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CoreAPI.Models.Shared;
 
 namespace CoreAPI.Models;

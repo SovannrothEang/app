@@ -6,6 +6,7 @@ using CoreAPI.DTOs.Transactions;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Services;
 
@@ -17,6 +18,7 @@ public class CustomerService(
 {
     #region Private Fields
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IRepository<Customer> _repository = unitOfWork.GetRepository<Customer>();
     private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
     private readonly IAccountRepository _accountRepository = unitOfWork.AccountRepository;
     private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
@@ -25,18 +27,48 @@ public class CustomerService(
     private readonly IMapper _mapper = mapper;
     #endregion
 
-    public async Task<IEnumerable<CustomerDto>> GetAllForGobalAsync(bool childIncluded = false, CancellationToken ct = default)
+    // TODO: add order by logic
+    public async Task<IEnumerable<CustomerDto>> GetAllForGobalAsync(
+        bool childIncluded = false,
+        CancellationToken ct = default)
     {
-        var customers =  await _customerRepository.GetAllAsync(childIncluded, cancellationToken: ct);
+        var customers = await _repository.ListAsync(
+            ignoreQueryFilters: true,
+            includes: q =>
+            {
+                q.Include(c => c.User);
+                if (childIncluded)
+                    q = q
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.Transactions)
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.AccountType);
+                return q;
+            },
+            filter: null, // Global usage
+            cancellationToken: ct);
         return customers.Select(e => _mapper.Map<CustomerDto>(e));
     }
-
     public async Task<IEnumerable<CustomerDto>> GetAllForTenantAsync(
         bool childIncluded = false,
         CancellationToken ct = default)
     {
-        var customers =  await _customerRepository.GetAllForTenantAsync(childIncluded, cancellationToken: ct);
-        return customers.Select(e => _mapper.Map<Customer,CustomerDto>(e));
+        var customers = await _repository.ListAsync(
+            ignoreQueryFilters: true,
+            includes: q =>
+            {
+                q.Include(c => c.User);
+                if (childIncluded)
+                    q = q
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.Transactions)
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.AccountType);
+                return q;
+            },
+            filter: q => q.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId), // Only customers who have accounts with the current tenant
+            cancellationToken: ct);
+        return customers.Select(e => _mapper.Map<CustomerDto>(e));
     }
 
     public async Task<CustomerDto> GetByIdForCustomerAsync(
@@ -45,7 +77,21 @@ public class CustomerService(
         bool childIncluded = false,
         CancellationToken ct = default)
     {
-        var customer = await _customerRepository.GetByIdForCustomerAsync(customerId, childIncluded, cancellationToken: ct)
+        var customer = await _repository.FirstOrDefaultAsync(
+            predicate: e => e.Id == customerId,
+            ignoreQueryFilters: true,
+            includes: q =>
+            {
+                q.Include(c => c.User);
+                if (childIncluded)
+                    q = q
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.Transactions)
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.AccountType);
+                return q;
+            },
+            cancellationToken: ct)
                        ?? throw new KeyNotFoundException($"Customer with id: {customerId} not found.");
         return _mapper.Map<CustomerDto>(customer);
     }
@@ -55,7 +101,23 @@ public class CustomerService(
         bool childIncluded = false,
         CancellationToken ct = default)
     {
-        var customer = await _customerRepository.GetByIdForTenantAsync(id, childIncluded, cancellationToken: ct)
+        var customer = await _repository.FirstOrDefaultAsync(
+            predicate: e =>
+                e.Id == id &&
+                e.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId),
+            ignoreQueryFilters: true,
+            includes: q =>
+            {
+                q.Include(c => c.User);
+                if (childIncluded)
+                    q = q
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.Transactions)
+                        .Include(c => c.Accounts)
+                            .ThenInclude(acc => acc.AccountType);
+                return q;
+            },
+            cancellationToken: ct)
                        ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
         return _mapper.Map<CustomerDto>(customer);
     }
@@ -102,7 +164,7 @@ public class CustomerService(
             var user = await _userService.CreateUserAsync(registerDto, cancellationToken);
             var customer = new Customer(dto.Id ?? Guid.NewGuid().ToString(), user.Id, _currentUserProvider.UserId);
 
-            await _customerRepository.CreateAsync(customer, cancellationToken);
+            await _repository.CreateAsync(customer, cancellationToken);
             await _unitOfWork.CompleteAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
@@ -121,8 +183,8 @@ public class CustomerService(
                        ?? throw new KeyNotFoundException($"Customer with id: {id} not found.");
 
         _mapper.Map(dto, customer);
-        await _customerRepository.Update(customer);
-        await _customerRepository.SaveChangeAsync(ct);
+        _repository.Update(customer);
+        await _unitOfWork.CompleteAsync(ct);
     }
 
     public async Task DeleteAsync(string id, CancellationToken ct = default)
@@ -132,7 +194,7 @@ public class CustomerService(
 
         // TODO: what should we do after customer is deleted? it's about account.
 
-        await _customerRepository.Remove(customer);
-        await _customerRepository.SaveChangeAsync(ct);
+        customer.Deleted();
+        await _unitOfWork.CompleteAsync(ct);
     }
 }

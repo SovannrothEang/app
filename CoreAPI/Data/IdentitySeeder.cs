@@ -1,5 +1,4 @@
-﻿using CoreAPI.DTOs.Transactions;
-using CoreAPI.Models;
+﻿using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -15,6 +14,7 @@ public static class IdentitySeeder
         var config = serviceProvider.GetRequiredService<IConfiguration>();
         var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
         var tenantRepository = unitOfWork.TenantRepository;
+        var repository = unitOfWork.GetRepository<Tenant>();
         var tenantContext = serviceProvider.GetRequiredService<ICurrentUserProvider>();
 
         // Failed cuz we did not manage the unique while the db is enforcing the multi-tenancy!!
@@ -22,7 +22,7 @@ public static class IdentitySeeder
             ?? throw new Exception("Tenancy:Host not found");
         if (!await tenantRepository.IsExistByIdAsync(tenantHost))
         {
-            await tenantRepository.CreateAsync(new Tenant(tenantHost, tenantHost, tenantHost));
+            await repository.CreateAsync(new Tenant(tenantHost, tenantHost, tenantHost));
             
             // I think tenant host never gonna need that
             // IEnumerable<TransactionTypeCreateDto> types =

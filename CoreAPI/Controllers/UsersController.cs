@@ -1,4 +1,5 @@
-﻿using CoreAPI.Services.Interfaces;
+﻿using CoreAPI.DTOs;
+using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,27 +13,22 @@ namespace CoreAPI.Controllers;
 public class UsersController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
-    // TODO: Fix the tenant scope to fit the authorize
-    // I think we can allow tenant to access this endpoint, since the user is Tenant Entity
-
+    
     /// <summary>
     /// Get all users, in the scope of the tenant (Global filtering)
     /// </summary>
-    /// <param name="ct"></param>
-    /// <returns>List of users dto</returns>
     [HttpGet]
-    public async Task<ActionResult> GetAllUsers(CancellationToken ct = default)
+    public async Task<ActionResult> GetAllUsers(
+        [FromQuery] PaginationOption option,
+        CancellationToken ct = default)
     {
-        var users = await _userService.GetAllUserAsync(ct);
+        var users = await _userService.GetPagedResultAsync(option, ct);
         return Ok(users);
     }
 
     /// <summary>
     /// Get user by id in the scope of tenant
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
     [HttpGet("{id}")]
     public async Task<ActionResult> GetUserById(string id, CancellationToken ct = default)
     {

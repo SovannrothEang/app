@@ -16,7 +16,6 @@ namespace CoreAPI.Controllers;
 [RequireHttps]
 public class TenantsController(
     IAuthorizationService authorizationService,
-    IUserService userService,
     ICustomerService customerService,
     ITransactionService transactionService,
     IMapper mapper,
@@ -25,7 +24,6 @@ public class TenantsController(
     ITransactionTypeService transactionTypeService) : ControllerBase
 {
     private readonly IAuthorizationService _authorizationService = authorizationService;
-    private readonly IUserService _userService = userService;
     private readonly ICustomerService _customerService = customerService;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly ITransactionTypeService _transactionTypeService = transactionTypeService;
@@ -80,10 +78,11 @@ public class TenantsController(
         if (!result.IsValid)
             return BadRequest(result.Errors);
 
-        var (tenant, token) = await _tenantService.CreateAsync(dto, ct);
+        var (tenant, userId, token) = await _tenantService.CreateAsync(dto, ct);
         return Ok(new
         {
             Tenant = tenant,
+            UserId = userId,
             Token = token
         });
     }

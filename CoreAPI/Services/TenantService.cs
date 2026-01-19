@@ -1,6 +1,5 @@
-﻿using System.Formats.Asn1;
-using System.Linq.Expressions;
-using AutoMapper;
+﻿using AutoMapper;
+using CoreAPI.DTOs;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
@@ -25,24 +24,50 @@ public class TenantService(
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<TenantService> _logger = logger;
 
-    public async Task<IEnumerable<TenantDto>> GetAllAsync(Expression<Func<Tenant, bool>>? filtering = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TenantDto>> GetAllAsync(CancellationToken ct = default)
     {
-        var tenants = await _tenantRepository.GetAllAsync(filtering, cancellationToken);
-        return tenants.Select(e => _mapper.Map<TenantDto>(e)).ToList();
+        var tenants = await _repository.ListAsync<TenantDto>(
+            ignoreQueryFilters: true,
+            cancellationToken: ct);
+        return tenants;
+    }
+    public async Task<PagedResult<TenantDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default)
+    {
+        // TODO: add orderby logic
+        var (tenants, totalCount) = await _repository.GetPagedAsync(
+            option.Page!.Value,
+            option.PageSize!.Value,
+            ignoreQueryFilters: true,
+            option.FilterValue is null
+                ? null
+                : option.FilterBy!.ToLower() switch
+                {
+                    "id" => e => e.Id == option.FilterValue,
+                    "name" => e => e.Name == option.FilterValue,
+                    "performby" => e => e.PerformBy == option.FilterValue,
+                    // "status" => e => e.Status == Enum.TryParse<TenantStatus>(option.FilterValue),
+                    _ => null
+                },
+            cancellationToken: ct
+        );
+        return new PagedResult<TenantDto>
+        {
+            Items = [.. tenants.Select(_mapper.Map<TenantDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = totalCount,
+        };
     }
 
     public async Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(id, ct);
-        return _mapper.Map<TenantDto>(tenant);
+        return await _repository.FirstOrDefaultAsync<TenantDto>(
+            predicate: e => e.Id == id,
+            cancellationToken: ct);
     }
 
     public async Task<TenantOnboardResponseDto> CreateAsync(TenantOnBoardingDto dto, CancellationToken ct = default)
     {
-        // var exist = await _tenantRepository.IsExistByNameAsync(dto.Name, ct);
-        // if (exist)
-        //     throw new BadHttpRequestException($"Tenant with name: {dto.Name} is already exist!");
-        
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
@@ -67,7 +92,7 @@ public class TenantService(
 
             await _unitOfWork.CompleteAsync(ct);
             await transaction.CommitAsync(ct);
-            return new TenantOnboardResponseDto(tenantDto, token);
+            return new TenantOnboardResponseDto(tenantDto, userId, token);
         }
         catch
         {
@@ -88,17 +113,23 @@ public class TenantService(
 
     public async Task DeleteAsync(string id, CancellationToken ct = default)
     {
-        var exist = await _tenantRepository.GetByIdAsync(id, ct)
+        var tenant = await _repository.FirstOrDefaultAsync(
+            predicate: e => e.Id == id,
+            trackChanges: true,
+            cancellationToken: ct)
             ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
         
-        _repository.Remove(exist);
+        tenant.Deleted();
         await _unitOfWork.CompleteAsync(ct);
     }
 
     public async Task ActivateAsync(string id, CancellationToken ct = default)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(id, ct)
-                     ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
+        var tenant = await _repository.FirstOrDefaultAsync(
+            predicate: e => e.Id == id,
+            trackChanges: true,
+            cancellationToken: ct)
+            ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
 
         tenant.Activate();
         await _unitOfWork.CompleteAsync(ct);
@@ -106,7 +137,10 @@ public class TenantService(
     
     public async Task DeactivateAsync(string id, CancellationToken ct = default)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(id, ct)
+        var tenant = await _repository.FirstOrDefaultAsync(
+            predicate: e => e.Id == id,
+            trackChanges: true,
+            cancellationToken: ct)
             ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
         
         tenant.Deactivate();

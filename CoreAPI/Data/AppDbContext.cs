@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Reflection;
 using CoreAPI.Models;
 using CoreAPI.Models.Shared;
@@ -37,7 +38,51 @@ public class AppDbContext(
         where TEntity : class, ITenantEntity
     {
         builder.Entity<TEntity>()
-            .HasQueryFilter(e => (e.TenantId == _currentUserProvider.TenantId));
+            .HasQueryFilter(e => e.TenantId == _currentUserProvider.TenantId);
+    }
+    
+    private void ApplyDeletedFilter<TEntity>(ModelBuilder builder)
+        where TEntity : class, IDeletedEntity
+    {
+        builder.Entity<TEntity>()
+            .HasQueryFilter(e => e.IsDeleted == false);
+    }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+        builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            var clrType = entityType.ClrType;
+            if (clrType != null && typeof(IDeletedEntity).IsAssignableFrom(clrType))
+            {
+                var method = typeof(AppDbContext)
+                    .GetMethod(nameof(ApplyDeletedFilter),
+                        BindingFlags.NonPublic |
+                        BindingFlags.Instance)
+                    ?.MakeGenericMethod(entityType.ClrType);
+
+                method?.Invoke(this, [builder]);
+            }
+
+            if (clrType != null && typeof(ITenantEntity).IsAssignableFrom(clrType))
+            {
+                var method = typeof(AppDbContext)
+                    .GetMethod(nameof(ApplyTenantFilter),
+                            BindingFlags.NonPublic |
+                            BindingFlags.Instance)
+                    ?.MakeGenericMethod(entityType.ClrType);
+
+                method?.Invoke(this, [builder]);
+            }
+        }
+
+        builder.Entity<IdentityUserClaim<string>>().ToTable("UserClaims");
+        builder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims");
+        builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
+        builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
     }
     
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -72,29 +117,5 @@ public class AppDbContext(
             }
         }
         return base.SaveChangesAsync(cancellationToken);
-    }
-
-    protected override void OnModelCreating(ModelBuilder builder)
-    {
-        base.OnModelCreating(builder);
-        builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-
-        foreach (var entityType in builder.Model.GetEntityTypes())
-        {
-            if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
-            {
-                var method = typeof(AppDbContext)
-                    .GetMethod(nameof(ApplyTenantFilter),
-                        BindingFlags.NonPublic |
-                        BindingFlags.Instance)
-                    ?.MakeGenericMethod(entityType.ClrType);
-
-                method?.Invoke(this, [builder]);
-            }
-        }
-        builder.Entity<IdentityUserClaim<string>>().ToTable("UserClaims");
-        builder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims");
-        builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
-        builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
     }
 }
