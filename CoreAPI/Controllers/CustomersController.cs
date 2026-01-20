@@ -1,6 +1,4 @@
-﻿using AutoMapper;
-using CoreAPI.DTOs;
-using CoreAPI.DTOs.Customers;
+﻿using CoreAPI.DTOs;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,27 +9,35 @@ namespace CoreAPI.Controllers;
 [Route("api/[controller]")]
 [RequireHttps]
 public class CustomersController(
-    IMapper mapper,
     ITransactionService transactionService,
     IAccountService accountService,
     ICustomerService customerService) : ControllerBase
 {
-    private readonly IMapper _mapper = mapper;
+    #region Private Fields
     private readonly ITransactionService _transactionService = transactionService;
     private readonly IAccountService _accountService = accountService;
     private readonly ICustomerService _customerService = customerService;
+    #endregion
 
+    /// <summary>
+    /// Get all customers by the Admin
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
     public async Task<ActionResult> GetAllCustomersAsync(
-        bool? childIncluded = false,
+        [FromQuery] bool? childIncluded,
+        [FromQuery] PaginationOption option,
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var customers = await _customerService.GetAllForGobalAsync(childIncluded.Value, ct);
+        var customers = await _customerService.GetPaginatedResultsAsync(option, childIncluded.Value, ct);
         return Ok(customers);
     }
     
+    /// <summary>
+    /// Get the customer profile by Customer,
+    /// TODO: why need this when we have the Overview or Dashboard??
+    /// </summary>
     [HttpGet("{id}")]
     [ActionName(nameof(GetCustomerByIdAsync))]
     [Authorize(Policy = Constants.CustomerAccessPolicy)]
@@ -42,7 +48,7 @@ public class CustomersController(
     {
         childIncluded ??= false;
         var customer = await _customerService.GetByIdForCustomerAsync(id, null, childIncluded.Value, cancellationToken);
-        return Ok(_mapper.Map<CustomerDto>(customer));
+        return Ok(customer);
     }
 
     /// <summary>
