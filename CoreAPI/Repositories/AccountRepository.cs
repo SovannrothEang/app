@@ -9,12 +9,10 @@ namespace CoreAPI.Repositories;
 
 public class AccountRepository(
     AppDbContext dbContext,
-    ITransactionRepository transactionRepository,
     ILogger<AccountRepository> logger)
     : IAccountRepository
 {
     private readonly AppDbContext _dbContext = dbContext;
-    private readonly ITransactionRepository _transactionRepository = transactionRepository;
     private readonly ILogger<AccountRepository> _logger = logger;
 
     // Get all, but it attached to TenantID (Global query) 
@@ -59,12 +57,13 @@ public class AccountRepository(
         return await queryable.ToListAsync(cancellationToken);
     }
 
-    public async Task<(IEnumerable<Account> result, int totalCount)> GetAllByCustomerIdForGlobalAsync(
-        string customerId,
-        PaginationOption option,
-        Expression<Func<Account, bool>>? filtering = null,
-        bool childIncluded = false,
-        CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<Account> result, int totalCount)>
+        GetAllByCustomerIdForGlobalAsync(
+            string customerId,
+            PaginationOption option,
+            Expression<Func<Account, bool>>? filtering = null,
+            bool childIncluded = false,
+            CancellationToken cancellationToken = default)
     {
         var queryable = _dbContext.Accounts
             .AsNoTracking()

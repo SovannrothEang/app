@@ -16,7 +16,6 @@ public sealed class UnitOfWork(
     private bool _disposed;
     
     public IUserRepository UserRepository => serviceProvider.GetRequiredService<IUserRepository>();
-    public ICustomerRepository CustomerRepository => serviceProvider.GetRequiredService<ICustomerRepository>();
     public ITenantRepository TenantRepository => serviceProvider.GetRequiredService<ITenantRepository>();
     public IAccountRepository AccountRepository => serviceProvider.GetRequiredService<IAccountRepository>();
     public ITransactionRepository TransactionRepository => serviceProvider.GetRequiredService<ITransactionRepository>();

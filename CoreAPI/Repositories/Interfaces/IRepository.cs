@@ -29,6 +29,7 @@ public interface IRepository<TEntity> where TEntity : class
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
     /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="select">The select to be applied to the query.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task<IEnumerable<TResult>> ListAsync<TResult>(
         bool trackChanges = false,
@@ -36,6 +37,7 @@ public interface IRepository<TEntity> where TEntity : class
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         Expression<Func<TEntity, object>>? orderBy = null,
+        Expression<Func<TEntity, TResult>>? select = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
