@@ -13,17 +13,19 @@ namespace CoreAPI.Services;
 public class CustomerService(
     IUnitOfWork unitOfWork,
     IUserService userService,
+    ITransactionService transactionService,
+    IAccountService accountService,
     ICurrentUserProvider currentUserProvider,
     IMapper mapper) : ICustomerService
 {
     #region Private Fields
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IMapper _mapper = mapper;
     private readonly IRepository<Customer> _repository = unitOfWork.GetRepository<Customer>();
-    private readonly IAccountRepository _accountRepository = unitOfWork.AccountRepository;
-    private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IUserService _userService = userService;
-    private readonly IMapper _mapper = mapper;
+    private readonly IAccountService _accountService = accountService;
+    private readonly ITransactionService _transactionService = transactionService;
     #endregion
 
     #region Private Methods
@@ -84,19 +86,16 @@ public class CustomerService(
         return customers;
     }
 
-    public async Task<CustomerDto> GetByIdForCustomerAsync(
+    public async Task<CustomerDto?> GetByIdForGlobalAsync(
         string customerId,
-        PaginationOption? option,
         bool childIncluded = false,
         CancellationToken ct = default)
     {
-        var customer = await _repository.FirstOrDefaultAsync<CustomerDto>(
+        return await _repository.FirstOrDefaultAsync<CustomerDto>(
             predicate: e => e.Id == customerId,
             ignoreQueryFilters: true,
             includes: q => GetCustomerIncludes(q, childIncluded),
-            cancellationToken: ct)
-           ?? throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
-        return customer;
+            cancellationToken: ct);
     }
 
     public async Task<CustomerDto> GetByIdForTenantAsync(
@@ -113,7 +112,7 @@ public class CustomerService(
             ignoreQueryFilters: true,
             includes: q => GetCustomerIncludes(q, childIncluded),
             cancellationToken: ct)
-           ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
+            ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
         return customer;
     }
 
@@ -129,25 +128,10 @@ public class CustomerService(
         pageOption.Page ??= 1;
         pageOption.PageSize ??= 10;
 
-        // I dont need total accounts right now
-        // TODO: make a method for getting all balance
-        var (accounts, _) = await _accountRepository.GetAllByCustomerIdForGlobalAsync(
-            customerId, pageOption, null, false, ct);
-        var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdForGlobalAsync(
-            customerId, pageOption, childIncluded, ct);
-
-        if (accounts is null || !accounts.Any())
-            throw new KeyNotFoundException($"Customer with id: {customerId} not found.");
-
-        var dtos = result.Select(_mapper.Map<TransactionDto>).ToList();
-
-        return (accounts.Sum(a => a.Balance), new PagedResult<TransactionDto>
-        {
-            Items = dtos,
-            PageNumber = pageOption.Page.Value,
-            PageSize = pageOption.PageSize.Value,
-            TotalCount = totalCount
-        });
+        var totalBalance = await _accountService.GetTotalBalanceByCustomerIdAsync(customerId, ct);
+        var result = await _transactionService.GetPagedResultAsync(
+            pageOption, childIncluded, ct);
+        return (totalBalance, result);
     }
 
     public async Task<CustomerDto> CreateAsync(

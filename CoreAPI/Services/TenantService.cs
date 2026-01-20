@@ -67,6 +67,14 @@ public class TenantService(
             cancellationToken: ct);
     }
 
+    public async Task<TenantDto?> GetValidTenantByIdAsync(string id, bool trackChange = false, CancellationToken ct = default)
+    {
+        return await _repository.FirstOrDefaultAsync<TenantDto>(
+            predicate: e => e.Id == id && e.Status == TenantStatus.Active,
+            trackChanges: trackChange,
+            cancellationToken: ct);
+    }
+
     public async Task<TenantOnboardResponseDto> CreateAsync(TenantOnBoardingDto dto, CancellationToken ct = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);

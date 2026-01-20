@@ -2,7 +2,6 @@ using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Accounts;
 using CoreAPI.DTOs.Tenants;
-using CoreAPI.DTOs.Transactions;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
@@ -11,15 +10,15 @@ using System.Linq.Expressions;
 namespace CoreAPI.Services;
 
 public class AccountService(
+    IUnitOfWork unitOfWork,
     IAccountRepository accountRepository,
     IMapper mapper,
-    ITransactionService transactionService,
     ILogger<AccountService> logger) : IAccountService
 {
     #region Private Fields
+    private readonly IRepository<Account> _repository = unitOfWork.GetRepository<Account>();
     private readonly IAccountRepository _accountRepository = accountRepository;
     private readonly IMapper _mapper = mapper;
-    private readonly ITransactionService _transactionService = transactionService;
     private readonly ILogger<AccountService> _logger = logger;
     #endregion
 
@@ -74,5 +73,20 @@ public class AccountService(
             }).ToList();
 
         return (tenantProfile.Sum(p => p.TotalBalance), tenantProfile);
+    }
+    
+    public async Task<decimal> GetTotalBalanceByCustomerIdAsync(
+        string customerId,
+        CancellationToken ct = default)
+    {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Get total balance for customer: {customerId}", customerId);
+
+        var totalBalance = await _repository.ListAsync(
+            filter: a => a.CustomerId == customerId,
+            select: a => a.Balance,
+            cancellationToken: ct)
+            ?? throw new BadHttpRequestException("Unable to calculate total balance.");
+        return totalBalance.Sum();
     }
 }

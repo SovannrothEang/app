@@ -1,5 +1,4 @@
-﻿using System.Formats.Tar;
-using AutoMapper;
+﻿using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
@@ -17,14 +16,12 @@ public class TransactionService(
     IUnitOfWork unitOfWork,
     ICurrentUserProvider currentUserProvider,
     ILogger<TransactionService> logger,
-    IMapper mapper,
-    ITransactionTypeService transactionTypeService)
+    ITransactionTypeService transactionTypeService,
+    IMapper mapper)
     : ITransactionService
 {
     #region Private fields
     private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
-    private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
-    private readonly ICustomerRepository _customerRepository = unitOfWork.CustomerRepository;
     private readonly IAccountTypeRepository _accountTypeRepository = unitOfWork.AccountTypeRepository;
     private readonly ITransactionTypeService _transactionTypeService = transactionTypeService;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -33,7 +30,7 @@ public class TransactionService(
     private readonly IMapper _mapper = mapper;
     #endregion
 
-    public async Task<PagedResult<TransactionDto>> GetAllAsync(
+    public async Task<PagedResult<TransactionDto>> GetPagedResultAsync(
         PaginationOption option,
         bool childIncluded = false,
         CancellationToken ct = default)
@@ -47,6 +44,7 @@ public class TransactionService(
             option,
             childIncluded: childIncluded,
             cancellationToken: ct);
+        
         var dtos = transactions.Select(t => _mapper.Map<TransactionDto>(t)).ToList();
         return new PagedResult<TransactionDto>
         {
@@ -60,7 +58,7 @@ public class TransactionService(
     public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForGlobalAsync(
         string customerId,
         PaginationOption pageOption,
-        bool childIncluded,
+        bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
         var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdForGlobalAsync(
@@ -84,13 +82,24 @@ public class TransactionService(
         bool trackChanges = false,
         CancellationToken cancellationToken = default)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(tenantId, cancellationToken);
-        if (tenant is null) throw new KeyNotFoundException($"No Tenant was found with id: {tenantId}.");
-
+        var tenant = await _unitOfWork.GetRepository<Tenant>().FirstOrDefaultAsync(
+            predicate: e => e.Id == tenantId && e.Status == TenantStatus.Active,
+            trackChanges: trackChanges,
+            cancellationToken: cancellationToken)
+            ?? throw new KeyNotFoundException($"No Tenant was found with id: {tenantId}.");
         if (tenant.Status != TenantStatus.Active) throw new BadHttpRequestException("Tenant is not active!");
 
-        var customer = await _customerRepository.GetByIdForCustomerAsync(customerId, childIncluded: true, trackChanges: trackChanges, cancellationToken)
-                       ?? throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
+        var customer = await _unitOfWork.GetRepository<Customer>().FirstOrDefaultAsync(
+            predicate: e => e.Id == customerId,
+            trackChanges: trackChanges,
+            includes: queryable => queryable
+                .Include(c => c.User)
+                .Include(c => c.Accounts)
+                    .ThenInclude(acc => acc.Transactions)
+                .Include(c => c.Accounts)
+                    .ThenInclude(acc => acc.AccountType),
+            cancellationToken: cancellationToken)
+            ?? throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
 
         return (customer, tenant);
     }
@@ -104,7 +113,7 @@ public class TransactionService(
             PostTransactionDto dto,
             CancellationToken cancellationToken = default)
     {
-        var validator = new CustomerPostTransactionValidator(_customerRepository);
+        var validator = new PostTransactionValidator(_unitOfWork);
         var result = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!result.IsValid)
@@ -121,18 +130,20 @@ public class TransactionService(
             await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
             try
             {
-                var type = await _transactionTypeService.GetBySlugAsync(slug, cancellationToken);
-                if (type == null)
-                    throw new BadHttpRequestException("Invalid Transaction Type, get available type with: /api/transactions/{transactionId}/operations");
+                var type = await _transactionTypeService.GetBySlugAsync(slug, cancellationToken)
+                    ?? throw new BadHttpRequestException("Invalid Transaction Type, get available type with: /api/transactions/{transactionId}/operations");
 
                 if (!type.AllowNegative && dto.Amount < 0)
                     throw new BadHttpRequestException(
                         $"Negative amounts are not allowed for transaction type '{type.Name}'.");
 
                 var finalAmount = dto.Amount * type.Multiplier;
-                var (customer, tenant) = await GetValidCustomerAndTenantAsync(customerId, tenantId, trackChanges: true, cancellationToken);
+                var (customer, tenant) = await GetValidCustomerAndTenantAsync(
+                    customerId, tenantId, trackChanges: true, cancellationToken);
 
-                var account = customer.Accounts.FirstOrDefault(e => e.TenantId == tenant.Id && e.AccountTypeId == accountTypeId);
+                var account = customer.Accounts.FirstOrDefault(e =>
+                    e.TenantId == tenant.Id &&
+                    e.AccountTypeId == accountTypeId);
 
                 if (account is null)
                 {

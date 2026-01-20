@@ -5,7 +5,6 @@ namespace CoreAPI.Repositories.Interfaces;
 public interface IUnitOfWork : IDisposable
 {
     IUserRepository UserRepository { get; }
-    ICustomerRepository CustomerRepository { get; }
     ITenantRepository TenantRepository { get; }
     IAccountRepository AccountRepository { get; }
     ITransactionRepository TransactionRepository { get; }

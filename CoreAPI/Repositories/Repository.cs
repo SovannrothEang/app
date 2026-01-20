@@ -31,13 +31,19 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         Expression<Func<TEntity, object>>? orderBy = null,
+        Expression<Func<TEntity, TResult>>? select = null,
         CancellationToken cancellationToken = default)
     {
         var queryable = Query;
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, filter, includes, orderBy);
-        return await queryable
-            .ProjectTo<TResult>(_mapper.ConfigurationProvider)
-            .ToListAsync(cancellationToken);
+        if (select is not null)
+            return await queryable
+                .Select(select)
+                .ToListAsync(cancellationToken);
+        else
+            return await queryable
+                .ProjectTo<TResult>(_mapper.ConfigurationProvider)
+                .ToListAsync(cancellationToken);
     }
     public async Task<TEntity?> FirstOrDefaultAsync(
         Expression<Func<TEntity, bool>> predicate,

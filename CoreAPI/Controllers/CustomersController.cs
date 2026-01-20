@@ -47,7 +47,7 @@ public class CustomersController(
         CancellationToken cancellationToken = default)
     {
         childIncluded ??= false;
-        var customer = await _customerService.GetByIdForCustomerAsync(id, null, childIncluded.Value, cancellationToken);
+        var customer = await _customerService.GetByIdForGlobalAsync(id, childIncluded.Value, cancellationToken);
         return Ok(customer);
     }
 
@@ -62,7 +62,7 @@ public class CustomersController(
         CancellationToken ct = default)
     {
         childIncluded ??= false;
-        var transactions = await _transactionService.GetAllAsync(option, childIncluded.Value, ct);
+        var transactions = await _transactionService.GetPagedResultAsync(option, childIncluded.Value, ct);
         return Ok(transactions);
     }
 

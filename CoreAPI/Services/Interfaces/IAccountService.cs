@@ -1,6 +1,4 @@
 ﻿using CoreAPI.DTOs;
-using CoreAPI.DTOs.Accounts;
-using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 
 namespace CoreAPI.Services.Interfaces;
@@ -30,5 +28,15 @@ public interface IAccountService
     //     string tenantId,
     //     string customerId,
     //     bool childIncluded = false,
-    //     CancellationToken cancellationToken = default);
+    //     Cancell
+    
+    /// <summary>
+    /// Get total balance by Customer ID
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    Task<decimal> GetTotalBalanceByCustomerIdAsync(
+        string customerId,
+        CancellationToken ct = default);
 }

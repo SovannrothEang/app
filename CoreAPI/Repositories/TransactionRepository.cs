@@ -3,7 +3,6 @@ using CoreAPI.Data;
 using CoreAPI.DTOs;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
