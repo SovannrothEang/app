@@ -50,9 +50,8 @@ public class CustomerService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
-        var customers = await _repository.GetPagedAsync<CustomerDto>(
-            page: option.Page.Value,
-            pageSize: option.PageSize.Value,
+        var customers = await _repository.GetPagedResultAsync<CustomerDto>(
+            option,
             ignoreQueryFilters: true,
             filter: option.FilterBy is null
                 ? null
@@ -76,9 +75,8 @@ public class CustomerService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
-        var customers = await _repository.GetPagedAsync<CustomerDto>(
-            page: option.Page.Value,
-            pageSize: option.PageSize.Value,
+        var customers = await _repository.GetPagedResultAsync<CustomerDto>(
+            option,
             ignoreQueryFilters: true,
             filter: q => q.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId), // Only customers who have accounts with the current tenant
             includes: q => GetCustomerIncludes(q, childIncluded),

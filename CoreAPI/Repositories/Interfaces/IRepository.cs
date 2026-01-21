@@ -18,7 +18,7 @@ public interface IRepository<TEntity> where TEntity : class
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -36,7 +36,7 @@ public interface IRepository<TEntity> where TEntity : class
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         Expression<Func<TEntity, TResult>>? select = null,
         CancellationToken cancellationToken = default);
 
@@ -85,20 +85,18 @@ public interface IRepository<TEntity> where TEntity : class
     /// <summary>
     /// Get paged result of the entity type of TEntity
     /// </summary>
-    /// <param name="page">The number of page</param>
-    /// <param name="pageSize">The number of page size</param>
+    /// <param name="option"></param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
     /// <param name="includes">The includes to be applied to the query.</param>
     /// <param name="orderBy">The order to be applied to the query</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    Task<(IEnumerable<TEntity> items, int totalCount)> GetPagedAsync(
-        int page,
-        int pageSize,
+    Task<(IEnumerable<TEntity> items, int totalCount)> GetPagedResultAsync(
+        PaginationOption option,
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -108,20 +106,18 @@ public interface IRepository<TEntity> where TEntity : class
     /// <summary>
     /// Get paged result of the entity type of TEntity
     /// </summary>
-    /// <param name="page">The number of page</param>
-    /// <param name="pageSize">The number of page size</param>
+    /// <param name="option"></param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
     /// <param name="includes">The includes to be applied to the query.</param>
     /// <param name="orderBy">The order to be applied to the query</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    Task<PagedResult<TResult>> GetPagedAsync<TResult>(
-        int page,
-        int pageSize,
+    Task<PagedResult<TResult>> GetPagedResultAsync<TResult>(
+        PaginationOption option,
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         CancellationToken cancellationToken = default);
 
     Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default);

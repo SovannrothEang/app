@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using AutoMapper;
 using CoreAPI.Data;
+using CoreAPI.Models.Shared;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -17,7 +18,6 @@ public sealed class UnitOfWork(
     
     public IUserRepository UserRepository => serviceProvider.GetRequiredService<IUserRepository>();
     public ITenantRepository TenantRepository => serviceProvider.GetRequiredService<ITenantRepository>();
-    public IAccountRepository AccountRepository => serviceProvider.GetRequiredService<IAccountRepository>();
     public ITransactionRepository TransactionRepository => serviceProvider.GetRequiredService<ITransactionRepository>();
     public ITransactionTypeRepository TransactionTypeRepository => serviceProvider.GetRequiredService<ITransactionTypeRepository>();
     public IAccountTypeRepository AccountTypeRepository => serviceProvider.GetRequiredService<IAccountTypeRepository>();
@@ -38,7 +38,7 @@ public sealed class UnitOfWork(
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-    public IRepository<T> GetRepository<T>() where T : class
+    public IRepository<T> GetRepository<T>() where T : class, IAuditEntity
     {
         var type = typeof(T);
         return (IRepository<T>)_repositories.GetOrAdd(type, _ => new Repository<T>(_context, serviceProvider.GetRequiredService<IMapper>()));

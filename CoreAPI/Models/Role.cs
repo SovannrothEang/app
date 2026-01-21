@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace CoreAPI.Models;
 
-public sealed class Role : IdentityRole<string>, ITenantEntity, IDeletedEntity
+public sealed class Role : IdentityRole<string>, ITenantEntity, IAuditEntity, IDeletedEntity
 {
     public string TenantId { get; set; } = null!;
 
