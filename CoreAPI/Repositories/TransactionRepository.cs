@@ -21,9 +21,8 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
             .AsNoTracking()
             .AsQueryable()
             .IgnoreQueryFilters();
-        var totalCount = await queryable.CountAsync(cancellationToken);
         if (filtering != null) queryable = queryable.Where(filtering);
-        var result = await this.GetPaginatedAsync(queryable, option, childIncluded, cancellationToken);
+        var (result, totalCount) = await GetPaginatedAsync(queryable, option, childIncluded, cancellationToken);
         return (result, totalCount);
     }
 
@@ -61,8 +60,7 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
             .AsNoTracking()
             .AsQueryable()
             .Where(e => e.CustomerId == customerId);
-        var totalCount = await queryable.CountAsync(cancellationToken);
-        var result = await this.GetPaginatedAsync(queryable, pageOption, childIncluded, cancellationToken);
+        var (result, totalCount) = await GetPaginatedAsync(queryable, pageOption, childIncluded, cancellationToken);
         return (result, totalCount);
     }
 
@@ -78,13 +76,12 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
             .AsQueryable()
             .IgnoreQueryFilters()
             .Where(e => e.CustomerId == customerId);
-        var totalCount = await queryable.CountAsync(cancellationToken);
-        var result = await this.GetPaginatedAsync(queryable, option, childIncluded, cancellationToken);
+        var (result, totalCount) = await GetPaginatedAsync(queryable, option, childIncluded, cancellationToken);
         return (result, totalCount);
     }
     
     #region  Helper Methods
-    private async Task<IEnumerable<Transaction>> GetPaginatedAsync(
+    private static async Task<(IEnumerable<Transaction>, int)> GetPaginatedAsync(
         IQueryable<Transaction> queryable,
         PaginationOption option,
         bool childIncluded,
@@ -96,20 +93,36 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
                 .Include(e => e.Referencer)
                 .Include(e => e.Performer);
 
-        if (!string.IsNullOrEmpty(option.TransactionType))
-        {
-            queryable = queryable.Where(x => x.TransactionType!.Slug == option.TransactionType);
-        }
-        if (option.StartDate.HasValue)
+        if (!string.IsNullOrEmpty(option.FilterBy) && !string.IsNullOrEmpty(option.FilterValue))
+            queryable = option.FilterBy.ToLower() switch
+            {
+                "id" => queryable
+                    .Where(x => x.Id.Equals(option.FilterValue!)),
+                "tenantid" => queryable
+                    .Where(x => x.TenantId.Equals(option.FilterValue!)),
+                "customerid" => queryable
+                    .Where(x => x.CustomerId.Equals(option.FilterValue!)),
+                "accounttypeid" => queryable
+                    .Where(x => x.AccountTypeId.Equals(option.FilterValue!)),
+                "type" => queryable
+                    .Where(x => x.TransactionType!.Name!.Equals(option.FilterValue!)),
+                "occurredat" => DateTime.TryParse(option.FilterValue, out var occurredAt)
+                    ? queryable.Where(x => x.OccurredAt.Date == occurredAt.Date)
+                    : queryable,
+                _ => throw new BadHttpRequestException($"Filtering by '{option.FilterBy}' is not supported.")
+            };
+        if (option.StartDate is not null)
         {
             var startDate = new DateTimeOffset(option.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-            queryable = queryable.Where(x => x.CreatedAt >= startDate);
+            queryable = queryable.Where(q => q.CreatedAt >= startDate);
         }
-        if (option.EndDate.HasValue)
+        if (option.EndDate is not null)
         {
-            var endDate = new DateTimeOffset(option.EndDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-            queryable = queryable.Where(x => x.CreatedAt <= endDate);
+            var endDate = new DateTimeOffset(option.EndDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+            queryable = queryable.Where(q => q.CreatedAt <= endDate);
         }
+        
+        var totalCount = await queryable.CountAsync(cancellationToken);
         
         var sortBy = option.SortBy!.ToLower();
         var sortDirection = option.SortDirection!.ToLower();
@@ -129,15 +142,22 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
             ("occurredat", "desc") => queryable
                 .OrderByDescending(x => x.OccurredAt)
                 .ThenBy(x => x.TransactionType!.Name),
+            ("createdat", "asc") => queryable
+                .OrderBy(x => x.CreatedAt)
+                .ThenBy(x => x.TransactionType!.Name),
+            ("createdat", "desc") => queryable
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenBy(x => x.TransactionType!.Name),
             _ => queryable
                 .OrderBy(x => x.CreatedAt)
                 .ThenBy(x => x.TransactionType!.Name)
         };
 
-        return await queryable
+        var result = await queryable
             .Skip((option.Page!.Value - 1) * option.PageSize!.Value)
             .Take(option.PageSize!.Value)
             .ToListAsync(cancellationToken);
+        return (result, totalCount);
     }
     #endregion
 }

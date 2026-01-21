@@ -5,6 +5,7 @@ using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace CoreAPI.Services;
@@ -28,26 +29,40 @@ public class AccountService(
             PaginationOption option,
             CancellationToken ct = default)
     {
+        option.Page ??= 1;
+        option.PageSize ??= 1;
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all accounts by customer: {customerId}", customerId);
 
         // TODO: Maybe make the comparison not case sensitive
-        Expression<Func<Account, bool>>? filtering = null;
+        Expression<Func<Account, bool>> filtering = q => q.CustomerId == customerId;
         if (option.FilterBy is not null && option.FilterValue is not null)
             filtering = option.FilterBy!.ToLower() switch
             {
-                "tenantid" => a => a.TenantId == option.FilterValue,
-                "name" => a => a.Tenant!.Name == option.FilterValue,
-                "typeid" => a => a.AccountTypeId == option.FilterValue,
-                "type" => a => a.AccountType!.Name == option.FilterValue,
-                _ => null
+                "tenantid" => a => a.CustomerId == customerId && a.TenantId == option.FilterValue,
+                "name" => a => a.CustomerId == customerId && a.Tenant!.Name == option.FilterValue,
+                "typeid" => a => a.CustomerId == customerId && a.AccountTypeId == option.FilterValue,
+                "type" => a => a.CustomerId == customerId && a.AccountType!.Name == option.FilterValue,
+                _ => filtering
             };
 
-        var (accounts, totalCount) = await _accountRepository.GetAllByCustomerIdForGlobalAsync(
-            customerId,
-            option,
-            filtering,
-            childIncluded: true,
+        //var (accounts, totalCount) = await _accountRepository.GetAllByCustomerIdForGlobalAsync(
+        //    customerId,
+        //    option,
+        //    filtering,
+        //    childIncluded: true,
+        //    cancellationToken: ct);
+        var (accounts, totalCount) = await _repository.GetPagedResultAsync(
+            option: option,
+            ignoreQueryFilters: true,
+            filter: filtering,
+            includes: q => q
+                .Include(e => e.AccountType)
+                .Include(e => e.Customer)
+                .Include(e => e.Tenant)
+                .Include(e => e.Performer),
+            orderBy: q => q
+                .OrderByDescending(x => x.CreatedAt), // TODO: take the last activity transaction date
             cancellationToken: ct);
         var totalCountPerTenant = accounts
             .GroupBy(a => a.TenantId)

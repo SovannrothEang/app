@@ -41,9 +41,8 @@ public class TenantService(
         option.PageSize ??= 10;
 
         // TODO: add orderby logic
-        var result = await _repository.GetPagedAsync<TenantDto>(
-            option.Page!.Value,
-            option.PageSize!.Value,
+        var result = await _repository.GetPagedResultAsync<TenantDto>(
+            option,
             ignoreQueryFilters: true,
             option.FilterValue is null
                 ? null

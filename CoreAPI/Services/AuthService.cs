@@ -242,9 +242,8 @@ public class AuthService(
 
     public async Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default)
     {
-        var users = await _repository.GetPagedAsync<UserProfileDto>(
-            page: option.Page!.Value,
-            pageSize: option.PageSize!.Value,
+        var users = await _repository.GetPagedResultAsync<UserProfileDto>(
+            option: option,
             ignoreQueryFilters: true,
             filter: option.FilterBy is null
                 ? null

@@ -3,12 +3,13 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using CoreAPI.Data;
 using CoreAPI.DTOs;
+using CoreAPI.Models.Shared;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepository<TEntity> where TEntity : class
+public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepository<TEntity> where TEntity : class, IAuditEntity
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly IMapper _mapper = mapper;
@@ -18,7 +19,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         CancellationToken cancellationToken = default)
     {
         var queryable = Query;
@@ -30,11 +31,12 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         Expression<Func<TEntity, TResult>>? select = null,
         CancellationToken cancellationToken = default)
     {
         var queryable = Query;
+            queryable = queryable.AsNoTracking();
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, filter, includes, orderBy);
         if (select is not null)
             return await queryable
@@ -80,50 +82,72 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             queryable = queryable.IgnoreQueryFilters();
         return await queryable.AnyAsync(predicate, cancellationToken);
     }
-    public async Task<(IEnumerable<TEntity> items, int totalCount)> GetPagedAsync(
-        int page,
-        int pageSize,
+    public async Task<(IEnumerable<TEntity> items, int totalCount)> GetPagedResultAsync(
+        PaginationOption option,
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         CancellationToken cancellationToken = default)
     {
+        var page = option.Page.GetValueOrDefault(1);
+        var pageSize = option.PageSize.GetValueOrDefault(10);
         var queryable = Query.AsNoTracking();
         if (ignoreQueryFilters)
             queryable = queryable.IgnoreQueryFilters();
         if (filter is not null)
             queryable = queryable.Where(filter);
+        if (option.StartDate.HasValue)
+        {
+            var startDate = new DateTimeOffset(option.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            queryable = queryable.Where(q => q.CreatedAt >= startDate);
+        }
+        if (option.EndDate.HasValue)
+        {
+            var endDate = new DateTimeOffset(option.EndDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+            queryable = queryable.Where(q => q.CreatedAt <= endDate);
+        }
         var totalCount = await queryable.CountAsync(cancellationToken);
         if (includes is not null)
             queryable = includes(queryable);
         if (orderBy is not null)
-            queryable = queryable.OrderBy(orderBy);
+            queryable = orderBy(queryable);
         var items = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
         return (items, totalCount);
     }
-    public async Task<PagedResult<TResult>> GetPagedAsync<TResult>(
-        int page,
-        int pageSize,
+    public async Task<PagedResult<TResult>> GetPagedResultAsync<TResult>(
+        PaginationOption option,
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null,
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         CancellationToken cancellationToken = default)
     {
+        var page = option.Page.GetValueOrDefault(1);
+        var pageSize = option.PageSize.GetValueOrDefault(10);
         var queryable = Query.AsNoTracking();
         if (ignoreQueryFilters)
             queryable = queryable.IgnoreQueryFilters();
         if (filter is not null)
             queryable = queryable.Where(filter);
+        if (option.StartDate.HasValue)
+        {
+            var startDate = new DateTimeOffset(option.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            queryable = queryable.Where(q => q.CreatedAt >= startDate);
+        }
+        if (option.EndDate.HasValue)
+        {
+            var endDate = new DateTimeOffset(option.EndDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+            queryable = queryable.Where(q => q.CreatedAt <= endDate);
+        }
         var totalCount = await queryable.CountAsync(cancellationToken);
         if (includes is not null)
             queryable = includes(queryable);
         if (orderBy is not null)
-            queryable = queryable.OrderBy(orderBy);
+            queryable = orderBy(queryable);
         var items = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -156,7 +180,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         bool ignoreQueryFilters = false,
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
-        Expression<Func<TEntity, object>>? orderBy = null)
+        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null)
     {
         if (!trackChanges)
             queryable = queryable.AsNoTracking();
@@ -167,7 +191,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         if (includes is not null)
             queryable = includes(queryable);
         if (orderBy is not null)
-            queryable = queryable.OrderBy(orderBy);
+            queryable = orderBy(queryable);
         return queryable;
     }
 }

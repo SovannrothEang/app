@@ -16,7 +16,6 @@ public class PaginationOption
     public string? SortDirection { get; set; } = "asc";
     public string? FilterBy { get; set; } = null;
     public string? FilterValue { get; set; } = null;
-    public string? TransactionType { get; set; } = null; // earn, redeem, adjust, bonus
     public DateOnly? StartDate { get; set; } = null;
     public DateOnly? EndDate { get; set; } = null;
 }

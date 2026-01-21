@@ -42,6 +42,7 @@ public interface ITransactionRepository
         bool childIncluded,
         Expression<Func<Transaction, bool>>? filtering = null,
         CancellationToken cancellationToken = default);
+
     Task<(IEnumerable<Transaction> list, int totalCount)> GetAllByCustomerIdAsync(
         string customerId,
         PaginationOption pageOption,
