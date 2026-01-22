@@ -29,12 +29,14 @@ public class CustomerService(
     #endregion
 
     #region Private Methods
-    private static IQueryable<Customer> GetCustomerIncludes(IQueryable<Customer> queryable, bool childIncluded)
+    private static IQueryable<Customer> GetCustomerIncludes(IQueryable<Customer> queryable, bool childIncluded, bool lastTransactionOnly = false)
     {
         queryable.Include(c => c.User);
         if (childIncluded)
             queryable = queryable.Include(c => c.Accounts)
-                    .ThenInclude(acc => acc.Transactions)
+                    .ThenInclude(acc => lastTransactionOnly
+                        ? acc.Transactions.OrderByDescending(x => x.CreatedAt).Take(1)
+                        : acc.Transactions.OrderByDescending(x => x.CreatedAt))
                 .Include(c => c.Accounts)
                     .ThenInclude(acc => acc.AccountType);
         return queryable;
@@ -62,7 +64,7 @@ public class CustomerService(
                     "email" => e => e.User!.Email == option.FilterValue,
                     _ => null
                 },
-            includes: q => GetCustomerIncludes(q, childIncluded),
+            includes: q => GetCustomerIncludes(q, childIncluded, true),
             cancellationToken: ct);
         return customers;
     }
@@ -79,7 +81,7 @@ public class CustomerService(
             option,
             ignoreQueryFilters: true,
             filter: q => q.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId), // Only customers who have accounts with the current tenant
-            includes: q => GetCustomerIncludes(q, childIncluded),
+            includes: q => GetCustomerIncludes(q, childIncluded, true),
             cancellationToken: ct);
         return customers;
     }
@@ -92,7 +94,7 @@ public class CustomerService(
         return await _repository.FirstOrDefaultAsync<CustomerDto>(
             predicate: e => e.Id == customerId,
             ignoreQueryFilters: true,
-            includes: q => GetCustomerIncludes(q, childIncluded),
+            includes: q => GetCustomerIncludes(q, childIncluded, true),
             cancellationToken: ct);
     }
 
@@ -108,7 +110,7 @@ public class CustomerService(
                 e.Id == id &&
                 e.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId),
             ignoreQueryFilters: true,
-            includes: q => GetCustomerIncludes(q, childIncluded),
+            includes: q => GetCustomerIncludes(q, childIncluded, true),
             cancellationToken: ct)
             ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
         return customer;
@@ -127,8 +129,7 @@ public class CustomerService(
         pageOption.PageSize ??= 10;
 
         var totalBalance = await _accountService.GetTotalBalanceByCustomerIdAsync(customerId, ct);
-        var result = await _transactionService.GetPagedResultAsync(
-            pageOption, childIncluded, ct);
+        var result = await _transactionService.GetPagedResultAsync(pageOption, childIncluded, ct);
         return (totalBalance, result);
     }
 
@@ -140,18 +141,13 @@ public class CustomerService(
         try
         {
             var registerDto = new RegisterDto(
-                dto.UserName,
-                dto.Email,
-                dto.FirstName,
-                dto.LastName,
-                dto.Password,
-                dto.Password);
+                dto.UserName, dto.Email, dto.FirstName,
+                dto.LastName, dto.Password, dto.ConfirmPassword);
             var user = await _userService.CreateUserAsync(registerDto, ct);
 
             var customer = new Customer(
                 dto.Id ?? Guid.NewGuid().ToString(),
-                user.Id,
-                _currentUserProvider.UserId);
+                user.Id, _currentUserProvider.UserId);
             await _repository.CreateAsync(customer, ct);
 
             await _unitOfWork.CompleteAsync(ct);

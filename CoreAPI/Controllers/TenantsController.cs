@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using CoreAPI.DTOs;
+﻿using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Exceptions;
@@ -109,13 +108,13 @@ public class TenantsController(
     // TODO: for customers in this tenant endpoints, need to be pagination, for filtering, ordering, and paged result
     
     /// <summary>
-    /// Get all customers who have accounts with tenant
+    /// Get all customers who have accounts with tenant, with its last transaction
     /// </summary>
     [HttpGet("{tenantId}/customers")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetAllCustomerInTenantScopeAsync(
         [FromRoute] string tenantId,
-        [FromQuery] bool? childIncluded, // won't include transactions
+        [FromQuery] bool? childIncluded,
         [FromQuery] PaginationOption option,
         CancellationToken ct = default)
     {
@@ -125,7 +124,7 @@ public class TenantsController(
     }
     
     /// <summary>
-    /// Get specific customer that has accounts with the tenant, and the _links for operations can be done to a customer's account
+    /// Get specific customer that has accounts, and its last transaction, with the tenant, and the _links for operations can be done to a customer's account
     /// TODO: actually need more detail for customer profile
     /// </summary>
     [HttpGet("{tenantId}/customers/{customerId}")]
@@ -133,7 +132,7 @@ public class TenantsController(
     public async Task<ActionResult> GetCustomerByIdInTenantScopeAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,
-        [FromQuery] bool? childIncluded, // won't include transactions
+        [FromQuery] bool? childIncluded,
         CancellationToken ct = default)
     {
         childIncluded ??= false;

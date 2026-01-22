@@ -18,10 +18,10 @@ public class TenantService(
     #region Private Fields
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IUserService _userService = userService;
+    private readonly IRepository<AccountType> _accountTypeRepository = unitOfWork.GetRepository<AccountType>();
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IRepository<Tenant> _repository = unitOfWork.GetRepository<Tenant>();
     private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
-    private readonly IAccountTypeRepository _accountTypeRepository = unitOfWork.AccountTypeRepository;
     private readonly ITransactionTypeRepository _transactionTypeRepository = unitOfWork.TransactionTypeRepository;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<TenantService> _logger = logger;
@@ -94,7 +94,7 @@ public class TenantService(
 
             // Default Account type
             var accountType = new AccountType(Guid.NewGuid().ToString(), "Normal", tenant.Id, _currentUserProvider.UserId);
-            await _accountTypeRepository.CreateAccountTypeAsync(accountType, ct);
+            await _accountTypeRepository.CreateAsync(accountType, ct);
             
             var (userId, token) = await _userService.CreateTenantUserAsync(tenantDto, dto.Owner, ct);
 

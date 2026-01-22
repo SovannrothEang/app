@@ -121,6 +121,7 @@ public interface IRepository<TEntity> where TEntity : class
         CancellationToken cancellationToken = default);
 
     Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task CreateBatchAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
     void Update(TEntity entity);
     void Remove(TEntity entity);
 }

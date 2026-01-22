@@ -12,13 +12,11 @@ namespace CoreAPI.Services;
 
 public class AccountService(
     IUnitOfWork unitOfWork,
-    IAccountRepository accountRepository,
     IMapper mapper,
     ILogger<AccountService> logger) : IAccountService
 {
     #region Private Fields
     private readonly IRepository<Account> _repository = unitOfWork.GetRepository<Account>();
-    private readonly IAccountRepository _accountRepository = accountRepository;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<AccountService> _logger = logger;
     #endregion
@@ -60,9 +58,46 @@ public class AccountService(
                 .Include(e => e.AccountType)
                 .Include(e => e.Customer)
                 .Include(e => e.Tenant)
-                .Include(e => e.Performer),
-            orderBy: q => q
-                .OrderByDescending(x => x.CreatedAt), // TODO: take the last activity transaction date
+                .Include(e => e.Performer)
+                .Include(e => e.Transactions
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Take(1)),
+            orderBy: q =>
+            {
+                var sortBy = option.SortBy!.ToLower();
+                var sortDirection = option.SortDirection!.ToLower();
+                IOrderedQueryable<Account> orderedQuery = (sortBy, sortDirection) switch
+                {
+                    ("balance", "asc") => q
+                        .OrderBy(x => x.Balance)
+                        .ThenBy(x => x.CreatedAt),
+                    ("balance", "desc") => q
+                        .OrderByDescending(x => x.Balance)
+                        .ThenBy(x => x.CreatedAt),
+                    ("type", "asc") => q
+                        .OrderBy(x => x.AccountType!.Name)
+                        .ThenBy(x => x.CreatedAt),
+                    ("type", "desc") => q
+                        .OrderByDescending(x => x.AccountType!.Name)
+                        .ThenBy(x => x.CreatedAt),
+                    ("name", "asc") => q
+                        .OrderBy(x => x.Tenant!.Name)
+                        .ThenBy(x => x.CreatedAt),
+                    ("name", "desc") => q
+                        .OrderByDescending(x => x.Tenant!.Name)
+                        .ThenBy(x => x.CreatedAt),
+                    ("lastactivity", "asc") => q
+                        .OrderBy(x => x.Transactions.Last().CreatedAt)
+                        .ThenBy(x => x.AccountType!.Name),
+                    ("lastactivity", "desc") => q
+                        .OrderByDescending(x => x.Transactions.Last().CreatedAt)
+                        .ThenBy(x => x.AccountType!.Name),
+                    _ => q
+                        .OrderBy(x => x.CreatedAt)
+                        .ThenBy(x => x.AccountType!.Name)
+                };
+                return orderedQuery;
+            },
             cancellationToken: ct);
         var totalCountPerTenant = accounts
             .GroupBy(a => a.TenantId)

@@ -165,6 +165,10 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
     {
         await _dbContext.Set<TEntity>().AddAsync(entity, cancellationToken);
     }
+    public async Task CreateBatchAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.Set<TEntity>().AddRangeAsync(entities, cancellationToken);
+    }
     public void Update(TEntity entity)
     {
         _dbContext.Set<TEntity>().Update(entity);
