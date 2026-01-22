@@ -35,7 +35,7 @@ public class CustomersController(
     }
     
     /// <summary>
-    /// Get the customer profile by Customer,
+    /// Get the customer profile by Customer, with all of accounts, and its last transaction
     /// TODO: why need this when we have the Overview or Dashboard??
     /// </summary>
     [HttpGet("{id}")]

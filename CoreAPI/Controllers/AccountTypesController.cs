@@ -2,6 +2,7 @@ using AutoMapper;
 using CoreAPI.DTOs.Accounts;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
+using CoreAPI.Services;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,23 +13,26 @@ namespace CoreAPI.Controllers
     [ApiController]
     [RequireHttps]
     [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
-    public class AccountTypesController(
-        IAccountTypeRepository accountTypeRepository,
-        IMapper mapper,
-        ICurrentUserProvider currentUserProvider) : ControllerBase
+    public class AccountTypesController(IAccountTypeService accountTypeService) : ControllerBase
     {
-        private readonly IAccountTypeRepository _accountTypeRepository = accountTypeRepository;
-        private readonly IMapper _mapper = mapper;
-        private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+        private readonly IAccountTypeService _accountTypeService = accountTypeService;
 
         [HttpGet]
-        public async Task<IActionResult> GetAccountTypes(
-            [FromQuery] bool? childIncluded,
-            CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetAccountTypes(CancellationToken cancellationToken = default)
         {
-            childIncluded ??= false;
-            var types =  await _accountTypeRepository.GetAllAsync(childIncluded.Value, cancellationToken);
+            var types =  await _accountTypeService.GetAllAsync(cancellationToken);
             return Ok(types);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetAccountTypeById(string id, CancellationToken cancellationToken = default)
+        {
+            var type = await _accountTypeService.GetByIdAsync(id, cancellationToken);
+            if (type == null)
+            {
+                return NotFound();
+            }
+            return Ok(type);
         }
 
         [HttpPost]
@@ -36,9 +40,8 @@ namespace CoreAPI.Controllers
             [FromBody] AccountTypeCreateDto dto,
             CancellationToken cancellationToken = default)
         {
-            var type = _mapper.Map<AccountType>(dto);
-            await _accountTypeRepository.CreateAccountTypeAsync(type, cancellationToken);
-            return Ok(_mapper.Map<AccountType, AccountTypeDto>(type));
+            var type = await _accountTypeService.CreateAsync(dto, cancellationToken);
+            return Ok(type);
             // return Ok(type);
         }
     }

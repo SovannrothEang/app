@@ -33,16 +33,15 @@ public static class DependencyInjections
         {
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             // builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            builder.Services.AddScoped<IAccountRepository, AccountRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<ITenantRepository, TenantRepository>();
             builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-            builder.Services.AddScoped<IAccountTypeRepository, AccountTypeRepository>();
             builder.Services.AddScoped<ITransactionTypeRepository, TransactionTypeRepository>();
 
             builder.Services.AddScoped<ICustomerService, CustomerService>();
             builder.Services.AddScoped<ITenantService, TenantService>();
             builder.Services.AddScoped<IAccountService, AccountService>();
+            builder.Services.AddScoped<IAccountTypeService, AccountTypeService>();
             builder.Services.AddScoped<ITransactionService, TransactionService>();
             builder.Services.AddScoped<ITransactionTypeService, TransactionTypeService>();
         

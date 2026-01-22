@@ -9,24 +9,23 @@ using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using CoreAPI.Validators.Customers;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace CoreAPI.Services;
 
 public class TransactionService(
     IUnitOfWork unitOfWork,
-    ICurrentUserProvider currentUserProvider,
     ILogger<TransactionService> logger,
+    ICurrentUserProvider currentUserProvider,
     ITransactionTypeService transactionTypeService,
+    IAccountTypeService accountTypeService,
     IMapper mapper)
     : ITransactionService
 {
     #region Private fields
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IRepository<Transaction> _repository = unitOfWork.GetRepository<Transaction>();
     private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
-    private readonly IAccountTypeRepository _accountTypeRepository = unitOfWork.AccountTypeRepository;
     private readonly ITransactionTypeService _transactionTypeService = transactionTypeService;
+    private readonly IAccountTypeService _accountTypeService = accountTypeService;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly ILogger<TransactionService> _logger = logger;
     private readonly IMapper _mapper = mapper;
@@ -48,68 +47,15 @@ public class TransactionService(
             childIncluded: childIncluded,
             cancellationToken: ct);
 
-        Expression<Func<Transaction, bool>>? filtering = null;
-        if (option.FilterBy is not null && option.FilterValue is not null)
-        {
-            filtering = option.FilterBy.ToLower() switch
-            {
-                "id" => x => x.Id == option.FilterValue!,
-                "tenantid" => x => x.TenantId == option.FilterValue!,
-                "customerid" => x => x.CustomerId == option.FilterValue!,
-                "accounttypeid" => x => x.AccountTypeId == option.FilterValue!,
-                "type" => x => x.TransactionType!.Name! == option.FilterValue!,
-                "occurredat" => DateTimeOffset.TryParse(option.FilterValue, out var occurredAt)
-                    ? x => x.OccurredAt.Date == occurredAt.Date
-                    : null,
-                _ => throw new BadHttpRequestException($"Filtering by '{option.FilterBy}' is not supported.")
-            };
-        }
-
-        Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>>? order = null;
-        if (option.SortDirection is not null && option.SortBy is not null)
-            order = (option.SortBy.ToLower(), option.SortDirection.ToLower()) switch
-            {
-                ("balance", "asc") => q => q.OrderBy(x => x.Amount),
-                ("balance", "desc") => q => q.OrderByDescending(x => x.Amount),
-                ("type", "asc") => q => q
-                    .OrderBy(x => x.TransactionType!.Name)
-                    .ThenBy(x => x.OccurredAt),
-                ("type", "desc") => q => q
-                    .OrderByDescending(x => x.TransactionType!.Name)
-                    .ThenBy(x => x.OccurredAt),
-                ("occurredat", "asc") => q => q
-                    .OrderBy(x => x.OccurredAt)
-                    .ThenBy(x => x.TransactionType!.Name),
-                ("occurredat", "desc") => q => q
-                    .OrderByDescending(x => x.OccurredAt)
-                    .ThenBy(x => x.TransactionType!.Name),
-                ("createdat", "asc") => q => q
-                    .OrderBy(x => x.CreatedAt)
-                    .ThenBy(x => x.TransactionType!.Name),
-                ("createdat", "desc") => q => q
-                    .OrderByDescending(x => x.CreatedAt)
-                    .ThenBy(x => x.TransactionType!.Name),
-                _ => q => q
-                    .OrderBy(x => x.CreatedAt)
-                    .ThenBy(x => x.TransactionType!.Name)
-            };
-        var result = await _repository.GetPagedResultAsync<TransactionDto>(
-            option,
-            ignoreQueryFilters: true,
-            filter: filtering,
-            includes: queryable =>
-            {
-                queryable = queryable.Include(e => e.TransactionType);
-                if (childIncluded)
-                    queryable = queryable
-                        .Include(e => e.Referencer)
-                        .Include(e => e.Performer);
-                return queryable;
-            },
-            orderBy: order,
-            cancellationToken: ct);
         var dtos = transactions.Select(t => _mapper.Map<TransactionDto>(t)).ToList();
-        return result;
+
+        return new PagedResult<TransactionDto>
+        {
+            Items = dtos,
+            PageNumber = option.Page!.Value,
+            PageSize = option.PageSize!.Value,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForGlobalAsync(
@@ -204,7 +150,8 @@ public class TransactionService(
 
                 if (account is null)
                 {
-                    if (finalAmount > 0 && await _accountTypeRepository.ExistsAsync(accountTypeId, cancellationToken))
+                    // if (finalAmount > 0 && await _accountTypeRepository.ExistsAsync(accountTypeId, cancellationToken))
+                    if (finalAmount > 0 && await _accountTypeService.ExistsAsync(accountTypeId, cancellationToken))
                     {
                         account = customer.CreateAccount(tenantId, accountTypeId);
                         if (_logger.IsEnabled(LogLevel.Information))

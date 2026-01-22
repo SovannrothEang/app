@@ -2,6 +2,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreAPI", "CoreAPI\CoreAPI.csproj", "{5AB23C9E-00DA-4063-94A3-C91AC102F8E5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{AD584DE3-D076-4719-84F0-E4BEA0971C9B}"
+	ProjectSection(SolutionItems) = preProject
+		docs\ANALYSIS_REPORT.md = docs\ANALYSIS_REPORT.md
+		docs\IMPLEMENTATION_PLAN.md = docs\IMPLEMENTATION_PLAN.md
+		docs\SECURITY_ANALYSIS_REPORT.md = docs\SECURITY_ANALYSIS_REPORT.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
