@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
@@ -23,7 +24,7 @@ public class TransactionService(
 {
     #region Private fields
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly ITransactionRepository _transactionRepository = unitOfWork.TransactionRepository;
+    private readonly IRepository<Transaction> _transactionRepository = unitOfWork.GetRepository<Transaction>();
     private readonly ITransactionTypeService _transactionTypeService = transactionTypeService;
     private readonly IAccountTypeService _accountTypeService = accountTypeService;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
@@ -42,20 +43,14 @@ public class TransactionService(
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all transactions");
 
-        var (transactions, totalCount) = await _transactionRepository.GetAllForGlobalAsync(
+        var result = await _transactionRepository.GetPagedResultAsync<TransactionDto>(
             option,
-            childIncluded: childIncluded,
+            ignoreQueryFilters: true,
+            filter: BuildTransactionFilter(option),
+            includes: BuildTransactionIncludes(childIncluded),
+            orderBy: BuildTransactionOrderBy(option),
             cancellationToken: ct);
-
-        var dtos = transactions.Select(t => _mapper.Map<TransactionDto>(t)).ToList();
-
-        return new PagedResult<TransactionDto>
-        {
-            Items = dtos,
-            PageNumber = option.Page!.Value,
-            PageSize = option.PageSize!.Value,
-            TotalCount = totalCount
-        };
+        return result;
     }
 
     public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForTenantAsync(
@@ -64,19 +59,21 @@ public class TransactionService(
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdAsync(
-            customerId,
-            pageOption,
-            childIncluded,
-            cancellationToken);
+        pageOption.Page ??= 1;
+        pageOption.PageSize ??= 10;
 
-        return new PagedResult<TransactionDto>
-        {
-            Items = [.. result.Select(x => _mapper.Map<TransactionDto>(x))],
-            PageNumber = pageOption.Page!.Value,
-            PageSize = pageOption.PageSize!.Value,
-            TotalCount = totalCount
-        };
+        var baseFilter = BuildTransactionFilter(pageOption);
+        Expression<Func<Transaction, bool>> customerFilter = e => e.CustomerId == customerId;
+        var combinedFilter = CombineFilters(customerFilter, baseFilter);
+
+        var result = await _transactionRepository.GetPagedResultAsync<TransactionDto>(
+            pageOption,
+            ignoreQueryFilters: false,
+            filter: combinedFilter,
+            includes: BuildTransactionIncludes(childIncluded),
+            orderBy: BuildTransactionOrderBy(pageOption),
+            cancellationToken: cancellationToken);
+        return result;
     }
     
     public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForGlobalAsync(
@@ -85,19 +82,21 @@ public class TransactionService(
         bool childIncluded = false,
         CancellationToken cancellationToken = default)
     {
-        var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdForGlobalAsync(
-            customerId,
-            pageOption,
-            childIncluded,
-            cancellationToken);
+        pageOption.Page ??= 1;
+        pageOption.PageSize ??= 10;
 
-        return new PagedResult<TransactionDto>
-        {
-            Items = [.. result.Select(x => _mapper.Map<TransactionDto>(x))],
-            PageNumber = pageOption.Page!.Value,
-            PageSize = pageOption.PageSize!.Value,
-            TotalCount = totalCount
-        };
+        var baseFilter = BuildTransactionFilter(pageOption);
+        Expression<Func<Transaction, bool>> customerFilter = e => e.CustomerId == customerId;
+        var combinedFilter = CombineFilters(customerFilter, baseFilter);
+
+        var result = await _transactionRepository.GetPagedResultAsync<TransactionDto>(
+            pageOption,
+            ignoreQueryFilters: true,
+            filter: combinedFilter,
+            includes: BuildTransactionIncludes(childIncluded),
+            orderBy: BuildTransactionOrderBy(pageOption),
+            cancellationToken: cancellationToken);
+        return result;
     }
 
     public async Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
@@ -169,7 +168,6 @@ public class TransactionService(
 
                 if (account is null)
                 {
-                    // if (finalAmount > 0 && await _accountTypeRepository.ExistsAsync(accountTypeId, cancellationToken))
                     if (finalAmount > 0 && await _accountTypeService.ExistsAsync(accountTypeId, cancellationToken))
                     {
                         account = customer.CreateAccount(tenantId, accountTypeId);
@@ -177,9 +175,6 @@ public class TransactionService(
                             _logger.LogInformation(
                                 "Account was create for customer {CustomerId} and tenant {TenantId}",
                                 customerId, tenantId);
-
-                        // Save the state if the context won't save it
-                        // await _unitOfWork.SaveChangesAsync(cancellationToken);
                     }
                     else
                     {
@@ -223,6 +218,122 @@ public class TransactionService(
     }
 
     #region Helper Methods
+    
+    /// <summary>
+    /// Builds the filter expression for transaction queries based on pagination options.
+    /// Supports filtering by: id, tenantid, customerid, accounttypeid, type (TransactionType name), occurredat.
+    /// </summary>
+    private static Expression<Func<Transaction, bool>>? BuildTransactionFilter(PaginationOption option)
+    {
+        if (string.IsNullOrEmpty(option.FilterBy) || string.IsNullOrEmpty(option.FilterValue))
+            return null;
+
+        return option.FilterBy.ToLower() switch
+        {
+            "id" => e => e.Id.Equals(option.FilterValue),
+            "tenantid" => e => e.TenantId.Equals(option.FilterValue),
+            "customerid" => e => e.CustomerId.Equals(option.FilterValue),
+            "accounttypeid" => e => e.AccountTypeId.Equals(option.FilterValue),
+            "type" => e => e.TransactionType!.Name!.Equals(option.FilterValue),
+            "occurredat" => DateTime.TryParse(option.FilterValue, out var occurredAt)
+                ? e => e.OccurredAt.Date == occurredAt.Date
+                : null,
+            _ => throw new BadHttpRequestException($"Filtering by '{option.FilterBy}' is not supported.")
+        };
+    }
+
+    /// <summary>
+    /// Builds the includes for transaction queries.
+    /// Always includes TransactionType. Optionally includes Referencer and Performer.
+    /// </summary>
+    private static Func<IQueryable<Transaction>, IQueryable<Transaction>> BuildTransactionIncludes(bool childIncluded)
+    {
+        return queryable =>
+        {
+            queryable = queryable.Include(e => e.TransactionType);
+            if (childIncluded)
+            {
+                queryable = queryable
+                    .Include(e => e.Referencer)
+                    .Include(e => e.Performer);
+            }
+            return queryable;
+        };
+    }
+
+    /// <summary>
+    /// Builds the order by expression for transaction queries.
+    /// Supports sorting by: balance (Amount), type, occurredat, createdat (default).
+    /// </summary>
+    private static Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> BuildTransactionOrderBy(PaginationOption option)
+    {
+        var sortBy = (option.SortBy ?? "createdAt").ToLower();
+        var sortDirection = (option.SortDirection ?? "asc").ToLower();
+
+        return (sortBy, sortDirection) switch
+        {
+            ("balance", "asc") => q => q.OrderBy(x => x.Amount),
+            ("balance", "desc") => q => q.OrderByDescending(x => x.Amount),
+            ("type", "asc") => q => q
+                .OrderBy(x => x.TransactionType!.Name)
+                .ThenBy(x => x.OccurredAt),
+            ("type", "desc") => q => q
+                .OrderByDescending(x => x.TransactionType!.Name)
+                .ThenBy(x => x.OccurredAt),
+            ("occurredat", "asc") => q => q
+                .OrderBy(x => x.OccurredAt)
+                .ThenBy(x => x.TransactionType!.Name),
+            ("occurredat", "desc") => q => q
+                .OrderByDescending(x => x.OccurredAt)
+                .ThenBy(x => x.TransactionType!.Name),
+            ("createdat", "asc") => q => q
+                .OrderBy(x => x.CreatedAt)
+                .ThenBy(x => x.TransactionType!.Name),
+            ("createdat", "desc") => q => q
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenBy(x => x.TransactionType!.Name),
+            _ => q => q
+                .OrderBy(x => x.CreatedAt)
+                .ThenBy(x => x.TransactionType!.Name)
+        };
+    }
+
+    /// <summary>
+    /// Combines two filter expressions with AND logic.
+    /// </summary>
+    private static Expression<Func<Transaction, bool>> CombineFilters(
+        Expression<Func<Transaction, bool>> first,
+        Expression<Func<Transaction, bool>>? second)
+    {
+        if (second is null)
+            return first;
+
+        var parameter = Expression.Parameter(typeof(Transaction), "e");
+        var firstBody = ReplaceParameter(first.Body, first.Parameters[0], parameter);
+        var secondBody = ReplaceParameter(second.Body, second.Parameters[0], parameter);
+        var combined = Expression.AndAlso(firstBody, secondBody);
+        return Expression.Lambda<Func<Transaction, bool>>(combined, parameter);
+    }
+
+    /// <summary>
+    /// Replaces parameter in expression tree.
+    /// </summary>
+    private static Expression ReplaceParameter(Expression expression, ParameterExpression oldParam, ParameterExpression newParam)
+    {
+        return new ParameterReplacer(oldParam, newParam).Visit(expression);
+    }
+
+    private sealed class ParameterReplacer(ParameterExpression oldParam, ParameterExpression newParam) : ExpressionVisitor
+    {
+        private readonly ParameterExpression _oldParam = oldParam;
+        private readonly ParameterExpression _newParam = newParam;
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            return node == _oldParam ? _newParam : base.VisitParameter(node);
+        }
+    }
+    
     private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> action, int maxRetries = 3)
     {
         for (var i = 0; i < maxRetries; i++)

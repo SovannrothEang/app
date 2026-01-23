@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Accounts;
@@ -6,7 +7,6 @@ using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace CoreAPI.Services;
 
@@ -32,76 +32,18 @@ public class AccountService(
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all accounts by customer: {customerId}", customerId);
 
-        // TODO: Maybe make the comparison not case sensitive
-        Expression<Func<Account, bool>> filtering = q => q.CustomerId == customerId;
-        if (option.FilterBy is not null && option.FilterValue is not null)
-            filtering = option.FilterBy!.ToLower() switch
-            {
-                "tenantid" => a => a.CustomerId == customerId && a.TenantId == option.FilterValue,
-                "name" => a => a.CustomerId == customerId && a.Tenant!.Name == option.FilterValue,
-                "typeid" => a => a.CustomerId == customerId && a.AccountTypeId == option.FilterValue,
-                "type" => a => a.CustomerId == customerId && a.AccountType!.Name == option.FilterValue,
-                _ => filtering
-            };
-
-        //var (accounts, totalCount) = await _accountRepository.GetAllByCustomerIdForGlobalAsync(
-        //    customerId,
-        //    option,
-        //    filtering,
-        //    childIncluded: true,
-        //    cancellationToken: ct);
         var (accounts, totalCount) = await _repository.GetPagedResultAsync(
             option: option,
             ignoreQueryFilters: true,
-            filter: filtering,
-            includes: q => q
-                .Include(e => e.AccountType)
-                .Include(e => e.Customer)
-                .Include(e => e.Tenant)
-                .Include(e => e.Performer)
-                .Include(e => e.Transactions
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Take(1)),
-            orderBy: q =>
-            {
-                var sortBy = (option.SortBy ?? "createdAt").ToLower();
-                var sortDirection = (option.SortDirection ?? "asc").ToLower();
-                IOrderedQueryable<Account> orderedQuery = (sortBy, sortDirection) switch
-                {
-                    ("balance", "asc") => q
-                        .OrderBy(x => x.Balance)
-                        .ThenBy(x => x.CreatedAt),
-                    ("balance", "desc") => q
-                        .OrderByDescending(x => x.Balance)
-                        .ThenBy(x => x.CreatedAt),
-                    ("type", "asc") => q
-                        .OrderBy(x => x.AccountType!.Name)
-                        .ThenBy(x => x.CreatedAt),
-                    ("type", "desc") => q
-                        .OrderByDescending(x => x.AccountType!.Name)
-                        .ThenBy(x => x.CreatedAt),
-                    ("name", "asc") => q
-                        .OrderBy(x => x.Tenant!.Name)
-                        .ThenBy(x => x.CreatedAt),
-                    ("name", "desc") => q
-                        .OrderByDescending(x => x.Tenant!.Name)
-                        .ThenBy(x => x.CreatedAt),
-                    ("lastactivity", "asc") => q
-                        .OrderBy(x => x.Transactions.Last().CreatedAt)
-                        .ThenBy(x => x.AccountType!.Name),
-                    ("lastactivity", "desc") => q
-                        .OrderByDescending(x => x.Transactions.Last().CreatedAt)
-                        .ThenBy(x => x.AccountType!.Name),
-                    _ => q
-                        .OrderBy(x => x.CreatedAt)
-                        .ThenBy(x => x.AccountType!.Name)
-                };
-                return orderedQuery;
-            },
+            filter: BuildFilter(customerId, option),
+            includes: BuildIncludes(),
+            orderBy: BuildOrderBy(option),
             cancellationToken: ct);
+
         var totalCountPerTenant = accounts
             .GroupBy(a => a.TenantId)
             .ToDictionary(g => g.Key, g => g.Count());
+
         var tenantProfile = accounts
             .GroupBy(a => a.TenantId)
             .Select(group =>
@@ -138,4 +80,84 @@ public class AccountService(
             cancellationToken: ct);
         return totalBalance;
     }
+
+    #region Private Methods
+    
+    /// <summary>
+    /// Builds filter expression for account queries.
+    /// Supports: tenantid, name (tenant name), typeid, type (account type name).
+    /// </summary>
+    private static Expression<Func<Account, bool>> BuildFilter(string customerId, PaginationOption option)
+    {
+        if (string.IsNullOrEmpty(option.FilterBy) || string.IsNullOrEmpty(option.FilterValue))
+            return a => a.CustomerId == customerId;
+
+        return option.FilterBy.ToLower() switch
+        {
+            "tenantid" => a => a.CustomerId == customerId && a.TenantId == option.FilterValue,
+            "name" => a => a.CustomerId == customerId && a.Tenant!.Name == option.FilterValue,
+            "typeid" => a => a.CustomerId == customerId && a.AccountTypeId == option.FilterValue,
+            "type" => a => a.CustomerId == customerId && a.AccountType!.Name == option.FilterValue,
+            _ => a => a.CustomerId == customerId
+        };
+    }
+
+    /// <summary>
+    /// Builds includes for account queries.
+    /// Includes AccountType, Customer, Tenant, Performer, and last Transaction.
+    /// </summary>
+    private static Func<IQueryable<Account>, IQueryable<Account>> BuildIncludes()
+    {
+        return queryable => queryable
+            .Include(e => e.AccountType)
+            .Include(e => e.Customer)
+            .Include(e => e.Tenant)
+            .Include(e => e.Performer)
+            .Include(e => e.Transactions
+                .OrderByDescending(x => x.CreatedAt)
+                .Take(1));
+    }
+
+    /// <summary>
+    /// Builds order by expression for account queries.
+    /// Supports: balance, type, name (tenant name), lastactivity, createdat (default).
+    /// </summary>
+    private static Func<IQueryable<Account>, IOrderedQueryable<Account>> BuildOrderBy(PaginationOption option)
+    {
+        var sortBy = (option.SortBy ?? "createdAt").ToLower();
+        var sortDirection = (option.SortDirection ?? "asc").ToLower();
+
+        return (sortBy, sortDirection) switch
+        {
+            ("balance", "asc") => q => q
+                .OrderBy(x => x.Balance)
+                .ThenBy(x => x.CreatedAt),
+            ("balance", "desc") => q => q
+                .OrderByDescending(x => x.Balance)
+                .ThenBy(x => x.CreatedAt),
+            ("type", "asc") => q => q
+                .OrderBy(x => x.AccountType!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("type", "desc") => q => q
+                .OrderByDescending(x => x.AccountType!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("name", "asc") => q => q
+                .OrderBy(x => x.Tenant!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("name", "desc") => q => q
+                .OrderByDescending(x => x.Tenant!.Name)
+                .ThenBy(x => x.CreatedAt),
+            ("lastactivity", "asc") => q => q
+                .OrderBy(x => x.Transactions.Max(t => t.CreatedAt))
+                .ThenBy(x => x.AccountType!.Name),
+            ("lastactivity", "desc") => q => q
+                .OrderByDescending(x => x.Transactions.Max(t => t.CreatedAt))
+                .ThenBy(x => x.AccountType!.Name),
+            _ => q => q
+                .OrderBy(x => x.CreatedAt)
+                .ThenBy(x => x.AccountType!.Name)
+        };
+    }
+    
+    #endregion
 }

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Tenants;
@@ -36,19 +37,8 @@ public class TenantService(
         var result = await _repository.GetPagedResultAsync<TenantDto>(
             option,
             ignoreQueryFilters: true,
-            filter: option.FilterBy is not null && option.FilterValue is not null
-                ? option.FilterBy.ToLower() switch
-                {
-                    "id" => e => e.Id == option.FilterValue,
-                    "name" => e => e.Name == option.FilterValue,
-                    "performby" => e => e.PerformBy == option.FilterValue,
-                    // "status" => e => e.Status == Enum.TryParse<TenantStatus>(option.FilterValue),
-                    _ => null
-                }
-                : null,
-            includes: q => q
-                .Include(t => t.Accounts)
-                .ThenInclude(a => a.AccountType),
+            filter: BuildFilter(option),
+            includes: BuildIncludes(),
             cancellationToken: ct
         );
         return result;
@@ -152,4 +142,37 @@ public class TenantService(
         tenant.Deactivate();
         await _unitOfWork.CompleteAsync(ct);
     }
+
+    #region Private Methods
+    
+    /// <summary>
+    /// Builds filter expression for tenant queries.
+    /// Supports: id, name, performby.
+    /// </summary>
+    private static Expression<Func<Tenant, bool>>? BuildFilter(PaginationOption option)
+    {
+        if (string.IsNullOrEmpty(option.FilterBy) || string.IsNullOrEmpty(option.FilterValue))
+            return null;
+
+        return option.FilterBy.ToLower() switch
+        {
+            "id" => e => e.Id == option.FilterValue,
+            "name" => e => e.Name == option.FilterValue,
+            "performby" => e => e.PerformBy == option.FilterValue,
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Builds includes for tenant queries.
+    /// Includes Accounts with AccountType.
+    /// </summary>
+    private static Func<IQueryable<Tenant>, IQueryable<Tenant>> BuildIncludes()
+    {
+        return queryable => queryable
+            .Include(t => t.Accounts)
+            .ThenInclude(a => a.AccountType);
+    }
+    
+    #endregion
 }
