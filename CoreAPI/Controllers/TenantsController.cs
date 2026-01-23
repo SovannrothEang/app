@@ -203,10 +203,10 @@ public class TenantsController(
 
     /// <summary>
     /// Checking the customer balance
-    /// TODO: there are account type, so should be better if return with accounnts
+    /// TODO: there are account type, so should be better if return with accounts
     /// </summary>
     [HttpGet("{tenantId}/customers/{customerId}/balance")]
-    [Authorize(Constants.TenantCustomerAccessPolicy)]
+    [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetCustomerBalanceByIdAsync(
         [FromRoute] string tenantId,
         [FromRoute] string customerId,

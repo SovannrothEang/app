@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
@@ -31,7 +31,7 @@ public class TransactionService(
     private readonly IMapper _mapper = mapper;
     #endregion
 
-    // Gobal admin access
+    // Global admin access
     public async Task<PagedResult<TransactionDto>> GetPagedResultAsync(
         PaginationOption option,
         bool childIncluded = false,
@@ -58,6 +58,27 @@ public class TransactionService(
         };
     }
 
+    public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForTenantAsync(
+        string customerId,
+        PaginationOption pageOption,
+        bool childIncluded = false,
+        CancellationToken cancellationToken = default)
+    {
+        var (result, totalCount) = await _transactionRepository.GetAllByCustomerIdAsync(
+            customerId,
+            pageOption,
+            childIncluded,
+            cancellationToken);
+
+        return new PagedResult<TransactionDto>
+        {
+            Items = [.. result.Select(x => _mapper.Map<TransactionDto>(x))],
+            PageNumber = pageOption.Page!.Value,
+            PageSize = pageOption.PageSize!.Value,
+            TotalCount = totalCount
+        };
+    }
+    
     public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForGlobalAsync(
         string customerId,
         PaginationOption pageOption,
@@ -90,15 +111,13 @@ public class TransactionService(
             trackChanges: trackChanges,
             cancellationToken: cancellationToken)
             ?? throw new KeyNotFoundException($"No Tenant was found with id: {tenantId}.");
-        if (tenant.Status != TenantStatus.Active) throw new BadHttpRequestException("Tenant is not active!");
 
         var customer = await _unitOfWork.GetRepository<Customer>().FirstOrDefaultAsync(
             predicate: e => e.Id == customerId,
             trackChanges: trackChanges,
+            ignoreQueryFilters: true,
             includes: queryable => queryable
                 .Include(c => c.User)
-                .Include(c => c.Accounts)
-                    .ThenInclude(acc => acc.Transactions)
                 .Include(c => c.Accounts)
                     .ThenInclude(acc => acc.AccountType),
             cancellationToken: cancellationToken)

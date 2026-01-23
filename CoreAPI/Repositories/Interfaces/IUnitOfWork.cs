@@ -5,12 +5,9 @@ namespace CoreAPI.Repositories.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
-    IUserRepository UserRepository { get; }
-    ITenantRepository TenantRepository { get; }
     ITransactionRepository TransactionRepository { get; }
-    ITransactionTypeRepository TransactionTypeRepository { get; }
 
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
-    IRepository<T> GetRepository<T>() where T : class, IAuditEntity;
+    IRepository<T> GetRepository<T>() where T : class;
     Task<int> CompleteAsync(CancellationToken cancellationToken = default);
 }

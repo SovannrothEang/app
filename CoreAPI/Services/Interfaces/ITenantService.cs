@@ -5,7 +5,6 @@ namespace CoreAPI.Services.Interfaces;
 
 public interface ITenantService
 {
-    Task<IEnumerable<TenantDto>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<PagedResult<TenantDto>> GetPagedResultsAsync(PaginationOption option, CancellationToken cancellationToken = default);
     Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default);
     Task<TenantDto?> GetValidTenantByIdAsync(string id, bool trackChange = false, CancellationToken ct = default);

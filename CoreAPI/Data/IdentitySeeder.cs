@@ -13,14 +13,14 @@ public static class IdentitySeeder
         var userMgr = serviceProvider.GetRequiredService<UserManager<User>>();
         var config = serviceProvider.GetRequiredService<IConfiguration>();
         var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
-        var tenantRepository = unitOfWork.TenantRepository;
+        var tenantRepository = unitOfWork.GetRepository<Tenant>();
         var repository = unitOfWork.GetRepository<Tenant>();
         var tenantContext = serviceProvider.GetRequiredService<ICurrentUserProvider>();
 
         // Failed cuz we did not manage the unique while the db is enforcing the multi-tenancy!!
         var tenantHost = config["Tenancy:Host"]
             ?? throw new Exception("Tenancy:Host not found");
-        if (!await tenantRepository.IsExistByIdAsync(tenantHost))
+        if (!await tenantRepository.ExistsAsync(e => e.Id == tenantHost))
         {
             await repository.CreateAsync(new Tenant(tenantHost, tenantHost, tenantHost));
             
@@ -59,7 +59,7 @@ public static class IdentitySeeder
         var isExistById = await userMgr.FindByIdAsync(roles[0].Id);
         if (isExist == null && isExistById == null)
         {
-            var tenantExist = await tenantRepository.IsExistByIdAsync(tenantHost);
+            var tenantExist = await tenantRepository.ExistsAsync(e => e.Id == tenantHost);
             if (!tenantExist)
                 throw new Exception("Tenant not found");
             var superAdmin = new User(roles[0].Id, superAdminEmail, superAdminUser, tenantHost)

@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using CoreAPI.Data;
 using CoreAPI.DTOs;
 using CoreAPI.Models;
@@ -124,8 +124,8 @@ public class TransactionRepository(AppDbContext dbContext) : ITransactionReposit
         
         var totalCount = await queryable.CountAsync(cancellationToken);
         
-        var sortBy = option.SortBy!.ToLower();
-        var sortDirection = option.SortDirection!.ToLower();
+        var sortBy = (option.SortBy ?? "createdAt").ToLower();
+        var sortDirection = (option.SortDirection ?? "asc").ToLower();
         queryable = (sortBy, sortDirection) switch
         {
             ("balance", "asc") => queryable.OrderBy(x => x.Amount),

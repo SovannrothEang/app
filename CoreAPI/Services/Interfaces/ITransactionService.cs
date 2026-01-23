@@ -24,6 +24,20 @@ public interface ITransactionService
         PaginationOption option,
         bool childIncluded = false,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Get all transactions by customerId for Tenant user
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="pageOption"></param>
+    /// <param name="childIncluded"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<PagedResult<TransactionDto>> GetAllByCustomerIdForTenantAsync(
+        string customerId,
+        PaginationOption pageOption,
+        bool childIncluded = false,
+        CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get all transactions by customerId for Global user

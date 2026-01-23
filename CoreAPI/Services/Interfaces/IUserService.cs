@@ -28,7 +28,7 @@ public interface IUserService
         TenantOwnerCreateDto dto,
         CancellationToken ct = default);
 
-    Task<IEnumerable<UserProfileDto>> GetAllUserAsync(CancellationToken ct = default);
+    Task<PagedResult<UserProfileDto>> GetAllUserAsync(PaginationOption option, CancellationToken ct = default);
     Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default);
     Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default);
 

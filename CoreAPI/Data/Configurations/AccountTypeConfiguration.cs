@@ -58,7 +58,7 @@ public class AccountTypeConfiguration : IEntityTypeConfiguration<AccountType>
             .WithMany()
             .HasForeignKey(pt => pt.PerformBy);
         builder.HasOne(e => e.Tenant)
-            .WithMany()
+            .WithMany(e => e.AccountTypes)
             .HasForeignKey(pt => pt.TenantId)
             .OnDelete(DeleteBehavior.Restrict);
     }

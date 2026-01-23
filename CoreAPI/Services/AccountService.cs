@@ -64,8 +64,8 @@ public class AccountService(
                     .Take(1)),
             orderBy: q =>
             {
-                var sortBy = option.SortBy!.ToLower();
-                var sortDirection = option.SortDirection!.ToLower();
+                var sortBy = (option.SortBy ?? "createdAt").ToLower();
+                var sortDirection = (option.SortDirection ?? "asc").ToLower();
                 IOrderedQueryable<Account> orderedQuery = (sortBy, sortDirection) switch
                 {
                     ("balance", "asc") => q
@@ -132,11 +132,10 @@ public class AccountService(
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get total balance for customer: {customerId}", customerId);
 
-        var totalBalance = await _repository.ListAsync(
+        var totalBalance = await _repository.SumAsync(
+            selector: a => a.Balance,
             filter: a => a.CustomerId == customerId,
-            select: a => a.Balance,
-            cancellationToken: ct)
-            ?? throw new BadHttpRequestException("Unable to calculate total balance.");
-        return totalBalance.Sum();
+            cancellationToken: ct);
+        return totalBalance;
     }
 }

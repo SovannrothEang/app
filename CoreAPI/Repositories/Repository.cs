@@ -1,15 +1,14 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using CoreAPI.Data;
 using CoreAPI.DTOs;
-using CoreAPI.Models.Shared;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Repositories;
 
-public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepository<TEntity> where TEntity : class, IAuditEntity
+public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepository<TEntity> where TEntity : class
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly IMapper _mapper = mapper;
@@ -26,6 +25,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, filter, includes, orderBy);
         return await queryable.ToListAsync(cancellationToken);
     }
+    
     public async Task<IEnumerable<TResult>> ListAsync<TResult>(
         bool trackChanges = false,
         bool ignoreQueryFilters = false,
@@ -36,7 +36,6 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         CancellationToken cancellationToken = default)
     {
         var queryable = Query;
-            queryable = queryable.AsNoTracking();
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, filter, includes, orderBy);
         if (select is not null)
             return await queryable
@@ -47,6 +46,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
                 .ProjectTo<TResult>(_mapper.ConfigurationProvider)
                 .ToListAsync(cancellationToken);
     }
+    
     public async Task<TEntity?> FirstOrDefaultAsync(
         Expression<Func<TEntity, bool>> predicate,
         bool trackChanges = false,
@@ -55,9 +55,10 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         CancellationToken cancellationToken = default)
     {
         var queryable = Query;
-        queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, null, includes, null);
+        queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, null, includes);
         return await queryable.FirstOrDefaultAsync(predicate, cancellationToken);
     }
+    
     public async Task<TResult?> FirstOrDefaultAsync<TResult>(
         Expression<Func<TEntity, bool>> predicate,
         bool trackChanges = false,
@@ -67,11 +68,12 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
     {
         var queryable = Query;
         queryable = queryable.Where(predicate);
-        queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, null, includes, null);
+        queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, null, includes);
         return await queryable
             .ProjectTo<TResult>(_mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(cancellationToken);
     }
+    
     public async Task<bool> ExistsAsync(
         Expression<Func<TEntity, bool>> predicate,
         bool ignoreQueryFilters = false,
@@ -82,6 +84,7 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             queryable = queryable.IgnoreQueryFilters();
         return await queryable.AnyAsync(predicate, cancellationToken);
     }
+    
     public async Task<(IEnumerable<TEntity> items, int totalCount)> GetPagedResultAsync(
         PaginationOption option,
         bool ignoreQueryFilters = false,
@@ -93,31 +96,25 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         var page = option.Page.GetValueOrDefault(1);
         var pageSize = option.PageSize.GetValueOrDefault(10);
         var queryable = Query.AsNoTracking();
-        if (ignoreQueryFilters)
-            queryable = queryable.IgnoreQueryFilters();
-        if (filter is not null)
-            queryable = queryable.Where(filter);
-        if (option.StartDate.HasValue)
-        {
-            var startDate = new DateTimeOffset(option.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-            queryable = queryable.Where(q => q.CreatedAt >= startDate);
-        }
-        if (option.EndDate.HasValue)
-        {
-            var endDate = new DateTimeOffset(option.EndDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
-            queryable = queryable.Where(q => q.CreatedAt <= endDate);
-        }
+        queryable = ApplyPaginated(
+            queryable,
+            ignoreQueryFilters,
+            option,
+            filter);
+        
         var totalCount = await queryable.CountAsync(cancellationToken);
         if (includes is not null)
             queryable = includes(queryable);
         if (orderBy is not null)
             queryable = orderBy(queryable);
+        
         var items = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
         return (items, totalCount);
     }
+    
     public async Task<PagedResult<TResult>> GetPagedResultAsync<TResult>(
         PaginationOption option,
         bool ignoreQueryFilters = false,
@@ -129,20 +126,12 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         var page = option.Page.GetValueOrDefault(1);
         var pageSize = option.PageSize.GetValueOrDefault(10);
         var queryable = Query.AsNoTracking();
-        if (ignoreQueryFilters)
-            queryable = queryable.IgnoreQueryFilters();
-        if (filter is not null)
-            queryable = queryable.Where(filter);
-        if (option.StartDate.HasValue)
-        {
-            var startDate = new DateTimeOffset(option.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-            queryable = queryable.Where(q => q.CreatedAt >= startDate);
-        }
-        if (option.EndDate.HasValue)
-        {
-            var endDate = new DateTimeOffset(option.EndDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
-            queryable = queryable.Where(q => q.CreatedAt <= endDate);
-        }
+        queryable = ApplyPaginated(
+            queryable,
+            ignoreQueryFilters,
+            option,
+            filter);
+        
         var totalCount = await queryable.CountAsync(cancellationToken);
         if (includes is not null)
             queryable = includes(queryable);
@@ -153,31 +142,52 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             .Take(pageSize)
             .ProjectTo<TResult>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
+        
         return new PagedResult<TResult>
         {
-            Items = items ?? [],
+            Items = items,
             PageNumber = page,
             PageSize = pageSize,
             TotalCount = totalCount
         };
     }
+    
+    public async Task<decimal> SumAsync(
+        Expression<Func<TEntity, decimal>> selector,
+        Expression<Func<TEntity, bool>>? filter = null,
+        bool ignoreQueryFilters = false,
+        CancellationToken cancellationToken = default)
+    {
+        var queryable = Query.AsNoTracking();
+        if (ignoreQueryFilters)
+            queryable = queryable.IgnoreQueryFilters();
+        if (filter is not null)
+            queryable = queryable.Where(filter);
+        return await queryable.SumAsync(selector, cancellationToken);
+    }
+    
     public async Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         await _dbContext.Set<TEntity>().AddAsync(entity, cancellationToken);
     }
+    
     public async Task CreateBatchAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
         await _dbContext.Set<TEntity>().AddRangeAsync(entities, cancellationToken);
     }
+    
     public void Update(TEntity entity)
     {
         _dbContext.Set<TEntity>().Update(entity);
     }
+    
     public void Remove(TEntity entity)
     {
         _dbContext.Set<TEntity>().Remove(entity);
     }
+    
     private IQueryable<TEntity> Query => _dbContext.Set<TEntity>();
+    
     private static IQueryable<TEntity> ApplyQueryFilters(
         IQueryable<TEntity> queryable,
         bool trackChanges = false,
@@ -196,6 +206,70 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             queryable = includes(queryable);
         if (orderBy is not null)
             queryable = orderBy(queryable);
+        return queryable;
+    }
+
+    private static IQueryable<TEntity> ApplyPaginated(
+        IQueryable<TEntity> queryable,
+        bool ignoreQueryFilters,
+        PaginationOption option,
+        Expression<Func<TEntity, bool>>? filter = null)
+    {
+        if (ignoreQueryFilters)
+            queryable = queryable.IgnoreQueryFilters();
+        if (filter is not null)
+            queryable = queryable.Where(filter);
+        var propertyInfo = typeof(TEntity).GetProperty("CreatedAt");
+
+        if (propertyInfo is null ||
+            (propertyInfo.PropertyType != typeof(DateTimeOffset) &&
+             propertyInfo.PropertyType != typeof(DateTimeOffset?)))
+            return queryable;
+        
+        var parameter = Expression.Parameter(typeof(TEntity), "q");
+        var property = Expression.Property(parameter, propertyInfo);
+        
+        if (option.StartDate.HasValue)
+        {
+            var startDate = new DateTimeOffset(option.StartDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            var constant = Expression.Constant(startDate, typeof(DateTimeOffset));
+
+            Expression comparison;
+            if (propertyInfo.PropertyType == typeof(DateTimeOffset?))
+            {
+                var value = Expression.Property(property, "Value");
+                comparison = Expression.GreaterThanOrEqual(value, constant);
+                var hasValue = Expression.Property(property, "HasValue");
+                comparison = Expression.AndAlso(hasValue, comparison);
+            }
+            else
+            {
+                comparison = Expression.GreaterThanOrEqual(property, constant);
+            }
+            var lambda = Expression.Lambda<Func<TEntity, bool>>(comparison, parameter);
+            queryable = queryable.Where(lambda);}
+        
+        if (option.EndDate.HasValue)
+        {
+            var endDate = new DateTimeOffset(option.EndDate.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+            var constant = Expression.Constant(endDate, typeof(DateTimeOffset));
+                
+            Expression comparison;
+            if (propertyInfo.PropertyType == typeof(DateTimeOffset?))
+            {
+                var value = Expression.Property(property, "Value");
+                comparison = Expression.LessThanOrEqual(value, constant);
+                var hasValue = Expression.Property(property, "HasValue");
+                comparison = Expression.AndAlso(hasValue, comparison);
+            }
+            else
+            {
+                comparison = Expression.LessThanOrEqual(property, constant);
+            }
+            var lambda = Expression.Lambda<Func<TEntity, bool>>(comparison, parameter);
+            queryable = queryable.Where(lambda);
+        }
+
         return queryable;
     }
 }

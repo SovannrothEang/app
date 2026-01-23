@@ -7,6 +7,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{AD584DE3-D
 		docs\ANALYSIS_REPORT.md = docs\ANALYSIS_REPORT.md
 		docs\IMPLEMENTATION_PLAN.md = docs\IMPLEMENTATION_PLAN.md
 		docs\SECURITY_ANALYSIS_REPORT.md = docs\SECURITY_ANALYSIS_REPORT.md
+		docs\FILE_STRUCTURE.md = docs\FILE_STRUCTURE.md
+		docs\PLAN_OVERVIEW.md = docs\PLAN_OVERVIEW.md
+		docs\QUICK_REFERENCE.md = docs\QUICK_REFERENCE.md
+		docs\README.md = docs\README.md
+		docs\SUMMARY.md = docs\SUMMARY.md
 	EndProjectSection
 EndProject
 Global

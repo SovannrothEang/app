@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using AutoMapper;
 using CoreAPI.Data;
-using CoreAPI.Models.Shared;
 using CoreAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -16,10 +15,7 @@ public sealed class UnitOfWork(
     private readonly ConcurrentDictionary<Type, object> _repositories = [];
     private bool _disposed;
     
-    public IUserRepository UserRepository => serviceProvider.GetRequiredService<IUserRepository>();
-    public ITenantRepository TenantRepository => serviceProvider.GetRequiredService<ITenantRepository>();
     public ITransactionRepository TransactionRepository => serviceProvider.GetRequiredService<ITransactionRepository>();
-    public ITransactionTypeRepository TransactionTypeRepository => serviceProvider.GetRequiredService<ITransactionTypeRepository>();
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -37,7 +33,7 @@ public sealed class UnitOfWork(
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-    public IRepository<T> GetRepository<T>() where T : class, IAuditEntity
+    public IRepository<T> GetRepository<T>() where T : class
     {
         var type = typeof(T);
         return (IRepository<T>)_repositories.GetOrAdd(type, _ => new Repository<T>(_context, serviceProvider.GetRequiredService<IMapper>()));
