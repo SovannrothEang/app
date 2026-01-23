@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Tenants;
@@ -28,7 +28,7 @@ public class AuthService(
     private readonly string _tenantHost = configuration["Tenancy:Host"] ?? throw new Exception("Tenant host not found");
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IRepository<User> _repository = unitOfWork.GetRepository<User>();
-    private readonly IUserRepository _userRepository = unitOfWork.UserRepository;
+    private readonly IRepository<UserRole> _userRoleRepository = unitOfWork.GetRepository<UserRole>();
     private readonly IMapper _mapper = mapper;
     //private readonly IEmailSender<User> _emailSender = emailSender;
     private readonly ITokenService _tokenService = tokenService;
@@ -44,12 +44,13 @@ public class AuthService(
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
-            if (emailIsExist != null)
+            var emailIsExistTask = _userManager.FindByEmailAsync(dto.Email);
+            var userNameIsExistTask = _userManager.FindByNameAsync(dto.UserName);
+            
+            await Task.WhenAll(emailIsExistTask, userNameIsExistTask);
+            if (emailIsExistTask.Result != null)
                 throw new BadHttpRequestException("Email is already exist!");
-
-            var userNameIsExist = await _userManager.FindByNameAsync(dto.UserName);
-            if (userNameIsExist != null)
+            if (userNameIsExistTask.Result != null)
                 throw new BadHttpRequestException("UserName is already exist!");
 
             var user = _mapper.Map<OnboardingUserDto, User>(dto);
@@ -150,7 +151,13 @@ public class AuthService(
         var role = await EnsuringRoleExistsAsync(RoleConstants.TenantOwner, tenant.Id);
 
         // Assign role to user
-        await _userRepository.AddToRoleAsync(user.Id, role.Id, tenant.Id);
+        var newUserRole = new UserRole
+        {
+            UserId = user.Id,
+            RoleId = role.Id,
+            TenantId = tenant.Id
+        };
+        await _userRoleRepository.CreateAsync(newUserRole, ct);
 
         await _unitOfWork.CompleteAsync(ct);
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -229,15 +236,18 @@ public class AuthService(
 
     #endregion
 
-    public async Task<IEnumerable<UserProfileDto>> GetAllUserAsync(CancellationToken ct = default)
+    public async Task<PagedResult<UserProfileDto>> GetAllUserAsync(
+        PaginationOption option,
+        CancellationToken ct = default)
     {
-        var users = await _repository.ListAsync<UserProfileDto>(
+        var result = await _repository.GetPagedResultAsync<UserProfileDto>(
+            option: option,
             ignoreQueryFilters: true,
             includes: q => q
                 .Include(e => e.UserRoles!)
                 .ThenInclude(ur => ur.Role),
             cancellationToken: ct);
-        return users;
+        return result;
     }
 
     public async Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default)
@@ -263,10 +273,16 @@ public class AuthService(
 
     public async Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default)
     {
-        var user = await _userRepository.GetByIdAsync(id, ct)
-                   ?? throw new KeyNotFoundException($"No User was found with id: {id}");
-        var roles = await _userManager.GetRolesAsync(user);
-        var dto = _mapper.Map<UserProfileDto>(roles);
-        return dto with { Roles = roles };
+        var user = await _repository.FirstOrDefaultAsync(
+           e => e.Id == id,
+           ignoreQueryFilters: true,
+           includes: q => q
+               .Include(e => e.UserRoles!)
+               .ThenInclude(ur => ur.Role),
+           cancellationToken: ct)
+           ?? throw new KeyNotFoundException($"No User was found with id: {id}");
+        
+        return _mapper.Map<UserProfileDto>(user);
     }
+    
 }

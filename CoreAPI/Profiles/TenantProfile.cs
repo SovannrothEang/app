@@ -34,10 +34,8 @@ public class TenantProfile : Profile
             //     => opts.Condition((src, dest, srcMember) => srcMember != null));
         
         CreateMap<Tenant, TenantDto>()
-            .ForMember(dest => dest.Name, opt 
-                => opt.MapFrom(src => src.Name))
-            .ForMember(dest => dest.Setting, opt =>
-                opt.MapFrom(src => src.Setting))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Setting, opt => opt.MapFrom(src => src.Setting))
             .ReverseMap();
     }
 }

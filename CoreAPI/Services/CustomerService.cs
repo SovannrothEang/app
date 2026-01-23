@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
@@ -31,7 +31,7 @@ public class CustomerService(
     #region Private Methods
     private static IQueryable<Customer> GetCustomerIncludes(IQueryable<Customer> queryable, bool childIncluded, bool lastTransactionOnly = false)
     {
-        queryable.Include(c => c.User);
+        queryable = queryable.Include(c => c.User);
         if (childIncluded)
             queryable = queryable.Include(c => c.Accounts)
                     .ThenInclude(acc => lastTransactionOnly
@@ -129,7 +129,7 @@ public class CustomerService(
         pageOption.PageSize ??= 10;
 
         var totalBalance = await _accountService.GetTotalBalanceByCustomerIdAsync(customerId, ct);
-        var result = await _transactionService.GetPagedResultAsync(pageOption, childIncluded, ct);
+        var result = await _transactionService.GetAllByCustomerIdForTenantAsync(customerId, pageOption, childIncluded, ct);
         return (totalBalance, result);
     }
 

@@ -18,6 +18,8 @@ public sealed class Tenant : BaseEntity
     public IReadOnlyCollection<Role> Roles => _roles;
     private readonly List<Account> _accounts = [];
     public IReadOnlyCollection<Account> Accounts => _accounts;
+    private readonly List<AccountType> _accountTypes = [];
+    public IReadOnlyCollection<AccountType> AccountTypes => _accountTypes;
     public User? PerformByUser { get; set; }
 
     public Tenant()

@@ -17,7 +17,8 @@ public class AccountProfile : Profile
         //     src.Transactions.ToList(),
         //     src.PerformBy,
         //     src.PerformByUser));
-        CreateMap<AccountType, AccountTypeDto>();
+        CreateMap<AccountType, AccountTypeDto>()
+            .ReverseMap();
         CreateMap<AccountTypeCreateDto, AccountType>();
         CreateMap<Account, AccountProfileDto>()
             .ForMember(dest => dest.AccountType, opt => opt.MapFrom(src => src.AccountType))

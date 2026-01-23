@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using CoreAPI.DTOs;
 
 namespace CoreAPI.Repositories.Interfaces;
@@ -118,6 +118,19 @@ public interface IRepository<TEntity> where TEntity : class
         Expression<Func<TEntity, bool>>? filter = null,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Calculate sum of a numeric property on the database side
+    /// </summary>
+    /// <param name="selector">The property to sum</param>
+    /// <param name="filter">Optional filter to be applied to the query</param>
+    /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    Task<decimal> SumAsync(
+        Expression<Func<TEntity, decimal>> selector,
+        Expression<Func<TEntity, bool>>? filter = null,
+        bool ignoreQueryFilters = false,
         CancellationToken cancellationToken = default);
 
     Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default);

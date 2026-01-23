@@ -1,4 +1,4 @@
-﻿using CoreAPI.Models.Shared;
+using CoreAPI.Models.Shared;
 using System.ComponentModel.DataAnnotations;
 using CoreAPI.Exceptions;
 using Newtonsoft.Json;
@@ -42,8 +42,8 @@ public sealed class Account : BaseEntity, ITenantEntity
         string? performBy,
         DateTimeOffset? occurredAt)
     {
-        // Safety Force: If negative (Redemption), ensure balance is sufficient
-        if (signedAmount < 0 && (Balance + signedAmount) < 0)
+        // Validate before update - check for negative balance
+        if (Balance + signedAmount < 0)
         {
             throw new InsufficientBalanceException(Balance, Math.Abs(signedAmount));
         }

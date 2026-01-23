@@ -1,10 +1,11 @@
-﻿using AutoMapper;
+using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Models;
 using CoreAPI.Models.Enums;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreAPI.Services;
 
@@ -21,20 +22,11 @@ public class TenantService(
     private readonly IRepository<AccountType> _accountTypeRepository = unitOfWork.GetRepository<AccountType>();
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IRepository<Tenant> _repository = unitOfWork.GetRepository<Tenant>();
-    private readonly ITenantRepository _tenantRepository = unitOfWork.TenantRepository;
-    private readonly ITransactionTypeRepository _transactionTypeRepository = unitOfWork.TransactionTypeRepository;
+    private readonly IRepository<TransactionType> _transactionTypeRepository = unitOfWork.GetRepository<TransactionType>();
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<TenantService> _logger = logger;
     #endregion
 
-    public async Task<IEnumerable<TenantDto>> GetAllAsync(CancellationToken ct = default)
-    {
-        var tenants = await _repository.ListAsync<TenantDto>(
-            ignoreQueryFilters: true,
-            filter: e => e.Status == TenantStatus.Active,
-            cancellationToken: ct);
-        return tenants;
-    }
     public async Task<PagedResult<TenantDto>> GetPagedResultsAsync(PaginationOption option, CancellationToken ct = default)
     {
         option.Page ??= 1;
@@ -44,16 +36,19 @@ public class TenantService(
         var result = await _repository.GetPagedResultAsync<TenantDto>(
             option,
             ignoreQueryFilters: true,
-            option.FilterValue is null
-                ? null
-                : option.FilterBy!.ToLower() switch
+            filter: option.FilterBy is not null && option.FilterValue is not null
+                ? option.FilterBy.ToLower() switch
                 {
                     "id" => e => e.Id == option.FilterValue,
                     "name" => e => e.Name == option.FilterValue,
                     "performby" => e => e.PerformBy == option.FilterValue,
                     // "status" => e => e.Status == Enum.TryParse<TenantStatus>(option.FilterValue),
                     _ => null
-                },
+                }
+                : null,
+            includes: q => q
+                .Include(t => t.Accounts)
+                .ThenInclude(a => a.AccountType),
             cancellationToken: ct
         );
         return result;
@@ -111,7 +106,10 @@ public class TenantService(
     
     public async Task UpdateAsync(string id, TenantUpdateDto dto, CancellationToken ct = default)
     {
-        var exist = await _tenantRepository.GetByIdAsync(id, ct)
+        var exist = await _repository.FirstOrDefaultAsync(
+            predicate: e => e.Id == id,
+            trackChanges: true,
+            cancellationToken: ct)
             ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
         
         _mapper.Map(dto, exist);
