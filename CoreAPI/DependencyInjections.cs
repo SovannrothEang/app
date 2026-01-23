@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using CoreAPI.Data;
 using CoreAPI.Models;
 using CoreAPI.Repositories;
@@ -33,7 +33,6 @@ public static class DependencyInjections
         {
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 
             // Application Services
             builder.Services.AddScoped<ICustomerService, CustomerService>();

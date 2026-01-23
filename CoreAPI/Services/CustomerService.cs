@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using CoreAPI.DTOs;
 using CoreAPI.DTOs.Auth;
@@ -28,21 +29,6 @@ public class CustomerService(
     private readonly ITransactionService _transactionService = transactionService;
     #endregion
 
-    #region Private Methods
-    private static IQueryable<Customer> GetCustomerIncludes(IQueryable<Customer> queryable, bool childIncluded, bool lastTransactionOnly = false)
-    {
-        queryable = queryable.Include(c => c.User);
-        if (childIncluded)
-            queryable = queryable.Include(c => c.Accounts)
-                    .ThenInclude(acc => lastTransactionOnly
-                        ? acc.Transactions.OrderByDescending(x => x.CreatedAt).Take(1)
-                        : acc.Transactions.OrderByDescending(x => x.CreatedAt))
-                .Include(c => c.Accounts)
-                    .ThenInclude(acc => acc.AccountType);
-        return queryable;
-    } 
-    #endregion
-
     // TODO: add order by logic
     public async Task<PagedResult<CustomerDto>> GetPaginatedResultsAsync(
         PaginationOption option,
@@ -55,16 +41,8 @@ public class CustomerService(
         var customers = await _repository.GetPagedResultAsync<CustomerDto>(
             option,
             ignoreQueryFilters: true,
-            filter: option.FilterBy is null
-                ? null
-                : option.FilterBy.ToLower() switch
-                {
-                    "id" => e => e.Id == option.FilterValue,
-                    "username" => e => e.User!.UserName == option.FilterValue,
-                    "email" => e => e.User!.Email == option.FilterValue,
-                    _ => null
-                },
-            includes: q => GetCustomerIncludes(q, childIncluded, true),
+            filter: BuildFilter(option),
+            includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct);
         return customers;
     }
@@ -81,7 +59,7 @@ public class CustomerService(
             option,
             ignoreQueryFilters: true,
             filter: q => q.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId), // Only customers who have accounts with the current tenant
-            includes: q => GetCustomerIncludes(q, childIncluded, true),
+            includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct);
         return customers;
     }
@@ -94,7 +72,7 @@ public class CustomerService(
         return await _repository.FirstOrDefaultAsync<CustomerDto>(
             predicate: e => e.Id == customerId,
             ignoreQueryFilters: true,
-            includes: q => GetCustomerIncludes(q, childIncluded, true),
+            includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct);
     }
 
@@ -110,7 +88,7 @@ public class CustomerService(
                 e.Id == id &&
                 e.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId),
             ignoreQueryFilters: true,
-            includes: q => GetCustomerIncludes(q, childIncluded, true),
+            includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct)
             ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
         return customer;
@@ -192,4 +170,51 @@ public class CustomerService(
         customer.Deleted();
         await _unitOfWork.CompleteAsync(ct);
     }
+
+    #region Private Methods
+    
+    /// <summary>
+    /// Builds filter expression for customer queries.
+    /// Supports: id, username, email.
+    /// </summary>
+    private static Expression<Func<Customer, bool>>? BuildFilter(PaginationOption option)
+    {
+        if (string.IsNullOrEmpty(option.FilterBy) || string.IsNullOrEmpty(option.FilterValue))
+            return null;
+
+        return option.FilterBy.ToLower() switch
+        {
+            "id" => e => e.Id == option.FilterValue,
+            "username" => e => e.User!.UserName == option.FilterValue,
+            "email" => e => e.User!.Email == option.FilterValue,
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Builds includes for customer queries.
+    /// Always includes User. Optionally includes Accounts with Transactions and AccountType.
+    /// </summary>
+    private static Func<IQueryable<Customer>, IQueryable<Customer>> BuildIncludes(
+        bool childIncluded,
+        bool lastTransactionOnly = false)
+    {
+        return queryable =>
+        {
+            queryable = queryable.Include(c => c.User);
+            if (childIncluded)
+            {
+                queryable = queryable
+                    .Include(c => c.Accounts)
+                        .ThenInclude(acc => lastTransactionOnly
+                            ? acc.Transactions.OrderByDescending(x => x.CreatedAt).Take(1)
+                            : acc.Transactions.OrderByDescending(x => x.CreatedAt))
+                    .Include(c => c.Accounts)
+                        .ThenInclude(acc => acc.AccountType);
+            }
+            return queryable;
+        };
+    }
+    
+    #endregion
 }

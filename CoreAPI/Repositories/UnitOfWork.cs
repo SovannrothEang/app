@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using AutoMapper;
 using CoreAPI.Data;
 using CoreAPI.Repositories.Interfaces;
@@ -14,8 +14,6 @@ public sealed class UnitOfWork(
 
     private readonly ConcurrentDictionary<Type, object> _repositories = [];
     private bool _disposed;
-    
-    public ITransactionRepository TransactionRepository => serviceProvider.GetRequiredService<ITransactionRepository>();
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
