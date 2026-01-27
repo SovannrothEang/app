@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CoreAPI.DTOs.Auth;
 using CoreAPI.Models;
+using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
@@ -10,11 +11,13 @@ public class RoleService(
     UserManager<User> userManager,
     RoleManager<Role> roleManager,
     ICurrentUserProvider currentUserProvider,
+    IUnitOfWork unitOfWork,
     IMapper mapper) : IRoleService
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly RoleManager<Role> _roleManager = roleManager;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     public IEnumerable<RoleDto> GetAllRoles(CancellationToken ct = default)
@@ -33,6 +36,15 @@ public class RoleService(
     {
         var role = await _roleManager.FindByIdAsync(id);
         return role is null ? null : _mapper.Map<Role, RoleDto>(role);
+    }
+    
+    public async Task<bool> ExistsAsync(string roleName, CancellationToken ct = default)
+    {
+        // var role = await _roleManager.FindByNameAsync(roleName);
+        return await _unitOfWork.GetRepository<Role>().
+            ExistsAsync(
+                predicate: r => r.Name == roleName,
+                cancellationToken: ct);
     }
 
     public async Task<IdentityResult> CreateRoleAsync(RoleCreateDto roleCreate)

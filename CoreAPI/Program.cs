@@ -21,7 +21,8 @@ try
     builder.Host.UseSerilog((context, service, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext()                       // Vital for correlation IDs
-        .WriteTo.Console()                             // Write to Console (Docker/Dev)
+        .Filter.ByExcluding(e => e.Properties.ContainsKey("Sql"))
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // Write to Console (Docker/Dev)
         .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)); // Write to File
     
     builder.Services

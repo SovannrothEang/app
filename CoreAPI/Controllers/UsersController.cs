@@ -11,10 +11,11 @@ namespace CoreAPI.Controllers;
 [ApiController]
 [RequireHttps]
 [Tags("Users")]
-public class UsersController(IUserService userService) : ControllerBase
+public class UsersController(IUserService userService, IRoleService roleService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
-    
+    private readonly IRoleService _roleService = roleService;
+
     /// <summary>
     /// Get all users, in the scope of the tenant (Global filtering)
     /// </summary>
@@ -75,7 +76,7 @@ public class UsersController(IUserService userService) : ControllerBase
     [EndpointDescription("This endpoint will act the registration endpoint for admin, action is done by SuperAdmin only")]
     public async Task<ActionResult> CreateAsync([FromBody] OnboardingUserDto dto)
     {
-        var validator = new OnBoardingUserDtoValidator();
+        var validator = new OnBoardingUserDtoValidator(_roleService);
         var result = await validator.ValidateAsync(dto);
         if (!result.IsValid)
             return BadRequest(result.Errors);
