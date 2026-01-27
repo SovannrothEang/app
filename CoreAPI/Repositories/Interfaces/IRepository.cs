@@ -6,12 +6,13 @@ namespace CoreAPI.Repositories.Interfaces;
 public interface IRepository<TEntity> where TEntity : class
 {
     /// <summary>
-    /// Get a List of entity type of TEntity
+    /// Get a List of entity's type of TEntity
     /// </summary>
-    /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
+    /// <param name="trackChanges">If true, the context will track the entities.</param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
-    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="includes">The `includes` to be applied to the query.</param>
+    /// <param name="orderBy">The order to be applied to the query</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task<IEnumerable<TEntity>> ListAsync(
         bool trackChanges = false,
@@ -22,14 +23,15 @@ public interface IRepository<TEntity> where TEntity : class
         CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Get a List of entity type of TEntity, then project it to TResult 
+    /// Get a List of entity's type of TEntity, then project it to TResult 
     /// </summary>
     /// <typeparam name="TResult"></typeparam>
-    /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
+    /// <param name="trackChanges">If true, the context will track the entities.</param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
-    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="includes">The `includes` to be applied to the query.</param>
     /// <param name="select">The select to be applied to the query.</param>
+    /// <param name="orderBy">The order to be applied to the query</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task<IEnumerable<TResult>> ListAsync<TResult>(
         bool trackChanges = false,
@@ -44,9 +46,9 @@ public interface IRepository<TEntity> where TEntity : class
     /// Get an entity type of TEntity with predicate expression
     /// </summary>
     /// <param name="predicate">An expression to find the entity</param>
-    /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
+    /// <param name="trackChanges">If true, the context will track the entities.</param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
-    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="includes">The `includes` to be applied to the query.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task<TEntity?> FirstOrDefaultAsync(
         Expression<Func<TEntity, bool>> predicate,
@@ -60,9 +62,9 @@ public interface IRepository<TEntity> where TEntity : class
     /// </summary>
     /// <typeparam name="TResult"></typeparam>
     /// <param name="predicate">An expression to find the entity</param>
-    /// <param name="trackChanges">If true, the entities will be tracked by the context.</param>
+    /// <param name="trackChanges">If true, the context will track the entities.</param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
-    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="includes">The `includes` to be applied to the query.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task<TResult?> FirstOrDefaultAsync<TResult>(
         Expression<Func<TEntity, bool>> predicate,
@@ -72,7 +74,7 @@ public interface IRepository<TEntity> where TEntity : class
         CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Get a boolean value that indicate whether the entity type of TEntity is exist or not
+    /// Get a boolean value that indicates whether the entity type of TEntity exists or not
     /// </summary>
     /// <param name="predicate">An expression to find the entity</param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
@@ -88,7 +90,7 @@ public interface IRepository<TEntity> where TEntity : class
     /// <param name="option"></param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
-    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="includes">The `includes` to be applied to the query.</param>
     /// <param name="orderBy">The order to be applied to the query</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task<(IEnumerable<TEntity> items, int totalCount)> GetPagedResultAsync(
@@ -109,7 +111,7 @@ public interface IRepository<TEntity> where TEntity : class
     /// <param name="option"></param>
     /// <param name="ignoreQueryFilters">If true, the global query filters will be ignored.</param>
     /// <param name="filter">The filter to be applied to the query.</param>
-    /// <param name="includes">The includes to be applied to the query.</param>
+    /// <param name="includes">The `includes` to be applied to the query.</param>
     /// <param name="orderBy">The order to be applied to the query</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task<PagedResult<TResult>> GetPagedResultAsync<TResult>(
@@ -121,7 +123,7 @@ public interface IRepository<TEntity> where TEntity : class
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Calculate sum of a numeric property on the database side
+    /// Calculate the sum of a numeric property on the database side
     /// </summary>
     /// <param name="selector">The property to sum</param>
     /// <param name="filter">Optional filter to be applied to the query</param>

@@ -33,30 +33,38 @@ public class TenantService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
-        // TODO: add orderby logic
-        var result = await _repository.GetPagedResultAsync<TenantDto>(
+        // TODO: add order by logic
+        var result = await _repository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
             filter: BuildFilter(option),
             includes: BuildIncludes(),
             cancellationToken: ct
         );
-        return result;
+        return new PagedResult<TenantDto>()
+        {
+            Items = [.. result.items.Select(_mapper.Map<TenantDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = result.totalCount
+        };
     }
 
     public async Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default)
     {
-        return await _repository.FirstOrDefaultAsync<TenantDto>(
+        var tenant = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id,
             cancellationToken: ct);
+        return _mapper.Map<TenantDto>(tenant);
     }
 
     public async Task<TenantDto?> GetValidTenantByIdAsync(string id, bool trackChange = false, CancellationToken ct = default)
     {
-        return await _repository.FirstOrDefaultAsync<TenantDto>(
+        var tenant = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id && e.Status == TenantStatus.Active,
             trackChanges: trackChange,
             cancellationToken: ct);
+        return _mapper.Map<TenantDto>(tenant);
     }
 
     public async Task<TenantOnboardResponseDto> CreateAsync(TenantOnBoardingDto dto, CancellationToken ct = default)
@@ -71,9 +79,9 @@ public class TenantService(
             // Default Transaction types
             IEnumerable<TransactionType> types =
             [
-                new("earn_id", "earn", "Earn", "Points earned from activities", 1, false, tenant.Id),
-                new("redeem_id", "redeem", "Redeem", "Points redeems for rewards", -1, false, tenant.Id),
-                new("adjust_id", "adjust", "Adjust", "Manual points adjustment", 1, false, tenant.Id),
+                new(Guid.NewGuid().ToString(), "earn", "Earn", "Points earned from activities", 1, false, tenant.Id),
+                new(Guid.NewGuid().ToString(), "redeem", "Redeem", "Points redeems for rewards", -1, false, tenant.Id),
+                new(Guid.NewGuid().ToString(), "adjust", "Adjust", "Manual points adjustment", 1, true, tenant.Id),
             ];
             await _transactionTypeRepository.CreateBatchAsync(types, ct);
 

@@ -42,7 +42,7 @@ public class TenantsController(
     }
     
     /// <summary>
-    /// Get tenant profile by id
+    /// Get a tenant profile by id
     /// </summary>
     [HttpGet("{id}")]
     [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
@@ -62,7 +62,7 @@ public class TenantsController(
         CancellationToken ct = default)
     {
         var validator = new TenantCreateDtoValidator();
-        var result = validator.Validate(dto);
+        var result = await validator.ValidateAsync(dto, ct);
         if (!result.IsValid)
             return BadRequest(result.Errors);
 
@@ -108,7 +108,7 @@ public class TenantsController(
     // TODO: for customers in this tenant endpoints, need to be pagination, for filtering, ordering, and paged result
     
     /// <summary>
-    /// Get all customers who have accounts with tenant, with its last transaction
+    /// Get all customers who have accounts with the tenant, with its last transaction
     /// </summary>
     [HttpGet("{tenantId}/customers")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
@@ -151,7 +151,7 @@ public class TenantsController(
     }
 
     /// <summary>
-    /// Using for operations on account, like earn point, redeem or even adjust by the tenant owner
+    /// Using for operations on account, like earn point, redeem, or even adjust by the tenant owner
     /// </summary>
     [HttpPost("{tenantId}/customers/{customerId}/accountTypes/{accountTypeId}/{slug}")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
@@ -190,7 +190,7 @@ public class TenantsController(
         }
     }
     
-    // No need customers to involved to actually know what we can do
+    // No need customers to involve to actually know what we can do
     [HttpGet("{tenantId}/customers/operations")]
     [Authorize(Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetAllTransactionTypeAsync(

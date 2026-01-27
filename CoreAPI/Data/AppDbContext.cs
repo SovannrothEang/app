@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using System.Reflection;
 using CoreAPI.Models;
 using CoreAPI.Models.Shared;
@@ -27,7 +26,6 @@ public class AppDbContext(
     private readonly string _hostTenantId = configuration["Tenancy:Host"] ?? throw new Exception("Tenancy:Host is missing.");
 
     public DbSet<Tenant>  Tenants { get; set; }
-    // public DbSet<TenantUser>  TenantUsers { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Account> Accounts { get; set; }
     public DbSet<Transaction> Transactions { get; set; }

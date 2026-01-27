@@ -1,4 +1,5 @@
 ﻿using CoreAPI.DTOs.Tenants;
+using CoreAPI.DTOs.Transactions;
 using CoreAPI.Models;
 
 namespace CoreAPI.DTOs.Accounts;
@@ -9,7 +10,7 @@ public record AccountDto(
     string  AccountTypeId,
     AccountTypeDto? AccountType,
     decimal Balance,
-    IReadOnlyList<Transaction> Transactions,
+    IReadOnlyList<TransactionDto> Transactions,
     TenantDto? Tenant,
     string? PerformBy,
     UserProfileDto? Performer,

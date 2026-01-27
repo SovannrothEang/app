@@ -9,10 +9,12 @@ namespace CoreAPI.Services;
 public class RoleService(
     UserManager<User> userManager,
     RoleManager<Role> roleManager,
+    ICurrentUserProvider currentUserProvider,
     IMapper mapper) : IRoleService
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly RoleManager<Role> _roleManager = roleManager;
+    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IMapper _mapper = mapper;
 
     public IEnumerable<RoleDto> GetAllRoles(CancellationToken ct = default)
@@ -36,6 +38,7 @@ public class RoleService(
     public async Task<IdentityResult> CreateRoleAsync(RoleCreateDto roleCreate)
     {
         var role = _mapper.Map<RoleCreateDto, Role>(roleCreate);
+        role.PerformBy = _currentUserProvider.TenantId;
         return await _roleManager.CreateAsync(role);
     }
 

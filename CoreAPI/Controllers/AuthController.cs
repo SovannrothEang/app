@@ -22,22 +22,6 @@ public class AuthController(
     private readonly ICurrentUserProvider _currentUser = currentUser;
 
     /// <summary>
-    /// Register an account for admin by superadmin
-    /// </summary>
-    [HttpPost("onboarding/admin")]
-    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
-    [EndpointDescription("This endpoint will act the registration endpoint for admin, action is done by SuperAdmin only")]
-    public async Task<ActionResult> Register([FromBody] OnboardingUserDto dto)
-    {
-        var (userId, token) = await _userService.OnboardingUserAsync(dto);
-        return Ok( new
-        {
-            UserId = userId,
-            Token = token,
-        });
-    }
-
-    /// <summary>
     /// Global login endpoint for all users, no matter what role
     /// </summary>
     [HttpPost("login")]

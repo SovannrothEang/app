@@ -81,7 +81,7 @@ public class AccountService(
         return totalBalance;
     }
 
-    #region Private Methods
+    #region Helper Methods
     
     /// <summary>
     /// Builds filter expression for account queries.
@@ -103,7 +103,7 @@ public class AccountService(
     }
 
     /// <summary>
-    /// Builds includes for account queries.
+    /// Builds `includes` for account queries.
     /// Includes AccountType, Customer, Tenant, Performer, and last Transaction.
     /// </summary>
     private static Func<IQueryable<Account>, IQueryable<Account>> BuildIncludes()

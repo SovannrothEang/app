@@ -41,10 +41,10 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             return await queryable
                 .Select(select)
                 .ToListAsync(cancellationToken);
-        else
-            return await queryable
-                .ProjectTo<TResult>(_mapper.ConfigurationProvider)
-                .ToListAsync(cancellationToken);
+        
+        return await queryable
+            .ProjectTo<TResult>(_mapper.ConfigurationProvider)
+            .ToListAsync(cancellationToken);
     }
     
     public async Task<TEntity?> FirstOrDefaultAsync(

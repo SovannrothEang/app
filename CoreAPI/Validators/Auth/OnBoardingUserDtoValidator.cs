@@ -26,5 +26,6 @@ public class OnBoardingUserDtoValidator : AbstractValidator<OnboardingUserDto>
         
         RuleFor(user => user.Role)
             .MaximumLength(50).WithMessage("Role cannot exceed 50 characters");
-    }    
+        // TODO: Add role existence validation if necessary
+    }
 }

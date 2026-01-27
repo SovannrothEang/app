@@ -29,6 +29,7 @@ public class AuthService(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IRepository<User> _repository = unitOfWork.GetRepository<User>();
     private readonly IRepository<UserRole> _userRoleRepository = unitOfWork.GetRepository<UserRole>();
+    private readonly IRepository<Role> _roleRepository = unitOfWork.GetRepository<Role>();
     private readonly IMapper _mapper = mapper;
     //private readonly IEmailSender<User> _emailSender = emailSender;
     private readonly ITokenService _tokenService = tokenService;
@@ -44,22 +45,28 @@ public class AuthService(
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            var roleName = dto.Role ?? RoleConstants.User;
+            var roleExistsTask = _roleManager.RoleExistsAsync(roleName);
+
             var emailIsExistTask = _userManager.FindByEmailAsync(dto.Email);
             var userNameIsExistTask = _userManager.FindByNameAsync(dto.UserName);
             
-            await Task.WhenAll(emailIsExistTask, userNameIsExistTask);
+            await Task.WhenAll(emailIsExistTask, userNameIsExistTask, roleExistsTask);
             if (emailIsExistTask.Result != null)
                 throw new BadHttpRequestException("Email is already exist!");
             if (userNameIsExistTask.Result != null)
                 throw new BadHttpRequestException("UserName is already exist!");
+            if (!roleExistsTask.Result)
+                throw new BadHttpRequestException($"Role '{dto.Role}' does not exist!");
 
-            var user = _mapper.Map<OnboardingUserDto, User>(dto);
-            user.TenantId = _tenantHost;
+            var user = _mapper.Map<User>(dto);
+            user.TenantId = _currentUserProvider.TenantId!;
+            user.PerformBy = userId;
             await _userManager.CreateAsync(user);
             //if (!result.Succeeded) return false;
 
             var roleCreated = dto.Role is null
-                ? await _userManager.AddToRoleAsync(user, RoleConstants.SuperAdmin)
+                ? await _userManager.AddToRoleAsync(user, RoleConstants.User)
                 : await _userManager.AddToRoleAsync(user, dto.Role);
             if (!roleCreated.Succeeded)
                 throw new BadHttpRequestException(string.Join(", ",
@@ -91,7 +98,12 @@ public class AuthService(
         if (!signinResult.Succeeded) return null;
 
         var (token, expiresAt) = await _tokenService.GenerateToken(user);
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await _unitOfWork.GetRepository<UserRole>().ListAsync(
+            filter: u => u.UserId == user.Id && u.TenantId == user.TenantId,
+            ignoreQueryFilters: true,
+            includes: e => e.Include(u => u.Role),
+            select: u => u.Role!.Name,
+            cancellationToken: ct) ?? [];
 
         return new AuthResponseDto(
             token,
@@ -99,10 +111,11 @@ public class AuthService(
             null!,
             user.Id,
             user.Email!,
-            roles
+            [.. roles!]
         );
     }
 
+    // Customer registration
     public async Task<UserProfileDto> CreateUserAsync(RegisterDto dto, CancellationToken ct = default)
     {
         _currentUserProvider.SetTenantId(_tenantHost);
@@ -142,19 +155,33 @@ public class AuthService(
         {
             FirstName = dto.FirstName,
             LastName = dto.LastName,
+            PerformBy = _currentUserProvider.UserId,
         };
         var result = await _userManager.CreateAsync(user);
         if (!result.Succeeded)
             throw new Exception(result.Errors.First().Description);
-
-        // Make sure role exist
-        var role = await EnsuringRoleExistsAsync(RoleConstants.TenantOwner, tenant.Id);
+        
+        // Default roles
+        var defaultRoles = new List<Role>
+        {
+            new(Guid.NewGuid().ToString(), RoleConstants.TenantOwner, tenant.Id)
+            {
+                NormalizedName = RoleConstants.TenantOwner.ToUpper(),
+                PerformBy = _currentUserProvider.UserId
+            },
+            new(Guid.NewGuid().ToString(), RoleConstants.User, tenant.Id)
+            {
+                NormalizedName = RoleConstants.User.ToUpper(),
+                PerformBy = _currentUserProvider.UserId
+            }
+        };
+        await _roleRepository.CreateBatchAsync(defaultRoles, ct);
 
         // Assign role to user
         var newUserRole = new UserRole
         {
             UserId = user.Id,
-            RoleId = role.Id,
+            RoleId = defaultRoles[0].Id,
             TenantId = tenant.Id
         };
         await _userRoleRepository.CreateAsync(newUserRole, ct);
@@ -164,22 +191,6 @@ public class AuthService(
 
         // TODO: use EmailService, and send the invited-link to the tenant's email instead
         return (user.Id, token); // Development
-    }
-
-    private async Task<Role> EnsuringRoleExistsAsync(string roleName, string tenantId)
-    {
-        var role = await _roleManager.Roles.FirstOrDefaultAsync(r => r.Name == roleName && r.TenantId == tenantId);
-        if (role != null)
-        {
-            return role;
-        }
-
-        var newRole = new Role(Guid.NewGuid().ToString(), roleName, tenantId);
-        var result = await _roleManager.CreateAsync(newRole);
-        return result.Succeeded
-            ? newRole
-            : throw new BadHttpRequestException(
-                string.Join(", ", result.Errors.Select(e => e.Description)));
     }
 
     public async Task<UserProfileDto> CompleteInviteAsync(string userId, string token, string newPassword)
@@ -197,25 +208,29 @@ public class AuthService(
         if (!result.Succeeded)
             throw new BadHttpRequestException("Invalid token or password complexity failed.");
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await _unitOfWork.GetRepository<UserRole>().ListAsync(
+            filter: u => u.UserId == user.Id && u.TenantId == user.TenantId,
+            ignoreQueryFilters: true,
+            includes: e => e.Include(u => u.Role),
+            select: u => u.Role!.Name) ?? [];
         return new UserProfileDto(
             user.Id,
             user.UserName,
             user.Email,
-            roles);
+            [.. roles!]);
     }
 
     #region Auth
     public async Task<UserProfileDto> GetCurrentUserProfileAsync(string userId)
     {
-        var user = await _repository.FirstOrDefaultAsync<UserProfileDto>(
+        var user = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == userId,
             includes: q => q
                 .Include(x => x.UserRoles!)
                 .ThenInclude(x => x.Role))
             ?? throw new UnauthorizedAccessException();
 
-        return user;
+        return _mapper.Map<UserProfileDto>(user);
     }
 
     public async Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordRequest request)
@@ -240,19 +255,79 @@ public class AuthService(
         PaginationOption option,
         CancellationToken ct = default)
     {
-        var result = await _repository.GetPagedResultAsync<UserProfileDto>(
+        option.Page ??= 1;
+        option.PageSize ??= 10;
+        var (users, totalCount) = await _repository.GetPagedResultAsync(
             option: option,
             ignoreQueryFilters: true,
             includes: q => q
                 .Include(e => e.UserRoles!)
                 .ThenInclude(ur => ur.Role),
             cancellationToken: ct);
-        return result;
+        return new PagedResult<UserProfileDto>
+        {
+            Items = [.. users.Select(_mapper.Map<UserProfileDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = totalCount,
+        };
     }
 
+    public async Task<PagedResult<UserProfileDto>> GetAllUserByTenantAsync(
+        PaginationOption option,
+        CancellationToken ct = default)
+    {
+        option.Page ??= 1;
+        option.PageSize ??= 10;
+        var (users, totalCount) = await _repository.GetPagedResultAsync(
+            option: option,
+            includes: q => q
+                .Include(e => e.UserRoles!)
+                .ThenInclude(ur => ur.Role),
+            cancellationToken: ct);
+        return new PagedResult<UserProfileDto>
+        {
+            Items = [.. users.Select(_mapper.Map<UserProfileDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = totalCount,
+        };
+    }
+    
     public async Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default)
     {
-        var users = await _repository.GetPagedResultAsync<UserProfileDto>(
+        option.Page ??= 1;
+        option.PageSize ??= 10;
+        var (users, totalCount) = await _repository.GetPagedResultAsync(
+            option: option,
+            // ignoreQueryFilters: true,
+            filter: option.FilterBy is null
+                ? null
+                : option.FilterBy.ToLower() switch
+            {
+                "username" => e => e.UserName == option.FilterValue,
+                "email" => e => e.Email == option.FilterValue,
+                "role" => e => e.UserRoles!.Any(x => x.Role!.Name == option.FilterValue),
+                _ => null
+            },
+            includes: q => q
+                .Include(e => e.UserRoles!)
+                .ThenInclude(ur => ur.Role),
+            cancellationToken: ct);
+        return new PagedResult<UserProfileDto>
+        {
+            Items = [.. users.Select(_mapper.Map<UserProfileDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = totalCount
+        };
+    }
+
+    public async Task<PagedResult<UserProfileDto>> GetPagedResultForAdminAsync(PaginationOption option, CancellationToken ct = default)
+    {
+        option.Page ??= 1;
+        option.PageSize ??= 10;
+        var (users, totalCount) = await _repository.GetPagedResultAsync(
             option: option,
             ignoreQueryFilters: true,
             filter: option.FilterBy is null
@@ -268,10 +343,29 @@ public class AuthService(
                 .Include(e => e.UserRoles!)
                 .ThenInclude(ur => ur.Role),
             cancellationToken: ct);
-        return users;
+        return new PagedResult<UserProfileDto>
+        {
+            Items = [.. users.Select(_mapper.Map<UserProfileDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = totalCount
+        };
     }
 
-    public async Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default)
+    public async Task<UserProfileDto?> GetUserByIdAsync(string id, CancellationToken ct = default)
+    {
+        var user = await _repository.FirstOrDefaultAsync(
+                       e => e.Id == id,
+                       includes: q => q
+                           .Include(e => e.UserRoles!)
+                           .ThenInclude(ur => ur.Role),
+                       cancellationToken: ct)
+                   ?? throw new KeyNotFoundException($"No User was found with id: {id}");
+        
+        return _mapper.Map<UserProfileDto>(user);
+    }
+    
+    public async Task<UserProfileDto?> GetUserByIdForAdminAsync(string id, CancellationToken ct = default)
     {
         var user = await _repository.FirstOrDefaultAsync(
            e => e.Id == id,
@@ -284,5 +378,4 @@ public class AuthService(
         
         return _mapper.Map<UserProfileDto>(user);
     }
-    
 }

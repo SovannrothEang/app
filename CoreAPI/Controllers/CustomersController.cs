@@ -74,7 +74,7 @@ public class CustomersController(
     public async Task<ActionResult> GetCustomerTransactionsByIdAsync(
         string customerId,
         [FromQuery] PaginationOption option,
-        [FromQuery] bool? childIncluded = false,
+        [FromQuery] bool? childIncluded,
         CancellationToken ct = default)
     {
         childIncluded ??= false;
@@ -92,7 +92,7 @@ public class CustomersController(
         [FromQuery] PaginationOption option,
         CancellationToken ct = default)
     {
-        var (totalBalance, result) = await _accountService.GetAllByCustomerIdForGlobalAsync(customerId, option, ct); // TenantId is for filtering
+        var (totalBalance, result) = await _accountService.GetAllByCustomerIdForGlobalAsync(customerId, option, ct);
         return Ok(new
         {
             TotalBalance = totalBalance,

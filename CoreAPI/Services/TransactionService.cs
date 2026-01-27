@@ -43,14 +43,20 @@ public class TransactionService(
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Get all transactions");
 
-        var result = await _transactionRepository.GetPagedResultAsync<TransactionDto>(
+        var result = await _transactionRepository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
             filter: BuildTransactionFilter(option),
             includes: BuildTransactionIncludes(childIncluded),
             orderBy: BuildTransactionOrderBy(option),
             cancellationToken: ct);
-        return result;
+        return new PagedResult<TransactionDto>()
+        {
+            Items = [..result.items.Select(_mapper.Map<TransactionDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = result.totalCount
+        };
     }
 
     public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForTenantAsync(
@@ -66,14 +72,20 @@ public class TransactionService(
         Expression<Func<Transaction, bool>> customerFilter = e => e.CustomerId == customerId;
         var combinedFilter = CombineFilters(customerFilter, baseFilter);
 
-        var result = await _transactionRepository.GetPagedResultAsync<TransactionDto>(
+        var result = await _transactionRepository.GetPagedResultAsync(
             pageOption,
             ignoreQueryFilters: false,
             filter: combinedFilter,
             includes: BuildTransactionIncludes(childIncluded),
             orderBy: BuildTransactionOrderBy(pageOption),
             cancellationToken: cancellationToken);
-        return result;
+        return new PagedResult<TransactionDto>()
+        {
+            Items = [.. result.items.Select(_mapper.Map<TransactionDto>)],
+            PageNumber = pageOption.Page.Value,
+            PageSize = pageOption.PageSize.Value,
+            TotalCount = result.totalCount
+        };
     }
     
     public async Task<PagedResult<TransactionDto>> GetAllByCustomerIdForGlobalAsync(
@@ -89,14 +101,20 @@ public class TransactionService(
         Expression<Func<Transaction, bool>> customerFilter = e => e.CustomerId == customerId;
         var combinedFilter = CombineFilters(customerFilter, baseFilter);
 
-        var result = await _transactionRepository.GetPagedResultAsync<TransactionDto>(
+        var result = await _transactionRepository.GetPagedResultAsync(
             pageOption,
             ignoreQueryFilters: true,
             filter: combinedFilter,
             includes: BuildTransactionIncludes(childIncluded),
             orderBy: BuildTransactionOrderBy(pageOption),
             cancellationToken: cancellationToken);
-        return result;
+        return new PagedResult<TransactionDto>()
+        {
+            Items = [.. result.items.Select(_mapper.Map<TransactionDto>)],
+            PageNumber = pageOption.Page.Value,
+            PageSize = pageOption.PageSize.Value,
+            TotalCount = result.totalCount
+        };
     }
 
     public async Task<(Customer customer, Tenant tenant)> GetValidCustomerAndTenantAsync(
@@ -230,11 +248,11 @@ public class TransactionService(
 
         return option.FilterBy.ToLower() switch
         {
-            "id" => e => e.Id.Equals(option.FilterValue),
-            "tenantid" => e => e.TenantId.Equals(option.FilterValue),
-            "customerid" => e => e.CustomerId.Equals(option.FilterValue),
-            "accounttypeid" => e => e.AccountTypeId.Equals(option.FilterValue),
-            "type" => e => e.TransactionType!.Name!.Equals(option.FilterValue),
+            "id" => e => e.Id == option.FilterValue,
+            "tenantid" => e => e.TenantId == option.FilterValue,
+            "customerid" => e => e.CustomerId == option.FilterValue,
+            "accounttypeid" => e => e.AccountTypeId == option.FilterValue,
+            "type" => e => e.TransactionType!.Name == option.FilterValue,
             "occurredat" => DateTime.TryParse(option.FilterValue, out var occurredAt)
                 ? e => e.OccurredAt.Date == occurredAt.Date
                 : null,

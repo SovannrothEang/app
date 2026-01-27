@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using CoreAPI.Data;
 using CoreAPI.Models;
+using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,12 +14,12 @@ namespace CoreAPI.Services;
 public class TokenService(
     IConfiguration config,
     UserManager<User> userManager,
-    AppDbContext dbContext,
+    IUnitOfWork unitOfWork,
     ICurrentUserProvider currentUserProvider) : ITokenService
 {
     private readonly IConfiguration _config = config;
     private readonly UserManager<User> _userManager = userManager;
-    private readonly AppDbContext _dbContext = dbContext;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     // private readonly IGenericRepository<TenantUser> _tenantUserRepository = unitOfWork.GetRepository<TenantUser>();
@@ -30,17 +31,16 @@ public class TokenService(
             new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new (ClaimTypes.NameIdentifier, user.Id),
             new (ClaimTypes.Email, user.Email?? string.Empty),
-            new ("tenant_id", user.TenantId)
-            ];
+            new ("tenant_id", user.TenantId)];
 
-        _currentUserProvider.SetTenantId(user.TenantId); // Don't know if it's violation or not, But need it for Role searching
+        _currentUserProvider.SetTenantId(user.TenantId); // Don't know if it's a violation or not, But need it for Role searching
         var roles = await _userManager.GetRolesAsync(user);
         if (roles.Any())
         {
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
         }
         
-        var customer = await _dbContext.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
+        var customer = await _unitOfWork.GetRepository<Customer>().FirstOrDefaultAsync(c => c.UserId == user.Id);
         if (customer != null)
         {
             claims.Add(new Claim("customer_id", customer.Id));

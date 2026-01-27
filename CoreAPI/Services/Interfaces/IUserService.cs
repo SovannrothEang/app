@@ -30,7 +30,12 @@ public interface IUserService
 
     Task<PagedResult<UserProfileDto>> GetAllUserAsync(PaginationOption option, CancellationToken ct = default);
     Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default);
-    Task<UserProfileDto?> GetUserById(string id, CancellationToken ct = default);
+
+    Task<PagedResult<UserProfileDto>> GetPagedResultForAdminAsync(
+        PaginationOption option,
+        CancellationToken ct = default);
+    Task<UserProfileDto?> GetUserByIdAsync(string id, CancellationToken ct = default);
+    Task<UserProfileDto?> GetUserByIdForAdminAsync(string id, CancellationToken ct = default);
 
     // Email verification
     //Task SendEmailVerificationEmailAsync(User user);

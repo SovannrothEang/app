@@ -14,15 +14,16 @@ public class AccountTypeService(IUnitOfWork unitOfWork, IMapper mapper, ICurrent
 
     public async Task<IEnumerable<AccountTypeDto>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _repository.ListAsync<AccountTypeDto>(cancellationToken: ct);
+        var types = await _repository.ListAsync(cancellationToken: ct);
+        return types.Select(_mapper.Map<AccountTypeDto>);
     }
 
     public async Task<AccountTypeDto?> GetByIdAsync(string id, CancellationToken ct = default)
     {
-        var accountType = await _repository.FirstOrDefaultAsync<AccountTypeDto>(
+        var accountType = await _repository.FirstOrDefaultAsync(
             c => c.Id == id,
             cancellationToken: ct);
-        return accountType;
+        return _mapper.Map<AccountTypeDto>(accountType);
     }
 
     public async Task<AccountTypeDto> CreateAsync(AccountTypeCreateDto dto, CancellationToken ct = default)

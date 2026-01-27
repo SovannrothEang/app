@@ -12,7 +12,7 @@ public class IdentityProfile : Profile
     {
         // User
         CreateMap<LoginDto, User>();
-        CreateMap<OnboardingUserDto, User>();
+        CreateMap<OnboardingUserDto, User>().ReverseMap();
         CreateMap<RegisterDto, User>();
         CreateMap<TenantOwnerCreateDto, User>();
         CreateMap<User, UserProfileDto>()

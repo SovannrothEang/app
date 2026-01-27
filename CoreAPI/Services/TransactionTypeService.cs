@@ -14,7 +14,8 @@ public class TransactionTypeService(IUnitOfWork unitOfWork, IMapper mapper) : IT
 
     public async Task<IEnumerable<TransactionTypeDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _repository.ListAsync<TransactionTypeDto>(cancellationToken: cancellationToken);
+        var types = await _repository.ListAsync(cancellationToken: cancellationToken);
+        return types.Select(_mapper.Map<TransactionTypeDto>);
     }
 
     public async Task<IEnumerable<OperationDto>> GetAllOperationsAsync(CancellationToken cancellationToken = default)
@@ -31,23 +32,26 @@ public class TransactionTypeService(IUnitOfWork unitOfWork, IMapper mapper) : IT
 
     public async Task<TransactionTypeDto?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        return await _repository.FirstOrDefaultAsync<TransactionTypeDto>(
+        var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id && e.IsActive == true,
             cancellationToken: cancellationToken);
+        return _mapper.Map<TransactionTypeDto>(type);
     }
 
     public async Task<TransactionTypeDto?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
-        return await _repository.FirstOrDefaultAsync<TransactionTypeDto>(
+        var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Name == name && e.IsActive == true,
             cancellationToken: cancellationToken);
+        return _mapper.Map<TransactionTypeDto>(type);
     }
 
     public async Task<TransactionTypeDto?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
-        return await _repository.FirstOrDefaultAsync<TransactionTypeDto>(
+        var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Slug == slug && e.IsActive == true,
             cancellationToken: cancellationToken);
+        return _mapper.Map<TransactionTypeDto>(type);
     }
 
     public async Task<bool> IsExistAsync(string id, CancellationToken cancellationToken = default)

@@ -29,7 +29,6 @@ public class CustomerService(
     private readonly ITransactionService _transactionService = transactionService;
     #endregion
 
-    // TODO: add order by logic
     public async Task<PagedResult<CustomerDto>> GetPaginatedResultsAsync(
         PaginationOption option,
         bool childIncluded = false,
@@ -38,13 +37,20 @@ public class CustomerService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
-        var customers = await _repository.GetPagedResultAsync<CustomerDto>(
+        var (customers, totalCount) = await _repository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
             filter: BuildFilter(option),
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
+            orderBy: BuildOrderBy(option),
             cancellationToken: ct);
-        return customers;
+        return new PagedResult<CustomerDto>
+        {
+            Items = [.. customers.Select(_mapper.Map<CustomerDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<PagedResult<CustomerDto>> GetPaginatedResultsForTenantAsync(
@@ -55,13 +61,19 @@ public class CustomerService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
-        var customers = await _repository.GetPagedResultAsync<CustomerDto>(
+        var (customers, totalCount) = await _repository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
             filter: q => q.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId), // Only customers who have accounts with the current tenant
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct);
-        return customers;
+        return new PagedResult<CustomerDto>
+        {
+            Items = [.. customers.Select(_mapper.Map<CustomerDto>)],
+            PageNumber = option.Page.Value,
+            PageSize = option.PageSize.Value,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<CustomerDto?> GetByIdForGlobalAsync(
@@ -69,11 +81,12 @@ public class CustomerService(
         bool childIncluded = false,
         CancellationToken ct = default)
     {
-        return await _repository.FirstOrDefaultAsync<CustomerDto>(
+        var result = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == customerId,
             ignoreQueryFilters: true,
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct);
+        return _mapper.Map<CustomerDto>(result);
     }
 
     public async Task<CustomerDto> GetByIdForTenantAsync(
@@ -83,7 +96,8 @@ public class CustomerService(
     {
         if (_currentUserProvider.TenantId is null)
             throw new UnauthorizedAccessException("TenantId is required for this operation.");
-        var customer = await _repository.FirstOrDefaultAsync<CustomerDto>(
+        
+        var customer = await _repository.FirstOrDefaultAsync(
             predicate: e =>
                 e.Id == id &&
                 e.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId),
@@ -91,7 +105,7 @@ public class CustomerService(
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct)
             ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
-        return customer;
+        return _mapper.Map<CustomerDto>(customer);
     }
 
     public async Task<(decimal balance, PagedResult<TransactionDto> result)>
@@ -171,7 +185,7 @@ public class CustomerService(
         await _unitOfWork.CompleteAsync(ct);
     }
 
-    #region Private Methods
+    #region Helper Methods
     
     /// <summary>
     /// Builds filter expression for customer queries.
@@ -206,15 +220,37 @@ public class CustomerService(
             {
                 queryable = queryable
                     .Include(c => c.Accounts)
+                        .ThenInclude(acc => acc.AccountType)
+                    .Include(c => c.Accounts)
                         .ThenInclude(acc => lastTransactionOnly
                             ? acc.Transactions.OrderByDescending(x => x.CreatedAt).Take(1)
-                            : acc.Transactions.OrderByDescending(x => x.CreatedAt))
-                    .Include(c => c.Accounts)
-                        .ThenInclude(acc => acc.AccountType);
+                            : acc.Transactions.OrderByDescending(x => x.CreatedAt));
             }
             return queryable;
         };
     }
-    
+
+    /// <summary>
+    /// Build order by for customer queries.
+    /// Supports: name, email, tenant, createdAt. Defaults to createdAt ascending.
+    /// </summary>
+    private static Func<IQueryable<Customer>, IOrderedQueryable<Customer>> BuildOrderBy(PaginationOption option)
+    {
+        var sortBy = option.SortBy?.ToLower() ?? "createdat";
+        var sortDirection = option.SortDirection?.ToLower() ?? "asc";
+        return (sortBy, sortDirection) switch
+        {
+            ("name", "asc") => q => q.OrderBy(c => c.User!.FirstName).ThenBy(c => c.User!.LastName),
+            ("name", "desc") => q => q.OrderByDescending(c => c.User!.FirstName).ThenByDescending(c => c.User!.LastName),
+            ("email", "asc") => q => q.OrderBy(c => c.User!.Email).ThenBy(u => u.CreatedAt),
+            ("email", "desc") => q => q.OrderByDescending(c => c.User!.Email).ThenBy(u => u.CreatedAt),
+            ("tenant", "asc") => q => q.OrderBy(c => c.Tenant!.Name).ThenBy(t => t.Id),
+            ("tenant", "desc") => q => q.OrderByDescending(c => c.Tenant!.Name).ThenBy(t => t.Id),
+            ("createdat", "asc") => q => q.OrderBy(c => c.CreatedAt),
+            ("createdat", "desc") => q => q.OrderByDescending(c => c.CreatedAt),
+            _ => q => q.OrderBy(c => c.CreatedAt).ThenBy(c => c.User!.FirstName).ThenBy(c => c.User!.LastName)
+        };
+    }
+
     #endregion
 }
