@@ -1,7 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using CoreAPI.Data;
 using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
@@ -15,17 +14,22 @@ public class TokenService(
     IConfiguration config,
     UserManager<User> userManager,
     IUnitOfWork unitOfWork,
-    ICurrentUserProvider currentUserProvider) : ITokenService
+    ICurrentUserProvider currentUserProvider,
+    ILogger<TokenService> logger) : ITokenService
 {
     private readonly IConfiguration _config = config;
     private readonly UserManager<User> _userManager = userManager;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+    private readonly ILogger<TokenService> _logger = logger;
+
     // private readonly IGenericRepository<TenantUser> _tenantUserRepository = unitOfWork.GetRepository<TenantUser>();
 
     public async Task<(string, DateTime)> GenerateToken(User user)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[TokenService] Generating JWT token for user {UserId} in tenant {TenantId}", user.Id, user.TenantId);
         List<Claim> claims = [
             new (JwtRegisteredClaimNames.Sub, user.Id),
             new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -58,6 +62,8 @@ public class TokenService(
             expires: DateTime.Now.AddHours(1),
             signingCredentials: credentials);
 
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Generated token successfully");
         return (new JwtSecurityTokenHandler().WriteToken(token), token.ValidTo);
     }
 }

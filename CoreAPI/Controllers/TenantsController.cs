@@ -3,6 +3,7 @@ using CoreAPI.DTOs.Customers;
 using CoreAPI.DTOs.Tenants;
 using CoreAPI.Exceptions;
 using CoreAPI.Services.Interfaces;
+using CoreAPI.Validators.Customers;
 using CoreAPI.Validators.Tenant;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,18 +15,18 @@ namespace CoreAPI.Controllers;
 [Tags("Tenants")]
 [RequireHttps]
 public class TenantsController(
-    IAuthorizationService authorizationService,
     ICustomerService customerService,
     ITransactionService transactionService,
     ITenantService tenantService,
-    ITransactionTypeService transactionTypeService) : ControllerBase
+    ITransactionTypeService transactionTypeService,
+    ILogger<TenantsController> logger) : ControllerBase
 {
     #region Private Fields
-    private readonly IAuthorizationService _authorizationService = authorizationService;
     private readonly ICustomerService _customerService = customerService;
     private readonly ITransactionService _transactionService = transactionService;
     private readonly ITransactionTypeService _transactionTypeService = transactionTypeService;
     private readonly ITenantService _tenantService = tenantService;
+    private readonly ILogger<TenantsController> _logger = logger;
     #endregion
 
     /// <summary>
@@ -64,7 +65,11 @@ public class TenantsController(
         var validator = new TenantCreateDtoValidator();
         var result = await validator.ValidateAsync(dto, ct);
         if (!result.IsValid)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Tenant onboarding failed validation: {Errors}", string.Join(", ", result.Errors));
             return BadRequest(result.Errors);
+        }
 
         var (tenant, userId, token) = await _tenantService.CreateAsync(dto, ct);
         return Ok(new
@@ -97,10 +102,6 @@ public class TenantsController(
         [FromRoute] string tenantId,
         CancellationToken ct = default)
     {
-        var tenantAccess = await _authorizationService.AuthorizeAsync(User, tenantId);
-        if (!tenantAccess.Succeeded)
-            return Forbid();
-        
         await _tenantService.ActivateAsync(tenantId, ct);
         return NoContent();
     }

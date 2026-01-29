@@ -23,7 +23,7 @@ public interface ICustomerService
     /// <param name="childIncluded">Include Accounts, Performer, User</param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    Task<CustomerDto?> GetByIdForGlobalAsync(
+    Task<CustomerDto> GetByIdForGlobalAsync(
         string customerId,
         bool childIncluded = false,
         CancellationToken ct = default);

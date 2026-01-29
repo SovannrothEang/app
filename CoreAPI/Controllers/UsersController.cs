@@ -11,10 +11,14 @@ namespace CoreAPI.Controllers;
 [ApiController]
 [RequireHttps]
 [Tags("Users")]
-public class UsersController(IUserService userService, IRoleService roleService) : ControllerBase
+public class UsersController(
+    IUserService userService,
+    IRoleService roleService,
+    ILogger<UsersController> logger) : ControllerBase
 {
     private readonly IUserService _userService = userService;
     private readonly IRoleService _roleService = roleService;
+    private readonly ILogger<UsersController> _logger = logger;
 
     /// <summary>
     /// Get all users, in the scope of the tenant (Global filtering)
@@ -76,11 +80,15 @@ public class UsersController(IUserService userService, IRoleService roleService)
     [EndpointDescription("This endpoint will act the registration endpoint for admin, action is done by SuperAdmin only")]
     public async Task<ActionResult> CreateAsync([FromBody] OnboardingUserDto dto)
     {
-        var validator = new OnBoardingUserDtoValidator(_roleService);
+        var validator = new OnBoardingUserDtoValidator();
         var result = await validator.ValidateAsync(dto);
         if (!result.IsValid)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Validation errors: {Errors}", result.Errors);
             return BadRequest(result.Errors);
-        
+        }
+    
         var (userId, token) = await _userService.OnboardingUserAsync(dto);
         return Ok( new
         {

@@ -1,5 +1,6 @@
 ﻿using CoreAPI.DTOs.Auth;
 using CoreAPI.Services.Interfaces;
+using CoreAPI.Validators.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,14 +11,14 @@ namespace CoreAPI.Controllers;
 [Tags("Roles")]
 [RequireHttps]
 [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
-public class RolesController(IRoleService roleService) : ControllerBase
+public class RolesController(IRoleService roleService, ILogger<RolesController> logger) : ControllerBase
 {
     private readonly IRoleService _roleService = roleService;
+    private readonly ILogger<RolesController> _logger = logger;
 
     /// <summary>
-    ///     Get all available roles
+    /// Get all available roles
     /// </summary>
-    /// <returns> A list of roles </returns>
     [HttpGet]
     // [Authorize(Policy = Constants.TenantAccessPolicy)]
     public ActionResult GetAll()
@@ -27,34 +28,53 @@ public class RolesController(IRoleService roleService) : ControllerBase
     }
 
     /// <summary>
-    ///     Create role by role name via Admin access only
+    /// Create role by role name via Admin access only
     /// </summary>
-    /// <param name="dto"></param>
-    /// <returns></returns>
     [HttpPost]
     public async Task<ActionResult> CreateRole([FromBody] RoleCreateDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        var result = new RoleCreateDtoValidator().Validate(dto);
+        if (!result.IsValid)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Role creation failed due to invalid data: {Errors}", result.Errors);
+            return BadRequest(result.Errors);
+        }
 
-        var result = await _roleService.CreateRoleAsync(dto);
-        return result.Succeeded
-            ? Ok(new { message = $"Role '{dto.Name}' is created" })
-            : BadRequest(result.Errors);
+        var roleCreated = await _roleService.CreateRoleAsync(dto);
+        if (!roleCreated.Succeeded)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Role creation failed: {Errors}", roleCreated.Errors);
+            return BadRequest(roleCreated.Errors);
+        }
+
+        return Ok(new { message = $"Role '{dto.Name}' is created" });
     }
 
     /// <summary>
-    ///     Assign role to user via Admin access or Tenant owner, by using username and role name
+    /// Assign role to user via Admin access or Tenant owner, by using username and role name
     /// </summary>
-    /// <param name="dto"></param>
-    /// <returns></returns>
     [HttpPost("assign-user")]
     public async Task<ActionResult> AssignRole([FromBody] AssignRoleDto dto)
     {
-        var result = await _roleService.AssignRoleAsync(dto);
-        return result.Succeeded
-            ? Ok(new { message = $"User {dto.UserName} added to role {dto.RoleName}" })
-            : BadRequest(result.Errors);
+        var result = new AssignRoleDtoValidator().Validate(dto);
+        if (!result.IsValid)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Role assignment failed due to invalid data: {Errors}", result.Errors);
+            return BadRequest(result.Errors);
+        }
+
+        var roleResult = await _roleService.AssignRoleAsync(dto);
+        if (!roleResult.Succeeded)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Role assignment failed: {Errors}", roleResult.Errors);
+            return BadRequest(roleResult.Errors);
+        }
+
+        return Ok(new { message = $"User {dto.UserName} added to role {dto.RoleName}" });
     }
 
     [HttpPost("unassign-user")]

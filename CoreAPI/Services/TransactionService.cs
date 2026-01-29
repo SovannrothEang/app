@@ -41,9 +41,9 @@ public class TransactionService(
         option.Page ??= 1;
         option.PageSize ??= 10;
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Get all transactions");
+            _logger.LogInformation("[TransactionService] Get all transactions as page result by User {Performer}", _currentUserProvider.UserId);
 
-        var result = await _transactionRepository.GetPagedResultAsync(
+        var (items, totalCount) = await _transactionRepository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
             filter: BuildTransactionFilter(option),
@@ -52,10 +52,10 @@ public class TransactionService(
             cancellationToken: ct);
         return new PagedResult<TransactionDto>()
         {
-            Items = [..result.items.Select(_mapper.Map<TransactionDto>)],
+            Items = [..items.Select(_mapper.Map<TransactionDto>)],
             PageNumber = option.Page.Value,
             PageSize = option.PageSize.Value,
-            TotalCount = result.totalCount
+            TotalCount = totalCount
         };
     }
 
@@ -72,7 +72,7 @@ public class TransactionService(
         Expression<Func<Transaction, bool>> customerFilter = e => e.CustomerId == customerId;
         var combinedFilter = CombineFilters(customerFilter, baseFilter);
 
-        var result = await _transactionRepository.GetPagedResultAsync(
+        var (items, totalCount) = await _transactionRepository.GetPagedResultAsync(
             pageOption,
             ignoreQueryFilters: false,
             filter: combinedFilter,
@@ -81,10 +81,10 @@ public class TransactionService(
             cancellationToken: cancellationToken);
         return new PagedResult<TransactionDto>()
         {
-            Items = [.. result.items.Select(_mapper.Map<TransactionDto>)],
+            Items = [.. items.Select(_mapper.Map<TransactionDto>)],
             PageNumber = pageOption.Page.Value,
             PageSize = pageOption.PageSize.Value,
-            TotalCount = result.totalCount
+            TotalCount = totalCount
         };
     }
     
@@ -101,7 +101,7 @@ public class TransactionService(
         Expression<Func<Transaction, bool>> customerFilter = e => e.CustomerId == customerId;
         var combinedFilter = CombineFilters(customerFilter, baseFilter);
 
-        var result = await _transactionRepository.GetPagedResultAsync(
+        var (items, totalCount) = await _transactionRepository.GetPagedResultAsync(
             pageOption,
             ignoreQueryFilters: true,
             filter: combinedFilter,
@@ -110,10 +110,10 @@ public class TransactionService(
             cancellationToken: cancellationToken);
         return new PagedResult<TransactionDto>()
         {
-            Items = [.. result.items.Select(_mapper.Map<TransactionDto>)],
+            Items = [.. items.Select(_mapper.Map<TransactionDto>)],
             PageNumber = pageOption.Page.Value,
             PageSize = pageOption.PageSize.Value,
-            TotalCount = result.totalCount
+            TotalCount = totalCount
         };
     }
 
@@ -123,12 +123,20 @@ public class TransactionService(
         bool trackChanges = false,
         CancellationToken cancellationToken = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation(
+                "[TransactionService] Validating Customer: {CustomerId} and Tenant: {TenantId}, get by User: {Performer}",
+                customerId, tenantId, _currentUserProvider.UserId);
         var tenant = await _unitOfWork.GetRepository<Tenant>().FirstOrDefaultAsync(
             predicate: e => e.Id == tenantId && e.Status == TenantStatus.Active,
             trackChanges: trackChanges,
-            cancellationToken: cancellationToken)
-            ?? throw new KeyNotFoundException($"No Tenant was found with id: {tenantId}.");
-
+            cancellationToken: cancellationToken);
+        if (tenant is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No active Tenant was found with id: {TenantId}.", tenantId);
+            throw new KeyNotFoundException($"No Tenant was found with id: {tenantId}.");
+        }
         var customer = await _unitOfWork.GetRepository<Customer>().FirstOrDefaultAsync(
             predicate: e => e.Id == customerId,
             trackChanges: trackChanges,
@@ -137,8 +145,13 @@ public class TransactionService(
                 .Include(c => c.User)
                 .Include(c => c.Accounts)
                     .ThenInclude(acc => acc.AccountType),
-            cancellationToken: cancellationToken)
-            ?? throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
+            cancellationToken: cancellationToken);
+        if (customer is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No active Tenant was found with id: {TenantId}.", tenantId);
+            throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
+        }
 
         return (customer, tenant);
     }
@@ -156,12 +169,18 @@ public class TransactionService(
         var result = await validator.ValidateAsync(dto, cancellationToken);
 
         if (!result.IsValid)
-            throw new BadHttpRequestException(string.Join(", ", result.Errors.Select(e => e.ErrorMessage)));
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.ErrorMessage));
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning(
+                    "PostTransactionAsync validation failed: {Errors}", errors);
+            throw new BadHttpRequestException(errors);
+        }
 
         var performBy = _currentUserProvider.UserId;
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation(
-                "Tenant: {TenantId} perform {slug} operation to Customer: {CustomerId}, perform by user {PerformBy}.",
+                "Tenant: {TenantId} perform {Slug} operation to Customer: {CustomerId}, perform by User {PerformBy}.",
                 tenantId, slug, customerId, performBy);
 
         return await ExecuteWithRetryAsync(async () =>
@@ -169,12 +188,15 @@ public class TransactionService(
             await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
             try
             {
-                var type = await _transactionTypeService.GetBySlugAsync(slug, cancellationToken)
-                    ?? throw new BadHttpRequestException("Invalid Transaction Type, get available type with: /api/transactions/{transactionId}/operations");
-
+                var type = await _transactionTypeService.GetBySlugAsync(slug, cancellationToken);
                 if (!type.AllowNegative && dto.Amount < 0)
+                {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning(
+                            "Negative amounts are not allowed for transaction type: {TypeName}", type.Name);
                     throw new BadHttpRequestException(
                         $"Negative amounts are not allowed for transaction type '{type.Name}'.");
+                }
 
                 var finalAmount = dto.Amount * type.Multiplier;
                 var (customer, tenant) = await GetValidCustomerAndTenantAsync(
@@ -198,6 +220,10 @@ public class TransactionService(
                     {
                         // If customer doesn't account with tenant, and the first amount is not positive,
                         // It won't trigger the account creation
+                        if (_logger.IsEnabled(LogLevel.Warning))
+                            _logger.LogWarning(
+                                "No account was found for customer: {CustomerId}, and tenant: {TenantId}, with type of account: {AccountTypeId}",
+                                customerId, tenantId, accountTypeId);
                         throw new BadHttpRequestException(
                             $"No account was found for customer: {customerId}, and tenant: {tenantId}, with type of account: {accountTypeId}");
                     }

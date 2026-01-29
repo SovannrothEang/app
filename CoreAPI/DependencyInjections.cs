@@ -25,7 +25,7 @@ public static class DependencyInjections
                 options => options
                     // .UseSqlServer(builder.Configuration.GetConnectionString("DockerConnection"))
                     .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-                    // .EnableSensitiveDataLogging() // Development 
+                    .EnableSensitiveDataLogging(false) // Development 
             );
         }
         

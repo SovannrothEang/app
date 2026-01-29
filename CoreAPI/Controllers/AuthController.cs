@@ -1,8 +1,8 @@
 ﻿using CoreAPI.DTOs.Auth;
 using CoreAPI.DTOs.Customers;
 using CoreAPI.Services.Interfaces;
+using CoreAPI.Validators.Auth;
 using CoreAPI.Validators.Customers;
-using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,11 +15,15 @@ namespace CoreAPI.Controllers;
 public class AuthController(
     IUserService userService,
     ICustomerService customerService,
-    ICurrentUserProvider currentUser) : ControllerBase
+    ICurrentUserProvider currentUser,
+    ILogger<AuthController> logger) : ControllerBase
 {
+    #region Private Fields
     private readonly IUserService _userService = userService;
     private readonly ICustomerService _customerService = customerService;
     private readonly ICurrentUserProvider _currentUser = currentUser;
+    private readonly ILogger<AuthController> _logger = logger;
+    #endregion
 
     /// <summary>
     /// Global login endpoint for all users, no matter what role
@@ -31,9 +35,14 @@ public class AuthController(
     {
         var result = await _userService.LoginAsync(dto);
 
-        return result is null 
-            ? BadRequest("Invalid credentials!")
-            : Ok(result);
+        if (result is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[AuthController] Login failed for user {UserName}", dto.UserName);
+            return BadRequest("Invalid credentials!");
+        }
+
+        return Ok(result);
     }
     
     /// <summary>
@@ -46,10 +55,13 @@ public class AuthController(
         [FromBody] CustomerCreateDto dto,
         CancellationToken cancellationToken = default)
     {
-        var validator = new CustomerCreateDtoValidator();
-        var result = validator.Validate(dto);
+        var result = new CustomerCreateDtoValidator().Validate(dto);
         if (!result.IsValid)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[AuthController] Customer registration validation failed: {Errors}", result.Errors);
             return BadRequest(result.Errors);
+        }
 
         var customer = await _customerService.CreateAsync(dto, cancellationToken);
         return Ok(new
@@ -67,6 +79,13 @@ public class AuthController(
     [AllowAnonymous]
     public async Task<IActionResult> CompleteInvite([FromBody] SetupPasswordRequest req)
     {
+        var result = new SetupPasswordRequestValidator().Validate(req);
+        if (!result.IsValid)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[AuthController] Complete invite validation failed: {Errors}", result.Errors);
+            return BadRequest(result.Errors);
+        }
         var user = await _userService.CompleteInviteAsync(req.UserId, req.Token, req.NewPassword);
         return Ok(user);
     }
@@ -80,7 +99,12 @@ public class AuthController(
     public ActionResult GetMe()
     {
         if (!_currentUser.IsAuthenticated)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[AuthController] Unauthorized access to GetMe endpoint.");
             return Unauthorized();
+        }
+            
          
         return Ok(new { _currentUser.UserId, _currentUser.Email, _currentUser.TenantId, _currentUser.Roles });
     }
@@ -93,15 +117,25 @@ public class AuthController(
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         if (!_currentUser.IsAuthenticated)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[AuthController] Unauthorized access to ChangePassword endpoint.");
             return Unauthorized();
+        }
 
+        // TODO: prepare for using fluent validation instead
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
         var result = await _userService.ChangePasswordAsync(_currentUser.UserId!, request);
 
-        return result.Succeeded
-            ? Ok(new { message = "Changed successfully." })
-            : BadRequest(new { message = "Failed to change password. Please check your current password." });
+        if (!result.Succeeded)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[AuthController] Change password failed for user {UserId}: {Errors}", _currentUser.UserId, result.Errors);
+            return BadRequest(new { message = "Failed to change password. Please check your current password." });
+        }
+
+        return Ok(new { message = "Changed successfully." });
     }
 }

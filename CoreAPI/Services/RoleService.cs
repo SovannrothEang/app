@@ -12,13 +12,15 @@ public class RoleService(
     RoleManager<Role> roleManager,
     ICurrentUserProvider currentUserProvider,
     IUnitOfWork unitOfWork,
-    IMapper mapper) : IRoleService
+    IMapper mapper,
+    ILogger<RoleService> logger) : IRoleService
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly RoleManager<Role> _roleManager = roleManager;
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
+    private readonly ILogger<RoleService> _logger = logger;
 
     public IEnumerable<RoleDto> GetAllRoles(CancellationToken ct = default)
     {
@@ -56,12 +58,20 @@ public class RoleService(
 
     public async Task<IdentityResult> AssignRoleAsync(AssignRoleDto dto)
     {
-        var user = await _userManager.FindByNameAsync(dto.UserName)
-            ?? throw new KeyNotFoundException($"No User is found with UserName: {dto.UserName}!");
-
-        var role = await _roleManager.FindByNameAsync(dto.RoleName)
-            ?? throw new KeyNotFoundException($"No Role is found with UserName: {dto.UserName}!");
-
+        var user = await _userManager.FindByNameAsync(dto.UserName);
+        if (user is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No User is found with UserName: {UserName}!", dto.UserName);
+            throw new KeyNotFoundException($"No User is found with UserName: {dto.UserName}!");
+        }
+        var role = await _roleManager.FindByNameAsync(dto.RoleName);
+        if (role is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No Role is found with RoleName: {RoleName}!", dto.RoleName);
+            throw new KeyNotFoundException($"No Role is found with UserName: {dto.UserName}!");
+        }
         if (await _userManager.IsInRoleAsync(user, dto.RoleName))
             throw new BadHttpRequestException($"User is already assigned to role: '{dto.RoleName}'!");
 

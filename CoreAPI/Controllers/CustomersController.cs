@@ -11,12 +11,14 @@ namespace CoreAPI.Controllers;
 public class CustomersController(
     ITransactionService transactionService,
     IAccountService accountService,
-    ICustomerService customerService) : ControllerBase
+    ICustomerService customerService,
+    ILogger<CustomersController> logger) : ControllerBase
 {
     #region Private Fields
     private readonly ITransactionService _transactionService = transactionService;
     private readonly IAccountService _accountService = accountService;
     private readonly ICustomerService _customerService = customerService;
+    private readonly ILogger<CustomersController> _logger = logger;
     #endregion
 
     /// <summary>
@@ -77,9 +79,13 @@ public class CustomersController(
         [FromQuery] bool? childIncluded,
         CancellationToken ct = default)
     {
-        childIncluded ??= false;
-        var transactions = await _transactionService.GetAllByCustomerIdForGlobalAsync(customerId, option, childIncluded.Value, ct);
-        return Ok(transactions);
+        using (_logger.BeginScope("GetCustomerTransactionsByIdAsync for CustomerId: {CustomerId}", customerId))
+        {
+            _logger.LogInformation("Retrieving transactions for customer.");
+            childIncluded ??= false;
+            var transactions = await _transactionService.GetAllByCustomerIdForGlobalAsync(customerId, option, childIncluded.Value, ct);
+            return Ok(transactions);
+        }
     }
     
     /// <summary>

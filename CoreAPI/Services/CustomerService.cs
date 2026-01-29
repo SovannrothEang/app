@@ -17,11 +17,13 @@ public class CustomerService(
     ITransactionService transactionService,
     IAccountService accountService,
     ICurrentUserProvider currentUserProvider,
-    IMapper mapper) : ICustomerService
+    IMapper mapper,
+    ILogger<CustomerService> logger) : ICustomerService
 {
     #region Private Fields
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
+    private readonly ILogger<CustomerService> _logger = logger;
     private readonly IRepository<Customer> _repository = unitOfWork.GetRepository<Customer>();
     private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
     private readonly IUserService _userService = userService;
@@ -37,6 +39,8 @@ public class CustomerService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetPaginatedResultsAsync by {Performer}", _currentUserProvider.UserId);
         var (customers, totalCount) = await _repository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
@@ -44,6 +48,9 @@ public class CustomerService(
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             orderBy: BuildOrderBy(option),
             cancellationToken: ct);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetPaginatedResultsAsync: Retrieved {Count} Customers out of {TotalCount} total",
+                option.PageSize, totalCount);
         return new PagedResult<CustomerDto>
         {
             Items = [.. customers.Select(_mapper.Map<CustomerDto>)],
@@ -61,12 +68,19 @@ public class CustomerService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetPaginatedResultsForTenantAsync for TenantId: {TenantId} by {Performer}",
+                _currentUserProvider.TenantId, _currentUserProvider.UserId);
         var (customers, totalCount) = await _repository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
             filter: q => q.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId), // Only customers who have accounts with the current tenant
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetPaginatedResultsForTenantAsync: Retrieved {Count} Customers out of {TotalCount} total for TenantId: {TenantId}",
+                option.PageSize, totalCount, _currentUserProvider.TenantId);
         return new PagedResult<CustomerDto>
         {
             Items = [.. customers.Select(_mapper.Map<CustomerDto>)],
@@ -76,16 +90,26 @@ public class CustomerService(
         };
     }
 
-    public async Task<CustomerDto?> GetByIdForGlobalAsync(
+    public async Task<CustomerDto> GetByIdForGlobalAsync(
         string customerId,
         bool childIncluded = false,
         CancellationToken ct = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetByIdForGlobalAsync: Retrieving Customer with id: {CustomerId} by {Performer}",
+                customerId, _currentUserProvider.UserId);
+
         var result = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == customerId,
             ignoreQueryFilters: true,
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
             cancellationToken: ct);
+        if (result is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[CustomerService] GetByIdForGlobalAsync: No Customer found with id: {CustomerId}", customerId);
+            throw new KeyNotFoundException($"No Customer was found with id: {customerId}.");
+        }
         return _mapper.Map<CustomerDto>(result);
     }
 
@@ -94,17 +118,24 @@ public class CustomerService(
         bool childIncluded = false,
         CancellationToken ct = default)
     {
-        if (_currentUserProvider.TenantId is null)
-            throw new UnauthorizedAccessException("TenantId is required for this operation.");
-        
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetByIdForTenantAsync: Retrieving Customer with id: {CustomerId} for TenantId: {TenantId} by {Performer}",
+                id, _currentUserProvider.TenantId, _currentUserProvider.UserId);
+
         var customer = await _repository.FirstOrDefaultAsync(
             predicate: e =>
                 e.Id == id &&
                 e.Accounts.Any(a => a.TenantId == _currentUserProvider.TenantId),
             ignoreQueryFilters: true,
             includes: BuildIncludes(childIncluded, lastTransactionOnly: true),
-            cancellationToken: ct)
-            ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
+            cancellationToken: ct);
+        if (customer is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[CustomerService] GetByIdForTenantAsync: No Customer found with id: {CustomerId} for TenantId: {TenantId}",
+                    id, _currentUserProvider.TenantId);
+            throw new KeyNotFoundException($"No Customer was found with id: {id}.");
+        }
         return _mapper.Map<CustomerDto>(customer);
     }
 
@@ -120,8 +151,14 @@ public class CustomerService(
         pageOption.Page ??= 1;
         pageOption.PageSize ??= 10;
 
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetCustomerBalanceByIdAsync: Retrieving balance and transactions for CustomerId: {CustomerId} in TenantId: {TenantId} by {Performer}",
+                customerId, tenantId, _currentUserProvider.UserId);
         var totalBalance = await _accountService.GetTotalBalanceByCustomerIdAsync(customerId, ct);
         var result = await _transactionService.GetAllByCustomerIdForTenantAsync(customerId, pageOption, childIncluded, ct);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] GetCustomerBalanceByIdAsync: Retrieved balance and {Count} transactions for CustomerId: {CustomerId} in TenantId: {TenantId}",
+                pageOption.PageSize, customerId, tenantId);
         return (totalBalance, result);
     }
 
@@ -132,6 +169,9 @@ public class CustomerService(
         await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[CustomerService] CreateAsync: Creating new Customer by {Performer}",
+                    _currentUserProvider.UserId);
             var registerDto = new RegisterDto(
                 dto.UserName, dto.Email, dto.FirstName,
                 dto.LastName, dto.Password, dto.ConfirmPassword);
@@ -145,6 +185,9 @@ public class CustomerService(
             await _unitOfWork.CompleteAsync(ct);
             await transaction.CommitAsync(ct);
 
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("[CustomerService] CreateAsync: Successfully created Customer with id: {CustomerId}",
+                    customer.Id);
             return _mapper.Map<CustomerDto>(customer);
         }
         catch
@@ -159,30 +202,50 @@ public class CustomerService(
         CustomerUpdateDto dto,
         CancellationToken ct = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] UpdateAsync: Updating Customer with id: {CustomerId} by {Performer}",
+                id, _currentUserProvider.UserId);
         var customer = await _repository.FirstOrDefaultAsync(
             predicate: c => c.Id == id,
             trackChanges: true,
             ignoreQueryFilters: true,
-            cancellationToken: ct)
-           ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
+            cancellationToken: ct);
+        if (customer is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[CustomerService] UpdateAsync: No Customer found with id: {CustomerId}", id);
+            throw new KeyNotFoundException($"No Customer was found with id: {id}.");
+        }
 
         _mapper.Map(dto, customer);
         _repository.Update(customer);
         await _unitOfWork.CompleteAsync(ct);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] UpdateAsync: Successfully updated Customer with id: {CustomerId}", id);
     }
 
     public async Task DeleteAsync(string id, CancellationToken ct = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] DeleteAsync: Deleting Customer with id: {CustomerId} by {Performer}",
+                id,  _currentUserProvider.UserId);
         var customer = await _repository.FirstOrDefaultAsync(
             predicate: c => c.Id == id,
             trackChanges: true,
             ignoreQueryFilters: true,
-            cancellationToken: ct)
-           ?? throw new KeyNotFoundException($"No Customer was found with id: {id}.");
+            cancellationToken: ct);
+        if (customer is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[CustomerService] DeleteAsync: No Customer found with id: {CustomerId}", id);
+            throw new KeyNotFoundException($"No Customer was found with id: {id}.");
+        }
         // TODO: what should we do after customer is deleted? it's about account.
 
         customer.Deleted();
         await _unitOfWork.CompleteAsync(ct);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[CustomerService] DeleteAsync: Successfully deleted Customer with id: {CustomerId}", id);
     }
 
     #region Helper Methods

@@ -9,6 +9,7 @@ using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Serilog;
+using Serilog.Events;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -17,12 +18,16 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    
+
     builder.Host.UseSerilog((context, service, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext()                       // Vital for correlation IDs
-        .Filter.ByExcluding(e => e.Properties.ContainsKey("Sql"))
-        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // Write to Console (Docker/Dev)
+        .Filter.ByExcluding(e =>
+            e.Properties.ContainsKey("Sql")
+            || (e.Properties.ContainsKey("SourceContext")
+                && e.Properties["SourceContext"].ToString().Contains("Microsoft.EntityFrameworkCore.Database.Command")))
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3} {RequestId}] {Message:lj}{NewLine}{Exception}") // Write to Console (Docker/Dev)
         .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)); // Write to File
     
     builder.Services

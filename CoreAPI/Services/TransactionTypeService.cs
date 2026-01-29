@@ -6,10 +6,16 @@ using CoreAPI.Services.Interfaces;
 
 namespace CoreAPI.Services;
 
-public class TransactionTypeService(IUnitOfWork unitOfWork, IMapper mapper) : ITransactionTypeService
+public class TransactionTypeService(
+    IUnitOfWork unitOfWork,
+    IMapper mapper,
+    ICurrentUserProvider currentUserProvider,
+    ILogger<TransactionTypeService> logger) : ITransactionTypeService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
+    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+    private readonly ILogger<TransactionTypeService> _logger = logger;
     private readonly IRepository<TransactionType> _repository = unitOfWork.GetRepository<TransactionType>();
 
     public async Task<IEnumerable<TransactionTypeDto>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,27 +36,45 @@ public class TransactionTypeService(IUnitOfWork unitOfWork, IMapper mapper) : IT
             cancellationToken: cancellationToken);
     }
 
-    public async Task<TransactionTypeDto?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<TransactionTypeDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id && e.IsActive == true,
             cancellationToken: cancellationToken);
+        if (type is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No transaction type was found with id: {TransactionTypeId}.", id);
+            throw new KeyNotFoundException($"No transaction type was found with id: {id}.");
+        }
         return _mapper.Map<TransactionTypeDto>(type);
     }
 
-    public async Task<TransactionTypeDto?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<TransactionTypeDto> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Name == name && e.IsActive == true,
             cancellationToken: cancellationToken);
+        if (type is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No transaction type was found with name: {TransactionTypeName}.", name);
+            throw new KeyNotFoundException($"No transaction type was found with name: {name}.");
+        }
         return _mapper.Map<TransactionTypeDto>(type);
     }
 
-    public async Task<TransactionTypeDto?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    public async Task<TransactionTypeDto> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
         var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Slug == slug && e.IsActive == true,
             cancellationToken: cancellationToken);
+        if (type is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No transaction type was found with slug: {TransactionTypeSlug}.", slug);
+            throw new KeyNotFoundException($"No transaction type was found with slug: {slug}.");
+        }
         return _mapper.Map<TransactionTypeDto>(type);
     }
 
@@ -92,22 +116,40 @@ public class TransactionTypeService(IUnitOfWork unitOfWork, IMapper mapper) : IT
 
     public async Task DeactivateAsync(string id, CancellationToken cancellationToken = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Deactivating transaction type with id: {TransactionTypeId}, perform by User {Performer}",
+                id, _currentUserProvider.UserId);
         var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id && e.IsActive == true,
             trackChanges: true,
-            cancellationToken: cancellationToken)
-            ?? throw new KeyNotFoundException($"No transaction type was found with id: {id}.");
+            cancellationToken: cancellationToken);
+        if (type is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No transaction type was found with id: {TransactionTypeId}.", id);
+            throw new KeyNotFoundException($"No transaction type was found with id: {id}.");
+        }
         type.Deactivate();
         await _unitOfWork.CompleteAsync(cancellationToken);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Transaction type with id: {TransactionTypeId} has been deactivated.", id);
     }
 
     public async Task ActivateAsync(string id, CancellationToken cancellationToken = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Activating transaction type with id: {TransactionTypeId}, perform by User {Performer}",
+                id, _currentUserProvider.UserId);
         var type = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id && e.IsActive == true,
             trackChanges: true,
-            cancellationToken: cancellationToken)
-            ?? throw new KeyNotFoundException($"No transaction type was found with id: {id}.");
+            cancellationToken: cancellationToken);
+        if (type is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No transaction type was found with id: {TransactionTypeId}.", id);
+            throw new KeyNotFoundException($"No transaction type was found with id: {id}.");
+        }
         type.Deactivate();
         await _unitOfWork.CompleteAsync(cancellationToken);
     }

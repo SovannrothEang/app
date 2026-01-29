@@ -87,32 +87,28 @@ public class AuthService(
         try
         {
             var roleName = dto.Role ?? RoleConstants.User;
-            var roleExistsTask = _roleManager.RoleExistsAsync(roleName);
-
-            var emailIsExistTask = _userManager.FindByEmailAsync(dto.Email);
-            var userNameIsExistTask = _userManager.FindByNameAsync(dto.UserName);
-            
-            await Task.WhenAll(emailIsExistTask, userNameIsExistTask, roleExistsTask);
-            if (emailIsExistTask.Result != null)
+            var roleExists = await _roleManager.RoleExistsAsync(roleName);
+            if (!roleExists)
             {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Onboarding failed. Email already exists: {email}", dto.Email);
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("Onboarding failed. Role does not exist: {role}", roleName);
+                throw new BadHttpRequestException($"Role '{roleName}' does not exist!");
+            }
+            var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
+            if (emailIsExist != null)
+            {
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("Onboarding failed. Email already exists: {email}", dto.Email);
                 throw new BadHttpRequestException("Email is already exist!");
             }
-
-            if (userNameIsExistTask.Result != null)
+            var userNameIsExist = await _userManager.FindByNameAsync(dto.UserName);
+            if (userNameIsExist != null)
             {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Onboarding failed. UserName already exists: {userName}", dto.UserName);
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("Onboarding failed. UserName already exists: {userName}", dto.UserName);
                 throw new BadHttpRequestException("UserName is already exist!");
             }
 
-            if (!roleExistsTask.Result)
-            {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Onboarding failed. Role does not exist: {role}", roleName);
-                throw new BadHttpRequestException($"Role '{roleName}' does not exist!");
-            }
 
             var user = _mapper.Map<User>(dto);
             user.TenantId = _currentUserProvider.TenantId!;
@@ -120,16 +116,16 @@ public class AuthService(
             var result = await _userManager.CreateAsync(user);
             if (!result.Succeeded)
             {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Onboarding failed. User creation failed for: {userName}", dto.UserName);
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("Onboarding failed. User creation failed for: {userName}", dto.UserName);
                 throw new BadHttpRequestException(string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
             var roleCreated = await _userManager.AddToRoleAsync(user, roleName);
             if (!roleCreated.Succeeded)
             {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Onboarding failed. Assigning role '{role}' to user '{userName}' failed", roleName, dto.UserName);
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("Onboarding failed. Assigning role '{role}' to user '{userName}' failed", roleName, dto.UserName);
                 throw new BadHttpRequestException(string.Join(", ", roleCreated.Errors.Select(error => error.Description)));
             }
 
@@ -152,20 +148,18 @@ public class AuthService(
     {
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Customer registration attempt: {userName} and {email}.", dto.UserName, dto.Email);
-        var emailIsExistTask = _userManager.FindByEmailAsync(dto.Email);
-        var userNameIsExistTask = _userManager.FindByNameAsync(dto.UserName);
-        await Task.WhenAll(emailIsExistTask, userNameIsExistTask);
-
-        if (emailIsExistTask.Result != null)
+        var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
+        if (emailIsExist != null)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Registration failed. Email already exists: {email}", dto.Email);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Registration failed. Email already exists: {email}", dto.Email);
             throw new BadHttpRequestException("Email is already exist!");
         }
-        if (userNameIsExistTask.Result != null)
+        var userNameIsExist = await _userManager.FindByNameAsync(dto.UserName);
+        if (userNameIsExist != null)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Registration failed. UserName already exists: {userName}", dto.UserName);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Registration failed. UserName already exists: {userName}", dto.UserName);
             throw new BadHttpRequestException("UserName is already exist!");
         }
 
@@ -175,8 +169,8 @@ public class AuthService(
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Registration failed. User creation failed for: {userName}", dto.UserName);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Registration failed. User creation failed for: {userName}", dto.UserName);
             throw new BadHttpRequestException(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
 
@@ -186,8 +180,8 @@ public class AuthService(
             var roleCreated = await _roleManager.CreateAsync(role);
             if (!roleCreated.Succeeded)
             {
-                if (_logger.IsEnabled(LogLevel.Information))
-                    _logger.LogInformation("Registration failed. Creating default role '{role}' failed", RoleConstants.Customer);
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("Registration failed. Creating default role '{role}' failed", RoleConstants.Customer);
                 throw new BadHttpRequestException(string.Join(", ", roleCreated.Errors.Select(error => error.Description)));
             }
         }
@@ -205,20 +199,18 @@ public class AuthService(
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("Creating tenant owner user for tenant: {tenantName}", tenant.Name);
         // Check if email or username exists in the tenant
-        var emailIsExistTask = _userManager.FindByEmailAsync(dto.Email);
-        var userNameIsExistTask = _userManager.FindByNameAsync(dto.UserName);
-        await Task.WhenAll(emailIsExistTask, userNameIsExistTask);
-
-        if (emailIsExistTask.Result != null)
+        var emailIsExist = await _userManager.FindByEmailAsync(dto.Email);
+        if (emailIsExist != null)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Onboarding user for tenant failed. Email already exists: {email}", dto.Email);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Onboarding user for tenant failed. Email already exists: {email}", dto.Email);
             throw new BadHttpRequestException("Email is already exist!");
         }
-        if (userNameIsExistTask.Result != null)
+        var userNameIsExist = await _userManager.FindByNameAsync(dto.UserName);
+        if (userNameIsExist != null)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Onboarding user for tenant failed. UserName already exists: {username}", dto.UserName);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Onboarding user for tenant failed. UserName already exists: {username}", dto.UserName);
             throw new BadHttpRequestException("UserName is already exist!");
         }
         var user = new User(Guid.NewGuid().ToString(), dto.Email, dto.UserName, tenant.Id)
@@ -230,8 +222,8 @@ public class AuthService(
         var result = await _userManager.CreateAsync(user);
         if (!result.Succeeded)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Onboarding user for tenant failed. User creation failed for: {userName}", dto.UserName);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Onboarding user for tenant failed. User creation failed for: {userName}", dto.UserName);
             throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
         
@@ -283,8 +275,8 @@ public class AuthService(
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
         if (!result.Succeeded)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Completing invite failed for user id: {userId}. Reason: {reason}", userId, string.Join(", ", result.Errors.Select(e => e.Description)));
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Completing invite failed for user id: {userId}. Reason: {reason}", userId, string.Join(", ", result.Errors.Select(e => e.Description)));
             throw new BadHttpRequestException("Invalid token or password complexity failed.");
         }
 
@@ -307,9 +299,13 @@ public class AuthService(
             predicate: e => e.Id == userId,
             includes: q => q
                 .Include(x => x.UserRoles!)
-                .ThenInclude(x => x.Role))
-            ?? throw new UnauthorizedAccessException();
-
+                .ThenInclude(x => x.Role));
+        if (user is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Unauthorized access attempt for user id: {userId}", userId);
+            throw new UnauthorizedAccessException();
+        }
         return _mapper.Map<UserProfileDto>(user);
     }
 

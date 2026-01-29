@@ -1,14 +1,11 @@
 using CoreAPI.DTOs.Auth;
-using CoreAPI.Models;
-using CoreAPI.Repositories.Interfaces;
-using CoreAPI.Services.Interfaces;
 using FluentValidation;
 
 namespace CoreAPI.Validators.Auth;
 
 public class OnBoardingUserDtoValidator : AbstractValidator<OnboardingUserDto>
 {
-    public OnBoardingUserDtoValidator(IRoleService roleService)
+    public OnBoardingUserDtoValidator()
     {
         RuleFor(user => user.Email)
             .NotEmpty().WithMessage("Email is required")
@@ -26,14 +23,14 @@ public class OnBoardingUserDtoValidator : AbstractValidator<OnboardingUserDto>
         RuleFor(x => x.LastName)
             .NotEmpty().WithMessage("LastName is required")
             .MaximumLength(50).WithMessage("LastName cannot exceed 50 characters");
-        
+
         RuleFor(user => user.Role)
-            .MaximumLength(50).WithMessage("Role cannot exceed 50 characters")
-            .MustAsync(async (id, cancellationToken) =>
-            {
-                if (id is null) return true;
-                return await roleService.ExistsAsync(id, cancellationToken);
-            })
-            .WithMessage("Role not found!");
+            .MaximumLength(50).WithMessage("Role cannot exceed 50 characters");
+        // .MustAsync(async (id, cancellationToken) =>
+        // {
+        //     if (id is null) return true;
+        //     return await roleService.ExistsAsync(id, cancellationToken);
+        // })
+        // .WithMessage("Role not found!");
     }
 }

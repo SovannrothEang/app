@@ -33,7 +33,7 @@ public class TenantService(
         option.Page ??= 1;
         option.PageSize ??= 10;
 
-        var result = await _repository.GetPagedResultAsync(
+        var (items, totalCount) = await _repository.GetPagedResultAsync(
             option,
             ignoreQueryFilters: true,
             filter: BuildFilter(option),
@@ -43,95 +43,114 @@ public class TenantService(
         );
         return new PagedResult<TenantDto>()
         {
-            Items = [.. result.items.Select(_mapper.Map<TenantDto>)],
+            Items = [.. items.Select(_mapper.Map<TenantDto>)],
             PageNumber = option.Page.Value,
             PageSize = option.PageSize.Value,
-            TotalCount = result.totalCount
+            TotalCount = totalCount
         };
     }
 
-    public async Task<TenantDto?> GetByIdAsync(string id, CancellationToken ct = default)
+    public async Task<TenantDto> GetByIdAsync(string id, CancellationToken ct = default)
     {
         var tenant = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id,
             cancellationToken: ct);
+        if (tenant is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[TenantService] GetByIdAsync: No tenant found with id: {TenantId}", id);
+            throw new KeyNotFoundException($"No tenant was found with id: {id}.");
+        }
         return _mapper.Map<TenantDto>(tenant);
     }
 
-    public async Task<TenantDto?> GetValidTenantByIdAsync(string id, bool trackChange = false, CancellationToken ct = default)
+    public async Task<TenantDto> GetValidTenantByIdAsync(string id, bool trackChange = false, CancellationToken ct = default)
     {
         var tenant = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id && e.Status == TenantStatus.Active,
             trackChanges: trackChange,
             cancellationToken: ct);
+        if (tenant is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("[TenantService] GetValidTenantByIdAsync: No active tenant found with id: {TenantId}", id);
+            throw new KeyNotFoundException($"No active tenant was found with id: {id}.");
+        }
         return _mapper.Map<TenantDto>(tenant);
     }
 
     public async Task<TenantOnboardResponseDto> CreateAsync(TenantOnBoardingDto dto, CancellationToken ct = default)
     {
-        using (_logger.BeginScope("RequestId: {RequestId}", Guid.NewGuid().ToString()))
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Onboarding new tenant: {TenantName}, Owner: {OwnerEmail}",
+                dto.Tenant.Name, dto.Owner.Email);
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+        try
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("Onboarding new tenant: {TenantName}, Owner: {OwnerEmail}",
-                    dto.Tenant.Name, dto.Owner.Email);
-            await using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
-            try
-            {
-                var tenant = _mapper.Map<Tenant>(dto.Tenant);
-                await _repository.CreateAsync(tenant, ct);
-                var tenantDto = _mapper.Map<TenantDto>(tenant);
-            
-                // Default Transaction types
-                IEnumerable<TransactionType> types =
-                [
-                    new(Guid.NewGuid().ToString(), "earn", "Earn", "Points earned from activities", 1, false, tenant.Id),
-                    new(Guid.NewGuid().ToString(), "redeem", "Redeem", "Points redeems for rewards", -1, false, tenant.Id),
-                    new(Guid.NewGuid().ToString(), "adjust", "Adjust", "Manual points adjustment", 1, true, tenant.Id),
-                ];
-                await _transactionTypeRepository.CreateBatchAsync(types, ct);
+            var tenant = _mapper.Map<Tenant>(dto.Tenant);
+            await _repository.CreateAsync(tenant, ct);
+            var tenantDto = _mapper.Map<TenantDto>(tenant);
+        
+            // Default Transaction types
+            IEnumerable<TransactionType> types =
+            [
+                new(Guid.NewGuid().ToString(), "earn", "Earn", "Points earned from activities", 1, false, tenant.Id),
+                new(Guid.NewGuid().ToString(), "redeem", "Redeem", "Points redeems for rewards", -1, false, tenant.Id),
+                new(Guid.NewGuid().ToString(), "adjust", "Adjust", "Manual points adjustment", 1, true, tenant.Id),
+            ];
+            await _transactionTypeRepository.CreateBatchAsync(types, ct);
 
-                // Default Account type
-                var accountType = new AccountType(Guid.NewGuid().ToString(), "Normal", tenant.Id, _currentUserProvider.UserId);
-                await _accountTypeRepository.CreateAsync(accountType, ct);
-            
-                var (userId, token) = await _userService.CreateTenantUserAsync(tenantDto, dto.Owner, ct);
+            // Default Account type
+            var accountType = new AccountType(Guid.NewGuid().ToString(), "Normal", tenant.Id, _currentUserProvider.UserId);
+            await _accountTypeRepository.CreateAsync(accountType, ct);
+        
+            var (userId, token) = await _userService.CreateTenantUserAsync(tenantDto, dto.Owner, ct);
 
-                await _unitOfWork.CompleteAsync(ct);
-                await transaction.CommitAsync(ct);
-                return new TenantOnboardResponseDto(tenantDto, userId, token);
-            }
-            catch (Exception ex)
-            {
-                if (_logger.IsEnabled(LogLevel.Error))
-                    _logger.LogError("Failed to onboard new tenant: {TenantName}, Owner: {OwnerEmail}. Exception: {message}",
-                        dto.Tenant.Name, dto.Owner.Email, ex.Message);
-                await transaction.RollbackAsync(ct);
-                throw;
-            }
+            await _unitOfWork.CompleteAsync(ct);
+            await transaction.CommitAsync(ct);
+            return new TenantOnboardResponseDto(tenantDto, userId, token);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
         }
     }
     
     public async Task UpdateAsync(string id, TenantUpdateDto dto, CancellationToken ct = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[TenantService] Updating tenant with id: {TenantId} by {Performer}", id, _currentUserProvider.UserId);
         var exist = await _repository.FirstOrDefaultAsync(
-                        predicate: e => e.Id == id,
-                        trackChanges: true,
-                        cancellationToken: ct)
-                    ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
+            predicate: e => e.Id == id,
+            trackChanges: true,
+            cancellationToken: ct);
+        if (exist is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No tenant found with id: {TenantId}", id);
+            throw new KeyNotFoundException($"No tenant was found with id: {id}.");
+        }
         
         _mapper.Map(dto, exist);
         _repository.Update(exist);
         await _unitOfWork.CompleteAsync(ct);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Tenant with id: {TenantId} updated successfully", id);
     }
 
     public async Task DeleteAsync(string id, CancellationToken ct = default)
     {
         var tenant = await _repository.FirstOrDefaultAsync(
-                         predicate: e => e.Id == id,
-                         trackChanges: true,
-                         cancellationToken: ct)
-                     ?? throw new KeyNotFoundException($"No tenant was found with id: {id}.");
-        
+            predicate: e => e.Id == id,
+            trackChanges: true,
+            cancellationToken: ct);
+        if (tenant is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No tenant found with id: {TenantId}", id);
+            throw new KeyNotFoundException($"No tenant was found with id: {id}.");
+        }
         tenant.Deleted();
         await _unitOfWork.CompleteAsync(ct);
     }
@@ -139,25 +158,28 @@ public class TenantService(
     public async Task ActivateAsync(string id, CancellationToken ct = default)
     {
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("Activating tenant with id: {TenantId}", id);
+            _logger.LogInformation("Activating tenant with id: {TenantId} by {Performer}", id, _currentUserProvider.UserId);
         var tenant = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id,
             trackChanges: true,
             cancellationToken: ct);
-
         if (tenant is null)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("No tenant found with id: {TenantId}", id);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No tenant found with id: {TenantId}", id);
             throw new KeyNotFoundException($"No tenant was found with id: {id}.");
         }
 
         tenant.Activate();
         await _unitOfWork.CompleteAsync(ct);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Tenant with id: {TenantId} activated successfully", id);
     }
     
     public async Task DeactivateAsync(string id, CancellationToken ct = default)
     {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Deactivating tenant with id: {TenantId} by {Performer}", id, _currentUserProvider.UserId);
         var tenant = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id,
             trackChanges: true,
@@ -165,13 +187,15 @@ public class TenantService(
 
         if (tenant is null)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("No tenant found with id: {TenantId}", id);
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("No tenant found with id: {TenantId}", id);
             throw new KeyNotFoundException($"No tenant was found with id: {id}.");
         }
         
         tenant.Deactivate();
         await _unitOfWork.CompleteAsync(ct);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Tenant with id: {TenantId} deactivated successfully", id);
     }
 
     #region Private Methods
