@@ -60,6 +60,9 @@ public class TransactionTypeConfiguration : IEntityTypeConfiguration<Transaction
         builder.HasIndex(e => new { e.Name, e.TenantId })
             .IsUnique()
             .HasFilter($"[{nameof(TransactionType.IsDeleted)}] = 0");
+        builder.HasIndex(e => new { e.TenantId, e.Slug })
+            .IsUnique()
+            .HasFilter($"[{nameof(TransactionType.Slug)}] <> '' AND [{nameof(TransactionType.IsDeleted)}] = 0");
         builder.HasIndex(e => e.TenantId);
         builder.HasIndex(e => new { e.IsActive, e.IsDeleted });
 

@@ -70,16 +70,16 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDatabaseName("IX_Users_NormalizedUserName")
             .IsUnique()
             .HasFilter($"[{nameof(User.IsDeleted)}] = 0");
+        builder.HasIndex(e => e.Email )
+            .IsUnique() 
+            .HasFilter($"[{nameof(User.Email)}] <> '' AND [{nameof(User.IsDeleted)}] = 0");
         builder.HasIndex(e => e.NormalizedEmail)
             .HasDatabaseName("IX_Users_NormalizedEmail")
-            .IsUnique(false)
+            .IsUnique()
             .HasFilter($"[{nameof(User.IsDeleted)}] = 0");
         builder.HasIndex(e => new { e.TenantId, e.Id })
             .IsUnique()
             .HasFilter($"[{nameof(User.TenantId)}] IS NOT NULL AND [{nameof(User.IsDeleted)}] = 0");
-        builder.HasIndex(e => new { e.TenantId, e.Email })
-            .IsUnique() 
-            .HasFilter($"[{nameof(User.Email)}] <> '' AND [{nameof(User.IsDeleted)}] = 0");
         builder.HasOne(e => e.Tenant)
             .WithMany(e => e.Users)
             .HasForeignKey(e => e.TenantId)
