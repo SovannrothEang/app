@@ -50,11 +50,20 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .HasFilter($"[{nameof(Tenant.IsDeleted)}] = 0");
 
         builder.HasIndex(e => e.PerformBy);
-            
+
+        // Relationships
+        builder.HasMany(e => e.Users)
+            .WithOne(u => u.Tenant)
+            .HasForeignKey(u => u.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.PerformByUser)
             .WithMany()
             .HasForeignKey(e => e.PerformBy);
-        
+        builder.HasMany(e => e.Accounts)
+            .WithOne(a => a.Tenant)
+            .HasForeignKey(a => a.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.OwnsOne(e => e.Setting);
     }
 }

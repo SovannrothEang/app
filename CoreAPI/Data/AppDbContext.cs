@@ -112,6 +112,22 @@ public class AppDbContext(
                             $"cannot modify entity belonging to '{entry.Entity.TenantId}'.");
                     }
                     break;
+                case EntityState.Deleted:
+                    foreach (var nav in entry.Navigations)
+                    {
+                        if (nav.CurrentValue is IEnumerable<IDeletedEntity> collection)
+                        {
+                            foreach (var child in collection)
+                            {
+                                child.Deleted();
+                            }
+                        }
+                        else if (nav.CurrentValue is IDeletedEntity single)
+                        {
+                            single.Deleted();
+                        }
+                    }
+                    break;
             }
         }
         return base.SaveChangesAsync(cancellationToken);
