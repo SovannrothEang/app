@@ -18,9 +18,12 @@ public class TenantProfile : Profile
                 Guid.NewGuid().ToString(),
                 src.Name,
                 src.Name,
-                new AccountSetting(
-                    src.PointPerDollar,
-                    src.ExpiryDays)
+                    (src.PointPerDollar != null &&
+                    src.ExpiryDays != null)
+                        ? new AccountSetting(
+                            src.PointPerDollar.Value,
+                            src.ExpiryDays.Value)
+                        : null
             ));
 
         // CreateMap<TenantUpdateDto, Tenant>()

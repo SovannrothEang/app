@@ -1,4 +1,5 @@
-﻿using CoreAPI.Models;
+﻿using CoreAPI.DTOs.Tenants;
+using CoreAPI.Models;
 using CoreAPI.Repositories.Interfaces;
 using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -70,6 +71,28 @@ public static class IdentitySeeder
             var created = await userMgr.CreateAsync(superAdmin, superAdminPass);
             if (created.Succeeded)
                 await userMgr.AddToRoleAsync(superAdmin, roles[0].Name);
+        }
+
+        // Seed tennat
+        const string tenantName = "Tenant Example";
+        const string tenantUserName = "TenantExample";
+        const string tenantEmail = "Tenant@example.com";
+
+
+        var tenantService = serviceProvider.GetRequiredService<ITenantService>();
+        var isTenantExist = await unitOfWork.GetRepository<Tenant>().ExistsAsync(
+            e => e.Name == tenantName);
+        if (!isTenantExist)
+        {
+            var tenant = new TenantCreateDto(tenantName, null, null);
+            var result = await tenantService.CreateAsync(
+                new TenantOnBoardingDto(
+                    tenant, new TenantOwnerCreateDto(tenantUserName, tenantEmail, tenantName, tenantName)));
+            var token = result.Token;
+            var tenantUserId = result.UserId;
+
+            var tenantUser = await serviceProvider.GetRequiredService<IUserService>()
+                    .CompleteInviteAsync(tenantUserId, token!, "Tenant123!");
         }
     }
 }
