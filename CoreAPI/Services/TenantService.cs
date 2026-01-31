@@ -54,6 +54,7 @@ public class TenantService(
     {
         var tenant = await _repository.FirstOrDefaultAsync(
             predicate: e => e.Id == id,
+            includes: q => q.Include(e => e.AccountTypes),
             cancellationToken: ct);
         if (tenant is null)
         {

@@ -1,5 +1,4 @@
-﻿using CoreAPI.Repositories.Interfaces;
-using CoreAPI.Services.Interfaces;
+﻿using CoreAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CoreAPI.Requirements.Handlers;
@@ -38,9 +37,12 @@ namespace CoreAPI.Requirements.Handlers;
         // }
 
         var tenantRouteValue = _httpContext.HttpContext?.GetRouteValue("tenantId")?.ToString();
-        if (string.IsNullOrEmpty(tenantRouteValue) &&
+        if ((string.IsNullOrEmpty(tenantRouteValue) &&
             _currentUserProvider.TenantId != null &&
             _currentUserProvider.IsInRole(RoleConstants.TenantOwner))
+            ||
+            (_currentUserProvider.TenantId == tenantRouteValue &&
+            _currentUserProvider.IsInRole(RoleConstants.TenantOwner)))
         {
             context.Succeed(requirement);
             return Task.CompletedTask;

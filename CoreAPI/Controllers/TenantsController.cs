@@ -46,7 +46,7 @@ public class TenantsController(
     /// Get a tenant profile by id
     /// </summary>
     [HttpGet("{id}")]
-    [Authorize(Policy = Constants.PlatformRootAccessPolicy)]
+    [Authorize(Policy = Constants.TenantScopeAccessPolicy)]
     public async Task<ActionResult> GetTenantByIdAsync(string id, CancellationToken ct = default)
     {
         var tenant = await _tenantService.GetByIdAsync(id, ct);
