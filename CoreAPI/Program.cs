@@ -10,6 +10,7 @@ using Scalar.AspNetCore;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Serilog;
 using Serilog.Events;
+using AutoMapper;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
