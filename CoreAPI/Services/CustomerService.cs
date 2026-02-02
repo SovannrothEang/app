@@ -170,16 +170,19 @@ public class CustomerService(
         try
         {
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("[CustomerService] CreateAsync: Creating new Customer by {Performer}",
-                    _currentUserProvider.UserId);
+                _logger.LogInformation("[CustomerService] CreateAsync: Creating new Customer");
+            var emailExist = await _repository.ExistsAsync(
+                e => e.User!.Email == dto.Email, ignoreQueryFilters: true, ct);
+            if (emailExist)
+            {
+                throw new BadHttpRequestException("Email exist");
+            }
             var registerDto = new RegisterDto(
                 dto.UserName, dto.Email, dto.FirstName,
                 dto.LastName, dto.Password, dto.ConfirmPassword);
             var user = await _userService.CreateUserAsync(registerDto, ct);
 
-            var customer = new Customer(
-                dto.Id ?? Guid.NewGuid().ToString(),
-                user.Id, _currentUserProvider.UserId);
+            var customer = new Customer(dto.Id ?? Guid.NewGuid().ToString(), user.Id);
             await _repository.CreateAsync(customer, ct);
 
             await _unitOfWork.CompleteAsync(ct);

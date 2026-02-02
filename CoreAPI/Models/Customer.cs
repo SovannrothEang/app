@@ -17,11 +17,12 @@ public sealed class Customer : BaseEntity, ITenantEntity
 
     private Customer() { }
 
-    public Customer(string id, string userId, string? performBy)
+    public Customer(string id, string userId, string? performBy = null)
     {
         Id = id;
         UserId = userId;
-        AddPerformBy(performBy);
+        if (performBy != null)
+            AddPerformBy(performBy);
     }
 
     public Account CreateAccount(string tenantId, string accountTypeId)
