@@ -14,17 +14,9 @@ public class TenantProfile : Profile
         //     .ForMember(dest => dest.Setting.PointExpirePeriod, opt =>
         //         opt.MapFrom(src => src.Setting.PointExpirePeriod))
         CreateMap<TenantCreateDto, Tenant>()
-            .ConstructUsing(src => new Tenant(
-                Guid.NewGuid().ToString(),
-                src.Name,
-                src.Name,
-                    (src.PointPerDollar != null &&
-                    src.ExpiryDays != null)
-                        ? new AccountSetting(
-                            src.PointPerDollar.Value,
-                            src.ExpiryDays.Value)
-                        : null
-            ));
+            .ForMember(dest => dest.Slug, opt => opt.MapFrom(src => src.Name.ToLower().Replace(" ", "-")))
+            .ForMember(dest => dest.Setting, opt => opt.MapFrom(src =>
+                src.PointPerDollar != null && src.ExpiryDays != null ? new AccountSetting(src.PointPerDollar.Value, src.ExpiryDays.Value) : null));
 
         // CreateMap<TenantUpdateDto, Tenant>()
         //     .ForMember(dest => dest.Name, opt
