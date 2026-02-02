@@ -71,6 +71,7 @@ public interface IRepository<TEntity> where TEntity : class
         bool trackChanges = false,
         bool ignoreQueryFilters = false,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
+        Expression<Func<TEntity, TResult>>? select = null,
         CancellationToken cancellationToken = default);
     
     /// <summary>

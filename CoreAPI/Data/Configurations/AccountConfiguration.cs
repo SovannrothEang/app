@@ -55,19 +55,20 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.HasIndex(e => new { e.TenantId, e.CustomerId, e.AccountTypeId })
             .IsUnique()
             .HasFilter($"[{nameof(Account.IsDeleted)}] = 0");
-        
+        builder.HasIndex(e => e.Balance);
+        builder.HasIndex(e => e.AccountTypeId);
+
         // builder.HasOne(e => ) // TODO: introduce new Account type for account
 
+        // Relationships
         builder.HasMany(e => e.Transactions)
             .WithOne(e => e.Account)
             .HasForeignKey(e => new { e.TenantId, e.CustomerId, e.AccountTypeId})
             .OnDelete(DeleteBehavior.Cascade);
-        
         builder.HasOne(e => e.Tenant)
             .WithMany(e => e.Accounts)
             .HasForeignKey(e => e.TenantId)
             .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasOne(e => e.Performer)
             .WithMany()
             .HasForeignKey(e => e.PerformBy);

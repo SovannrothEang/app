@@ -52,7 +52,8 @@ public class RoleService(
     public async Task<IdentityResult> CreateRoleAsync(RoleCreateDto roleCreate)
     {
         var role = _mapper.Map<RoleCreateDto, Role>(roleCreate);
-        role.PerformBy = _currentUserProvider.TenantId;
+        role.PerformBy = _currentUserProvider.UserId;
+        role.TenantId = _currentUserProvider.TenantId!;
         return await _roleManager.CreateAsync(role);
     }
 

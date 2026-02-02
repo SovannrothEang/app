@@ -64,11 +64,17 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
         bool trackChanges = false,
         bool ignoreQueryFilters = false,
         Func<IQueryable<TEntity>, IQueryable<TEntity>>? includes = null,
+        Expression<Func<TEntity, TResult>>? select = null,
         CancellationToken cancellationToken = default)
     {
         var queryable = Query;
         queryable = queryable.Where(predicate);
         queryable = ApplyQueryFilters(queryable, trackChanges, ignoreQueryFilters, null, includes);
+        if (select is not null)
+            return await queryable
+                .Select(select)
+                .FirstOrDefaultAsync(cancellationToken);
+
         return await queryable
             .ProjectTo<TResult>(_mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(cancellationToken);
@@ -102,12 +108,11 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             option,
             filter);
         
+        if (orderBy is not null)
+            queryable = orderBy(queryable);
         var totalCount = await queryable.CountAsync(cancellationToken);
         if (includes is not null)
             queryable = includes(queryable);
-        if (orderBy is not null)
-            queryable = orderBy(queryable);
-        
         var items = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -132,11 +137,11 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             option,
             filter);
         
+        if (orderBy is not null)
+            queryable = orderBy(queryable);
         var totalCount = await queryable.CountAsync(cancellationToken);
         if (includes is not null)
             queryable = includes(queryable);
-        if (orderBy is not null)
-            queryable = orderBy(queryable);
         var items = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -202,10 +207,10 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             queryable = queryable.IgnoreQueryFilters();
         if (filter is not null)
             queryable = queryable.Where(filter);
-        if (includes is not null)
-            queryable = includes(queryable);
         if (orderBy is not null)
             queryable = orderBy(queryable);
+        if (includes is not null)
+            queryable = includes(queryable);
         return queryable;
     }
 

@@ -15,6 +15,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .IsRequired();
         builder.Property(pt => pt.Amount)
             .HasColumnType("DECIMAL(18,2)")
+            .HasAnnotation("CheckConstraint", $"{nameof(Transaction.Amount)} != 0")
             .IsRequired();
         builder.Property(pt => pt.TransactionTypeId)
             .HasColumnType("VARCHAR(36)")
@@ -25,6 +26,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasColumnType("VARCHAR(36)");
         builder.Property(pt => pt.OccurredAt)
             .HasColumnType("DATETIMEOFFSET(3)")
+            .HasAnnotation("CheckConstraint", $"{nameof(Transaction.OccurredAt)} <= {nameof(Transaction.CreatedAt)}")
             .IsRequired();
         builder.Property(pt => pt.CreatedAt)
             .HasColumnType("DATETIMEOFFSET(3)")
@@ -46,7 +48,13 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasIndex(e => e.PerformBy);
         builder.HasIndex(e => e.TransactionTypeId);
         builder.HasIndex(e => new { e.TenantId, e.CustomerId, e.AccountTypeId });
-        
+        builder.HasIndex(t => t.OccurredAt);
+        builder.HasIndex(t => t.CreatedAt);
+        builder.HasIndex(t => new { t.CustomerId, t.OccurredAt });
+        builder.HasIndex(t => new { t.TenantId, t.OccurredAt });
+        builder.HasIndex(t => t.TransactionTypeId);
+
+        // Relationships
         builder.HasOne(e => e.Referencer)
             .WithMany()
             .HasForeignKey(e => e.ReferenceId)

@@ -38,28 +38,26 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.HasIndex(e => e.Id)
             .IsUnique()
             .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
-
         builder.HasIndex(e => e.PerformBy);
-
         builder.HasIndex(e => e.UserId)
             .IsUnique()
             .HasFilter($"[{nameof(Customer.IsDeleted)}] = 0");
+        builder.HasIndex(e => e.TenantId);
+        builder.HasIndex(e => e.CreatedAt);
 
+        // Relationships
         builder.HasMany(e => e.Accounts)
             .WithOne(e => e.Customer)
             .HasForeignKey(e => e.CustomerId)
             .OnDelete(DeleteBehavior.Cascade);
-
         builder.HasOne(e => e.Tenant)
             .WithMany()
             .HasForeignKey(e => e.TenantId)
             .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasOne(e => e.User)
             .WithOne()
             .HasForeignKey<Customer>(e => e.UserId)
             .IsRequired(false);
-        
         builder.HasOne(e => e.Performer)
             .WithMany()
             .HasForeignKey(e => e.PerformBy);
