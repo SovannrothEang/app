@@ -57,7 +57,8 @@ public class TransactionService(
             Items = [..items.Select(_mapper.Map<TransactionDto>)],
             PageNumber = option.Page.Value,
             PageSize = option.PageSize.Value,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / option.PageSize.Value)
         };
     }
 
@@ -86,7 +87,8 @@ public class TransactionService(
             Items = [.. items.Select(_mapper.Map<TransactionDto>)],
             PageNumber = pageOption.Page.Value,
             PageSize = pageOption.PageSize.Value,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageOption.PageSize.Value)
         };
     }
     
@@ -115,7 +117,8 @@ public class TransactionService(
             Items = [.. items.Select(_mapper.Map<TransactionDto>)],
             PageNumber = pageOption.Page.Value,
             PageSize = pageOption.PageSize.Value,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageOption.PageSize.Value)
         };
     }
 
@@ -167,15 +170,13 @@ public class TransactionService(
             PostTransactionDto dto,
             CancellationToken cancellationToken = default)
     {
-        var validator = new PostTransactionValidator(_unitOfWork);
-        var result = await validator.ValidateAsync(dto, cancellationToken);
+        var result = await new PostTransactionValidator(_unitOfWork).ValidateAsync(dto, cancellationToken);
 
         if (!result.IsValid)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.ErrorMessage));
             if (_logger.IsEnabled(LogLevel.Warning))
-                _logger.LogWarning(
-                    "PostTransactionAsync validation failed: {Errors}", errors);
+                _logger.LogWarning("PostTransactionAsync validation failed: {Errors}", errors);
             throw new BadHttpRequestException(errors);
         }
 
@@ -220,7 +221,7 @@ public class TransactionService(
                     }
                     else
                     {
-                        // If customer doesn't account with tenant, and the first amount is not positive,
+                        // If the customer doesn't account with the tenant, and the first amount is not positive,
                         // It won't trigger the account creation
                         if (_logger.IsEnabled(LogLevel.Warning))
                             _logger.LogWarning(
@@ -231,7 +232,7 @@ public class TransactionService(
                     }
                 }
 
-                // Process the Transaction (Generic form, support all transaction type)
+                // Process the Transaction (Generic form, support all transaction types)
                 var (balance, transactionDetail) = account.ProcessTransaction(
                     finalAmount,
                     type.Id,
@@ -362,7 +363,7 @@ public class TransactionService(
     }
 
     /// <summary>
-    /// Replaces parameter in expression tree.
+    /// Replaces parameter in an expression tree.
     /// </summary>
     private static Expression ReplaceParameter(Expression expression, ParameterExpression oldParam, ParameterExpression newParam)
     {

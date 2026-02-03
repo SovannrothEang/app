@@ -22,14 +22,14 @@ public class RolesController(IRoleService roleService, ILogger<RolesController> 
     /// </summary>
     [HttpGet]
     // [Authorize(Policy = Constants.TenantAccessPolicy)]
-    public ActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var roles = _roleService.GetAllRoles();
+        var roles = await _roleService.GetAllRoles();
         return Ok(roles);
     }
 
     /// <summary>
-    /// Create role by role name via Admin access only
+    /// Create a role by role name via Admin access only
     /// </summary>
     [HttpPost]
     public async Task<ActionResult> CreateRole([FromBody] RoleCreateDto dto)

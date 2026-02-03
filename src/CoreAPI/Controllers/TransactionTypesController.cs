@@ -45,7 +45,7 @@ public class TransactionTypesController(
         [FromBody] TransactionTypeCreateDto dto,
         CancellationToken ct = default)
     {
-        var result = new TransactionTypeCreateDtoValidator().Validate(dto);
+        var result = await new TransactionTypeCreateDtoValidator().ValidateAsync(dto, ct);
         if (!result.IsValid)
         {
             if (_logger.IsEnabled(LogLevel.Warning))

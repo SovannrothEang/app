@@ -5,13 +5,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 namespace Infrastructure;
 
 public class AppDbContext(
     DbContextOptions<AppDbContext> options,
-    ICurrentUserProvider currentUserProvider,
+    IServiceProvider serviceProvider,
     IConfiguration configuration) 
     : IdentityDbContext<
         User,
@@ -23,7 +24,7 @@ public class AppDbContext(
         IdentityRoleClaim<string>,
         IdentityUserToken<string>>(options)
 {
-    private readonly ICurrentUserProvider _currentUserProvider = currentUserProvider;
+    private readonly ICurrentUserProvider _currentUserProvider = serviceProvider.GetRequiredService<ICurrentUserProvider>();
     private readonly string _hostTenantId = configuration["Tenancy:Host"] ?? throw new Exception("Tenancy:Host is missing.");
 
     public DbSet<Tenant>  Tenants { get; set; }

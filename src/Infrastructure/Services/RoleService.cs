@@ -5,6 +5,7 @@ using Domain.Entities;
 using Domain.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
@@ -24,10 +25,10 @@ public class RoleService(
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<RoleService> _logger = logger;
 
-    public IEnumerable<RoleDto> GetAllRoles(CancellationToken ct = default)
+    public async Task<IEnumerable<RoleDto>> GetAllRoles(CancellationToken ct = default)
     {
         //var roles = await _roleManager.Roles.ToListAsync();
-        var roles = _roleManager.Roles.ToList();
+        var roles = await _roleManager.Roles.ToListAsync(ct);
         return roles.Select(r => _mapper.Map<Role, RoleDto>(r));
     }
 

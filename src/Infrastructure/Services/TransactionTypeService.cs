@@ -3,6 +3,7 @@ using Application.Services;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Repositories;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
@@ -97,6 +98,15 @@ public class TransactionTypeService(
         TransactionTypeCreateDto dto,
         CancellationToken cancellationToken = default)
     {
+        var exists = await IsTypeExistAsync(dto.Name, cancellationToken);
+        if (exists)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+                _logger.LogWarning("Transaction type creation failed. Type with name: {TransactionTypeName} already exists. Performed by User {Performer}",
+                    dto.Name, _currentUserProvider.UserId);
+            throw new BadHttpRequestException($"Transaction type with name: {dto.Name} already exists!");
+        }
+        
         var type = _mapper.Map<TransactionType>(dto);
         await _repository.CreateAsync(type, cancellationToken);
         await _unitOfWork.CompleteAsync(cancellationToken);

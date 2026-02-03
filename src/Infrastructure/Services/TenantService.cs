@@ -47,7 +47,8 @@ public class TenantService(
             Items = [.. items.Select(_mapper.Map<TenantDto>)],
             PageNumber = option.Page.Value,
             PageSize = option.PageSize.Value,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / option.PageSize.Value)
         };
     }
 
@@ -221,7 +222,7 @@ public class TenantService(
     }
 
     /// <summary>
-    /// Builds includes for tenant queries.
+    /// Builds Includes for tenant queries.
     /// Includes Accounts with AccountType.
     /// </summary>
     private static Func<IQueryable<Tenant>, IQueryable<Tenant>> BuildIncludes()

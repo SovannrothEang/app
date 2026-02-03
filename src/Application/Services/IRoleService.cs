@@ -6,7 +6,7 @@ namespace Application.Services;
 
 public interface IRoleService
 {
-    IEnumerable<RoleDto> GetAllRoles(CancellationToken ct = default);
+    Task<IEnumerable<RoleDto>> GetAllRoles(CancellationToken ct = default);
     Task<IEnumerable<string>> GetRoleNamesAsync(User user);
     Task<RoleDto?> GetRoleByIdAsync(string id);
     Task<bool> ExistsAsync(string roleName, CancellationToken ct = default);

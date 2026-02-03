@@ -60,7 +60,8 @@ public class AccountService(
                         Items = accountProfiles,
                         PageNumber = option.Page!.Value,
                         PageSize = option.PageSize!.Value,
-                        TotalCount = totalCountPerTenant.GetValueOrDefault(group.Key)
+                        TotalCount = totalCountPerTenant.GetValueOrDefault(group.Key),
+                        TotalPages = (int)Math.Ceiling((double)totalCountPerTenant.GetValueOrDefault(group.Key) / option.PageSize.Value)
                     }
             );
             }).ToList();

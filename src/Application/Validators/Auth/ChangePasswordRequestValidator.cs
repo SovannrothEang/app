@@ -22,7 +22,7 @@ public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRe
             .NotNull().WithMessage("Current password is required.")
             .MustAsync(async (currentPwd, cancellation) => await CheckCurrentPassword(currentPwd, cancellation));
 
-    RuleFor(e => e.NewPassword)
+        RuleFor(e => e.NewPassword)
             .NotEmpty().WithMessage("New password is required.")
             .NotNull().WithMessage("New password is required.");
 

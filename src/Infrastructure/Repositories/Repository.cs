@@ -152,7 +152,8 @@ public class Repository<TEntity>(AppDbContext dbContext, IMapper mapper) : IRepo
             Items = items,
             PageNumber = page,
             PageSize = pageSize,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
         };
     }
     

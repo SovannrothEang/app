@@ -124,10 +124,6 @@ public class AuthController(
             return Unauthorized();
         }
 
-        // TODO: prepare for using fluent validation instead
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var result = await _userService.ChangePasswordAsync(_currentUser.UserId!, request);
 
         if (!result.Succeeded)

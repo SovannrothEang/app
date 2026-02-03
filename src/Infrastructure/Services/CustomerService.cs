@@ -58,7 +58,8 @@ public class CustomerService(
             Items = [.. customers.Select(_mapper.Map<CustomerDto>)],
             PageNumber = option.Page.Value,
             PageSize = option.PageSize.Value,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / option.PageSize.Value)
         };
     }
 
@@ -88,7 +89,8 @@ public class CustomerService(
             Items = [.. customers.Select(_mapper.Map<CustomerDto>)],
             PageNumber = option.Page.Value,
             PageSize = option.PageSize.Value,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / option.PageSize.Value)
         };
     }
 
@@ -174,10 +176,22 @@ public class CustomerService(
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("[CustomerService] CreateAsync: Creating new Customer");
             var emailExist = await _repository.ExistsAsync(
-                e => e.User!.Email == dto.Email, ignoreQueryFilters: true, ct);
+                e => e.User!.Email == dto.Email,
+                ignoreQueryFilters: true, ct);
             if (emailExist)
             {
-                throw new BadHttpRequestException("Email exist");
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("[CustomerService] CreateAsync: Email already exists: {Email}", dto.Email);
+                throw new BadHttpRequestException("Credentials are already in use.");
+            }
+            var userNameExist = await _repository.ExistsAsync(
+                e => e.User!.UserName == dto.UserName,
+                ignoreQueryFilters: true, ct);
+            if (userNameExist)
+            {
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning("[CustomerService] CreateAsync: Username already exists: {UserName}", dto.UserName);
+                throw new BadHttpRequestException("Credentials are already in use.");
             }
             var registerDto = new RegisterDto(
                 dto.UserName, dto.Email, dto.FirstName,

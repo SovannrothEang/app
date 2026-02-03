@@ -63,8 +63,7 @@ public class TenantsController(
         [FromBody] TenantOnBoardingDto dto,
         CancellationToken ct = default)
     {
-        var validator = new TenantCreateDtoValidator();
-        var result = await validator.ValidateAsync(dto, ct);
+        var result = await new TenantCreateDtoValidator().ValidateAsync(dto, ct);
         if (!result.IsValid)
         {
             if (_logger.IsEnabled(LogLevel.Warning))
