@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+        
+        <PackageReference Include="Serilog.AspNetCore" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Application\Application.csproj">
+	    <Project>{2f5a4037-fc87-43f3-a21a-c514fc295dfd}</Project>
+	    <Name>Application</Name>
+	  </ProjectReference>
+	  <ProjectReference Include="..\Domain\Domain.csproj">
+	    <Project>{7f65dcd7-c954-4e37-bb82-1d6a1d3ef05b}</Project>
+	    <Name>Domain</Name>
+	  </ProjectReference>
+	</ItemGroup>
+
+</Project>

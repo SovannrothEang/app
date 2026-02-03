@@ -1,0 +1,49 @@
+﻿using Application.DTOs;
+using Application.DTOs.Auth;
+using Application.DTOs.Tenants;
+using Domain.Shared;
+using Microsoft.AspNetCore.Identity;
+
+namespace Application.Services;
+
+public interface IUserService
+{
+    Task<(string userId, string token)> OnboardingUserAsync(OnboardingUserDto dto, CancellationToken ct = default);
+    Task<AuthResponseDto?> LoginAsync(LoginDto dto, CancellationToken ct = default);
+
+    Task<UserProfileDto> CreateUserAsync(RegisterDto dto, CancellationToken ct = default);
+    Task<UserProfileDto> GetCurrentUserProfileAsync(string userId);
+    Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordRequest request);
+    //Task SendPasswordResetEmailAsync(string email);
+    Task<UserProfileDto> CompleteInviteAsync(string userId, string token, string newPassword);
+    Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword);
+    /// <summary>
+    /// Create an owner of the new created tenant
+    /// </summary>
+    /// <returns>
+    /// Token for complete the invitation (Prod: using EmailService to generate the link)
+    /// </returns>
+    Task<(string, string)> CreateTenantUserAsync(
+        TenantDto tenant,
+        TenantOwnerCreateDto dto,
+        CancellationToken ct = default);
+
+    Task<PagedResult<UserProfileDto>> GetAllUserAsync(PaginationOption option, CancellationToken ct = default);
+    Task<PagedResult<UserProfileDto>> GetPagedResultAsync(PaginationOption option, CancellationToken ct = default);
+
+    Task<PagedResult<UserProfileDto>> GetPagedResultForAdminAsync(
+        PaginationOption option,
+        CancellationToken ct = default);
+    Task<UserProfileDto?> GetUserByIdAsync(string id, CancellationToken ct = default);
+    Task<UserProfileDto?> GetUserByIdForAdminAsync(string id, CancellationToken ct = default);
+
+    // Email verification
+    //Task SendEmailVerificationEmailAsync(User user);
+    //Task<IdentityResult> ConfirmEmailAsync(string userId, string token);
+    //Task ResendVerificationEmailAsync(string email);
+
+    // Account management
+    //Task<IdentityResult> ChangeEmailAsync(string userId, string newEmail);
+    //Task<IdentityResult> ConfirmEmailChangeAsync(string userId, string token);
+    //Task<IdentityResult> DeleteAccountAsync(string userId, string? password = null);
+}

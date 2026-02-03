@@ -3,7 +3,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreAPI", "CoreAPI\CoreAPI.csproj", "{5AB23C9E-00DA-4063-94A3-C91AC102F8E5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreAPI", "src\CoreAPI\CoreAPI.csproj", "{5AB23C9E-00DA-4063-94A3-C91AC102F8E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src\Domain\Domain.csproj", "{7F65DCD7-C954-4E37-BB82-1D6A1D3EF05B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "src\Infrastructure\Infrastructure.csproj", "{F3C68456-C90C-4CE7-B238-3F725968F502}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "src\Application\Application.csproj", "{2F5A4037-FC87-43F3-A21A-C514FC295DFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{473C5CB2-2FBA-47E4-AED7-0B0F3EA899E5}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02CF3AF7-B867-4BE4-AC1E-D7D10801CC70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,11 +30,29 @@ Global
 		{5AB23C9E-00DA-4063-94A3-C91AC102F8E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5AB23C9E-00DA-4063-94A3-C91AC102F8E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5AB23C9E-00DA-4063-94A3-C91AC102F8E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F65DCD7-C954-4E37-BB82-1D6A1D3EF05B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F65DCD7-C954-4E37-BB82-1D6A1D3EF05B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F65DCD7-C954-4E37-BB82-1D6A1D3EF05B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F65DCD7-C954-4E37-BB82-1D6A1D3EF05B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3C68456-C90C-4CE7-B238-3F725968F502}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3C68456-C90C-4CE7-B238-3F725968F502}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3C68456-C90C-4CE7-B238-3F725968F502}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3C68456-C90C-4CE7-B238-3F725968F502}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F5A4037-FC87-43F3-A21A-C514FC295DFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F5A4037-FC87-43F3-A21A-C514FC295DFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F5A4037-FC87-43F3-A21A-C514FC295DFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F5A4037-FC87-43F3-A21A-C514FC295DFD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3CDFDAD-296F-4184-BA11-86D2E3277470}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2F5A4037-FC87-43F3-A21A-C514FC295DFD} = {02CF3AF7-B867-4BE4-AC1E-D7D10801CC70}
+		{5AB23C9E-00DA-4063-94A3-C91AC102F8E5} = {02CF3AF7-B867-4BE4-AC1E-D7D10801CC70}
+		{7F65DCD7-C954-4E37-BB82-1D6A1D3EF05B} = {02CF3AF7-B867-4BE4-AC1E-D7D10801CC70}
+		{F3C68456-C90C-4CE7-B238-3F725968F502} = {02CF3AF7-B867-4BE4-AC1E-D7D10801CC70}
 	EndGlobalSection
 EndGlobal

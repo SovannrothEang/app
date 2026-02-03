@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+        <PackageReference Include="AutoMapper" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+        <PackageReference Include="Microsoft.Build" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Domain\Domain.csproj">
+	    <Project>{7f65dcd7-c954-4e37-bb82-1d6a1d3ef05b}</Project>
+	    <Name>Domain</Name>
+	  </ProjectReference>
+	</ItemGroup>
+
+</Project>

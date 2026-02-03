@@ -1,0 +1,6 @@
+﻿namespace Application.DTOs.Customers;
+
+public record CustomerUpdateDto(
+    string? Name,
+    string? Email,
+    string? PhoneNumber);
