@@ -39,6 +39,7 @@ public sealed class Account : BaseEntity, ITenantEntity
         string transactionTypeId,
         string? reason,
         string? referenceId,
+        string? idempotencyKey,
         string? performBy,
         DateTimeOffset? occurredAt)
     {
@@ -48,7 +49,7 @@ public sealed class Account : BaseEntity, ITenantEntity
             throw new InsufficientBalanceException(Balance, Math.Abs(signedAmount));
         }
         
-        var transaction = ApplyTransaction(signedAmount, transactionTypeId, reason, referenceId, performBy, occurredAt);
+        var transaction = ApplyTransaction(signedAmount, transactionTypeId, reason, referenceId, idempotencyKey, performBy, occurredAt);
         return (this.Balance, transaction);
     }
 
@@ -57,6 +58,7 @@ public sealed class Account : BaseEntity, ITenantEntity
         string type,
         string? reason,
         string? referenceId,
+        string? idempotencyKey,
         string? performBy,
         DateTimeOffset? occurredAt)
     {
@@ -72,6 +74,7 @@ public sealed class Account : BaseEntity, ITenantEntity
             type,
             reason,
             referenceId,
+            idempotencyKey,
             performBy,
             occurredAt);
         _transactions.Add(transaction);

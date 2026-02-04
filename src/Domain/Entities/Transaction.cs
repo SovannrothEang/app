@@ -12,6 +12,7 @@ public record Transaction : ITenantEntity
     public string TransactionTypeId { get; set; } = null!;
     public string? Reason { get; private set; }
     public string? ReferenceId { get; private set; }
+    public string? IdempotencyKey { get; private set; }
     public DateTimeOffset OccurredAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     
@@ -37,6 +38,7 @@ private Transaction(
     string type,
     string? reason,
     string? referenceId = null,
+    string? idempotencyKey = null,
     string? performBy = null,
     DateTimeOffset? occurredAt = null)
     {
@@ -48,6 +50,7 @@ private Transaction(
         TransactionTypeId = type;
         Reason = reason;
         ReferenceId = referenceId;
+        IdempotencyKey = idempotencyKey;
         PerformBy = performBy;
         var now = DateTimeOffset.UtcNow;
         OccurredAt = occurredAt ?? now;
@@ -62,7 +65,8 @@ private Transaction(
         string type,
         string? reason,
         string? referenceId = null,
+        string? idempotencyKey = null,
         string? performBy = null,
         DateTimeOffset? occurredAt = null)
-        => new Transaction(Guid.NewGuid().ToString(), tenantId, customerId, accountTypeId, amount, type, reason, referenceId, performBy, occurredAt);
+        => new Transaction(Guid.NewGuid().ToString(), tenantId, customerId, accountTypeId, amount, type, reason, referenceId, idempotencyKey, performBy, occurredAt);
 }

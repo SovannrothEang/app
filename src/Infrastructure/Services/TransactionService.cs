@@ -171,7 +171,6 @@ public class TransactionService(
             CancellationToken cancellationToken = default)
     {
         var result = await new PostTransactionValidator(_unitOfWork).ValidateAsync(dto, cancellationToken);
-
         if (!result.IsValid)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.ErrorMessage));
@@ -186,6 +185,29 @@ public class TransactionService(
                 "Tenant: {TenantId} perform {Slug} operation to Customer: {CustomerId}, perform by User {PerformBy}.",
                 tenantId, slug, customerId, performBy);
 
+        // Idempotency check: If IdempotencyKey is provided, check if it already exists for this tenant
+        if (!string.IsNullOrEmpty(dto.IdempotencyKey))
+        {
+            var existingTransaction = await _transactionRepository.FirstOrDefaultAsync(
+                predicate: t => t.IdempotencyKey == dto.IdempotencyKey && t.TenantId == tenantId,
+                includes: q => q.Include(t => t.Account).ThenInclude(a => a!.Tenant),
+                cancellationToken: cancellationToken);
+
+            if (existingTransaction != null)
+            {
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation(
+                        "Duplicate transaction detected for IdempotencyKey: {IdempotencyKey}. Returning existing transaction: {TransactionId}",
+                        dto.IdempotencyKey, existingTransaction.Id);
+
+                return (
+                    existingTransaction.Account!.Balance,
+                    _mapper.Map<TransactionDto>(existingTransaction),
+                    _mapper.Map<TenantDto>(existingTransaction.Account.Tenant)
+                );
+            }
+        }
+
         return await ExecuteWithRetryAsync(async () =>
         {
             await using var transaction = await _unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -196,7 +218,8 @@ public class TransactionService(
                 {
                     if (_logger.IsEnabled(LogLevel.Warning))
                         _logger.LogWarning(
-                            "Negative amounts are not allowed for transaction type: {TypeName}", type.Name);
+                            "Negative amounts are not allowed for transaction type: {TypeName}",
+                            type.Name);
                     throw new BadHttpRequestException(
                         $"Negative amounts are not allowed for transaction type '{type.Name}'.");
                 }
@@ -238,6 +261,7 @@ public class TransactionService(
                     type.Id,
                     dto.Reason,
                     dto.ReferenceId,
+                    dto.IdempotencyKey,
                     performBy,
                     dto.OccurredAt);
 
